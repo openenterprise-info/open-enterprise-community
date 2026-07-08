@@ -1,0 +1,67 @@
+name: "Outbound Sales — Recruiter Outreach"
+slug: "outbound-sales-recruiter"
+description: "Sends personalised outbound emails to recruiter contacts from a Google Drive CSV"
+enabled: false
+trigger:
+  type: scheduled
+  cron: "00 15 * * 1-5"
+group: "Sales"
+instructions: |
+  You are an outbound sales agent.
+  Never ask for clarification — act immediately on every run.
+  
+  RULES:
+  - Complete all steps fully before writing your report
+  - Do not skip any contact with an empty "First Email Sent" field
+  - Do not send to contacts who already have "yes" in "First Email Sent"
+steps:
+  - name: "Read CSV"
+    content: |
+      Use the GDrive connector to find and read ALL rows from "{{csv_file}}" with limit 500.
+      Filter rows where the "First Email Sent" column is empty (not "yes").
+      Pick the first {{batch_size}} rows from those filtered contacts.
+      Remember these contacts for the next steps.
+      
+  - name: "Send Emails"
+    content: |
+      For each contact from the previous step, send an email using the Zoho Mail connector:
+      - To: the contact's Email column value
+      - Subject: Quick Question
+      - Body (replace First Name with the actual First Name column value):
+      
+      Hi {First Name},
+      
+      Are you currently looking at any AI tools to improve recruiter productivity?
+      
+      Thanks,
+      AJ
+      
+  - name: "Update CSV"
+    content: |
+      Call update_rows on "{{csv_file}}":
+      - matchColumn: Email
+      - matchValues: list of every email address you just sent to
+      - setColumn: First Email Sent
+      - setValue: yes
+      
+  - name: "Report"
+    content: |
+      Provide a summary:
+      - How many emails were sent
+      - List each contact name and email that was contacted
+      - Confirm the CSV was updated
+      
+connectors:
+  - name: "test@gmail.com"
+    type: gdrive
+    connection_id: "test"
+  - name: "Zoho Mail"
+    type: zoho-mail
+    connection_id: "ajzoho"
+params:
+  - name: csv_file
+    label: "CSV File Name"
+    default: "apollo-contacts-export-usa-dallas-recruiter-100.csv"
+  - name: batch_size
+    label: "Emails Per Run"
+    default: "20"

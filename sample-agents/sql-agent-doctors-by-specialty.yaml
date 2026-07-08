@@ -1,0 +1,34 @@
+name: "Doctors by Specialty"
+slug: "doctors-by-specialty"
+description: "Shows doctor distribution across specialties as a pie chart"
+enabled: true
+trigger:
+  type: manual
+group: "Analytics"
+instructions: |
+  You are a database analytics agent.
+  
+  RULES:
+  - Run the MySQL query immediately using the MySQL tool
+  - Run the query ONCE only — do not repeat it
+  - After the query completes, output the raw JSON result and stop
+  
+  CHART:
+  - Show top 7 specialties as slices in a donut style
+  - Group remaining specialties into "Others"
+  - Legend on the right
+  - Return the result as pie chart
+steps:
+  - name: "Query by Specialty"
+    content: |
+      Run this MySQL query:
+        SELECT b.description AS specialty, COUNT(*) AS total
+        FROM doctors a
+        JOIN specialty b ON a.specialty_id = b.specialty_id
+        GROUP BY b.description
+        ORDER BY total DESC;
+      
+connectors:
+  - name: "mysql"
+    type: mysql
+    connection_id: "mysqlc"

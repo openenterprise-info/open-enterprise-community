@@ -1,0 +1,26 @@
+name: "Total Doctors Count"
+slug: "total-doctors-count"
+description: "Queries the database and displays total doctor count as a chart"
+enabled: true
+trigger:
+  type: manual
+group: "Analytics"
+instructions: |
+  You are a database analytics agent. Query the database and return the result.
+  
+  RULES:
+  - Use the MySQL tool to run the query immediately
+  - Do NOT write any text before or between tool calls
+  - Return only the query result — no explanation needed
+steps:
+  - name: "Query Doctor Count"
+    content: |
+      Run this MySQL query:
+        SELECT COUNT(*) AS total_doctors FROM doctors;
+      
+      Return the result as pie chart.
+      
+connectors:
+  - name: "mysql"
+    type: mysql
+    connection_id: "mysqlc"

@@ -119,6 +119,23 @@ Thank you for testing Open Enterprise! If you run into issues, please [open an i
 
 ---
 
+## Sample Agents
+
+The [`sample-agents/`](sample-agents/) folder contains ready-to-import agent configurations to help you get started quickly:
+
+| File | Description |
+|------|-------------|
+| `devops-agent-security-monitor.yaml` | Monitors infrastructure for security issues |
+| `devops-agent-security-remediation.yaml` | Automates remediation of common security findings |
+| `marketing-agent-outbound-sales.yaml` | Runs outbound sales outreach workflows |
+| `marketing-agent-reply-tracker.yaml` | Tracks and follows up on email replies |
+| `sql-agent-doctors-by-specialty.yaml` | Queries a database for doctors by specialty |
+| `sql-agent-total-doctors-count.yaml` | Returns total doctor count from a database |
+
+To use: go to **Admin → Agents → Import**, select a YAML file, configure the required connectors, and run.
+
+---
+
 ## License
 
 [AGPL-3.0](LICENSE)

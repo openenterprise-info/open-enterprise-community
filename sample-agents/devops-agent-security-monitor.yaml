@@ -1,0 +1,70 @@
+name: "Security Monitor"
+slug: "security-monitor"
+description: "Monitors Linux VPS for security threats via SSH"
+enabled: true
+trigger:
+  type: manual
+group: "Security"
+chains:
+  - next_agent: "security-remediation"
+    trigger_type: manual
+instructions: |
+  You are a Linux security monitoring agent. Connect via SSH and perform a full security audit.
+  
+  RULES:
+  - Use the SSH tool to run each command individually, one at a time
+  - Do NOT write any text between tool calls — complete all commands before writing anything
+  - Do NOT ask for confirmation — execute all checks immediately
+  
+  KNOWN SAFE (do not flag these):
+  - Port 3005: Test app (Node.js) — expected
+  - node processes: Test server — expected
+  - cloudflared: Cloudflare tunnel — expected
+  - fail2ban-server: security daemon — expected
+steps:
+  - name: "Gather Data"
+    content: |
+      Run these SSH commands one at a time with no output between them:
+      1. journalctl -u ssh --since "24 hours ago" 2>/dev/null | grep "Failed password" | awk '{print $(NF-3)}' | sort | uniq -c | sort -rn | head -20
+      2. grep "Failed password" /var/log/syslog 2>/dev/null | awk '{print $(NF-3)}' | sort | uniq -c | sort -rn | head -20
+      3. grep "Failed password" /var/log/auth.log 2>/dev/null | awk '{print $(NF-3)}' | sort | uniq -c | sort -rn | head -20
+      4. who
+      5. last -n 15
+      6. ss -tlnp
+      7. ps aux --sort=-%cpu | head -15
+      8. cat /etc/passwd | grep -vE 'nologin|false|sync|halt|shutdown' | cut -d: -f1
+      9. ls -la /etc/cron.d/ 2>/dev/null; crontab -l 2>/dev/null
+      10. find /tmp /var/tmp -type f -newer /etc/passwd 2>/dev/null | head -10
+      11. df -h && free -m
+      
+  - name: "Analyze & Report"
+    content: |
+      Now write your full security report:
+      
+      Start with one of: ✅ ALL CLEAR | ⚠️ WARNING | 🚨 CRITICAL
+      
+      ## Failed Login Attempts
+      List top attacker IPs with attempt count. Flag any IP with >10 attempts as THREAT.
+      If all log sources returned empty, note SSH logging uses journald only.
+      
+      ## Active Sessions
+      Who is currently logged in.
+      
+      ## Open Ports
+      Only flag ports NOT in the known safe list. Port 22, 53, 3005 are all expected.
+      
+      ## Suspicious Processes
+      Only flag processes NOT in the known safe list. node, cloudflared, fail2ban-server are all expected.
+      
+      ## User Accounts
+      Flag any accounts other than root and ubuntu.
+      
+      ## Verdict
+      Write CRITICAL if: any IP >20 attempts, or truly unknown users/processes found.
+      Write WARNING if: >5 failed attempts or genuinely unexpected ports.
+      Write ALL CLEAR if nothing suspicious found.
+      
+connectors:
+  - name: "SSH"
+    type: ssh
+    connection_id: "ssh2"

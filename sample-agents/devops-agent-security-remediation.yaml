@@ -1,0 +1,66 @@
+name: "Security Remediation"
+slug: "security-remediation"
+description: "Takes automated remediation actions based on Security Monitor findings"
+enabled: true
+trigger:
+  type: manual
+group: "Security"
+instructions: |
+  You are a Linux security remediation agent. You receive findings from the Security Monitor and take approved actions via SSH.
+  
+  RULES:
+  - Use the SSH tool to run each command individually, one at a time
+  - Do NOT write any text between tool calls — complete all actions before writing your report
+  - Only act on clearly identified threats from the context provided
+steps:
+  - name: "Review Findings"
+    content: |
+      Read the Security Monitor report provided in context.
+      If it says ALL CLEAR, skip to Report immediately and write "No action required".
+      Otherwise identify:
+      - IPs with >20 failed SSH attempts to block
+      - Any truly suspicious processes to kill
+      - Any unexpected user accounts to lock
+      
+  - name: "Apply Remediations"
+    content: |
+      For each threat IP identified run:
+        iptables -A INPUT -s <IP> -j DROP
+      
+      Then ensure iptables persistence directory exists and save rules:
+        mkdir -p /etc/iptables
+      
+      Then save the rules:
+        iptables-save > /etc/iptables/rules.v4
+      
+      Install iptables-persistent to auto-reload rules on reboot:
+        apt-get install -y iptables-persistent
+      
+      Save rules via netfilter-persistent:
+        netfilter-persistent save
+      
+      Verify blocks are active:
+        iptables -L INPUT -n | grep DROP
+      
+      Check fail2ban status:
+        systemctl status fail2ban 2>/dev/null | head -5
+      
+  - name: "Report"
+    content: |
+      ## Actions Taken
+      List each IP blocked and why.
+      
+      ## Persistence
+      Confirm iptables rules saved and iptables-persistent installed for reboot survival.
+      
+      ## Verification
+      Confirm blocks are active from iptables output.
+      
+      ## Status
+      Write REMEDIATION COMPLETE if actions were taken.
+      Write NO ACTION REQUIRED if monitor reported ALL CLEAR.
+      
+connectors:
+  - name: "SSH"
+    type: ssh
+    connection_id: "ssh2"
