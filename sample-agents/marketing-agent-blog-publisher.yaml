@@ -1,0 +1,104 @@
+name: "Blog Publisher"
+slug: "blog-publisher"
+description: "Generates and publishes one blog post per run to the website via GitHub, driven by a Google Drive CSV of topics"
+enabled: true
+trigger:
+  type: manual
+group: "Marketing"
+
+instructions: |
+  You are a blog content agent. Write professional, SEO-optimised posts and auto-publish them.
+  Never ask for clarification — act immediately. Your FIRST action must always be a tool call.
+
+  RULES:
+  - Process exactly ONE topic per run
+  - Skip rows where Status = "published"
+  - If no unpublished topics remain, stop and report "All topics published."
+  - {ARTICLE_BODY_HTML} must be 1,500–2,000 words with 5–7 H2 sections
+  - Weave at least 5 internal links naturally into paragraph sentences
+  - Include exactly 2 callout boxes: <div class="callout"><p>insight here</p></div>
+  - Mention the product naturally in 1–2 places only
+  - Avoid: "delve", "leverage", "game-changer", "revolutionize", "transformative"
+
+steps:
+  - name: "Read CSV"
+    content: |
+      Call the GDrive connector to read all rows from "{{csv_file}}" (limit 200).
+      Find the FIRST row where Status is empty. Note the Topic, Category, Slug, and ID.
+      Then immediately proceed to the next step — do not output any text.
+
+  - name: "Write Blog Post"
+    content: |
+      Generate a complete blog HTML file using the topic and category from the CSV.
+      Fill in: {TOPIC}, {CATEGORY}, {DATE} (today's date as "Month D, YYYY"),
+      {READ_TIME} (7–9 min), {EMOJI}, {INTRO_PARAGRAPH}, {ARTICLE_BODY_HTML},
+      {CLOSING_PARAGRAPH}, {CTA_HEADING}, {CTA_SUBTEXT}, and 5 related article cards.
+
+      Call write_file on the GitHub connector:
+        path: blog/{SLUG}.html
+        message: "feat: publish blog — {TOPIC}"
+        content: [complete rendered HTML]
+
+  - name: "Update Blog Index"
+    content: |
+      Call read_file on GitHub for blog/index.html.
+      Insert this card immediately after <div id="blog-grid" class="blog-grid">:
+
+        <a href="{SLUG}.html" class="blog-card" style="text-decoration:none;">
+          <div class="blog-card-img">{EMOJI}</div>
+          <div class="blog-card-body">
+            <div class="blog-meta">
+              <span class="blog-tag">{CATEGORY}</span>
+              <span class="blog-date">{DATE}</span>
+            </div>
+            <h3>{TOPIC}</h3>
+            <p>{ONE_SENTENCE_DESCRIPTION}</p>
+            <span class="blog-read-more">Read article →</span>
+          </div>
+        </a>
+
+      Call write_file with the updated blog/index.html.
+      message: "chore: add blog card — {TOPIC}"
+
+  - name: "Update Sitemap"
+    content: |
+      Call read_file on GitHub for sitemap.xml.
+      Insert before </urlset>:
+
+        <url>
+          <loc>https://www.yoursite.com/blog/{SLUG}.html</loc>
+          <lastmod>{TODAY as YYYY-MM-DD}</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+
+      Call write_file with the updated sitemap.xml.
+      message: "chore: update sitemap — {SLUG}"
+
+  - name: "Mark CSV Published"
+    content: |
+      Call update_rows on "{{csv_file}}":
+        - matchColumn: Slug, matchValue: {SLUG}, setColumn: Status,         setValue: published
+        - matchColumn: Slug, matchValue: {SLUG}, setColumn: Published Date, setValue: {YYYY-MM-DD}
+        - matchColumn: Slug, matchValue: {SLUG}, setColumn: URL,            setValue: /blog/{SLUG}.html
+
+  - name: "Report"
+    content: |
+      Output a short summary:
+      - Topic published: {TOPIC}
+      - File: blog/{SLUG}.html
+      - Blog index updated: yes/no
+      - Sitemap updated: yes/no
+      - CSV marked published: yes/no
+      - Live URL: https://www.yoursite.com/blog/{SLUG}.html
+
+connectors:
+  - name: "Google Drive"
+    type: gdrive
+  - name: "GitHub Website Repo"
+    type: github
+
+params:
+  - name: csv_file
+    label: "Topics CSV File Name"
+    default: "blog-topics.csv"
