@@ -1,0 +1,25 @@
+# Dependencies
+app/node_modules/
+app/*/node_modules/
+
+# Environment
+app/server/.env
+app/server/.env.*
+
+# Database & uploads
+app/server/storage/
+app/processor/storage/
+
+# Build output
+app/frontend/dist/
+app/frontend/build/
+
+# Prisma generated
+app/server/prisma/generated/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

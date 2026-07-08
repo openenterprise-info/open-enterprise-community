@@ -1,0 +1,36 @@
+name: Build and Push to Docker Hub
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read version from package.json
+        id: version
+        run: echo "VERSION=v$(node -p "require('./app/package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Login to Docker Hub
+        run: docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_TOKEN }}"
+
+      - name: Build image
+        run: |
+          docker build \
+            -f app/Dockerfile \
+            -t "${{ secrets.DOCKER_USERNAME }}/open-enterprise-community:${{ steps.version.outputs.VERSION }}" \
+            -t "${{ secrets.DOCKER_USERNAME }}/open-enterprise-community:latest" \
+            app/
+
+      - name: Push to Docker Hub
+        run: |
+          docker push "${{ secrets.DOCKER_USERNAME }}/open-enterprise-community:${{ steps.version.outputs.VERSION }}"
+          docker push "${{ secrets.DOCKER_USERNAME }}/open-enterprise-community:latest"
+
+      - name: Prune old images on runner
+        run: docker image prune -f

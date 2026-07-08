@@ -1,0 +1,683 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Open Enterprise REST API",
+    "version": "1.3.1",
+    "description": "Developer API for querying, managing, and automating Open Enterprise workspaces programmatically.\n\n## Authentication\nAll endpoints require an API key. Generate one in **Admin Panel → API Keys**.\n\nInclude it in every request as a Bearer token:\n```\nAuthorization: Bearer emb_your_api_key_here\n```\n\n## Base URL\nAll endpoints are relative to your Open Enterprise instance URL, e.g. `https://your-domain.com/api/v1`"
+  },
+  "servers": [
+    { "url": "/api/v1", "description": "This Open Enterprise instance" }
+  ],
+  "security": [
+    { "ApiKeyAuth": [] }
+  ],
+  "tags": [
+    { "name": "Workspaces", "description": "Create and inspect workspaces" },
+    { "name": "Chat",       "description": "Send messages and receive AI-generated answers grounded in workspace documents" },
+    { "name": "Threads",    "description": "Manage conversation threads within a workspace" },
+    { "name": "Documents",  "description": "Upload, ingest, and manage documents" },
+    { "name": "Agents",     "description": "List and run AI agents" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Open Enterprise API Key",
+        "description": "Create an API key in Admin Panel → API Keys. Keys start with `emb_`."
+      }
+    },
+    "schemas": {
+      "WorkspaceSummary": {
+        "type": "object",
+        "properties": {
+          "id":        { "type": "integer",  "example": 1 },
+          "name":      { "type": "string",   "example": "HR Policy Documents" },
+          "slug":      { "type": "string",   "example": "hr-policy-documents", "description": "Use this in all other endpoint paths" },
+          "documents": { "type": "integer",  "example": 12 },
+          "chats":     { "type": "integer",  "example": 340 },
+          "createdAt": { "type": "string",   "format": "date-time" }
+        }
+      },
+      "Document": {
+        "type": "object",
+        "properties": {
+          "uid":              { "type": "string",  "example": "abc123-def456" },
+          "name":             { "type": "string",  "example": "Employee Handbook 2024.pdf" },
+          "type":             { "type": "string",  "example": "application/pdf" },
+          "size":             { "type": "integer", "example": 204800, "description": "File size in bytes" },
+          "status":           { "type": "string",  "enum": ["queued","ingesting","ready","partial","failed"], "example": "ready" },
+          "chunkCount":       { "type": "integer", "example": 48 },
+          "chunksProcessed":  { "type": "integer", "example": 48 },
+          "totalChunks":      { "type": "integer", "example": 48 },
+          "errorMessage":     { "type": "string",  "nullable": true },
+          "createdAt":        { "type": "string",  "format": "date-time" }
+        }
+      },
+      "Thread": {
+        "type": "object",
+        "properties": {
+          "uid":       { "type": "string",  "example": "550e8400-e29b-41d4-a716-446655440000" },
+          "name":      { "type": "string",  "example": "Q3 Policy Review" },
+          "pinned":    { "type": "boolean", "example": false },
+          "createdAt": { "type": "string",  "format": "date-time" }
+        }
+      },
+      "Agent": {
+        "type": "object",
+        "properties": {
+          "id":             { "type": "integer", "example": 1 },
+          "name":           { "type": "string",  "example": "Daily Report Agent" },
+          "triggerType":    { "type": "string",  "enum": ["manual","scheduled"], "example": "scheduled" },
+          "cronExpression": { "type": "string",  "example": "0 9 * * *", "nullable": true },
+          "enabled":        { "type": "boolean", "example": true },
+          "createdAt":      { "type": "string",  "format": "date-time" }
+        }
+      },
+      "AgentRun": {
+        "type": "object",
+        "properties": {
+          "id":          { "type": "integer", "example": 42 },
+          "status":      { "type": "string",  "enum": ["running","success","error"], "example": "success" },
+          "triggerType": { "type": "string",  "enum": ["manual","scheduled"], "example": "manual" },
+          "input":       { "type": "string",  "nullable": true },
+          "output":      { "type": "string",  "nullable": true },
+          "error":       { "type": "string",  "nullable": true },
+          "startedAt":   { "type": "string",  "format": "date-time" },
+          "completedAt": { "type": "string",  "format": "date-time", "nullable": true }
+        }
+      },
+      "Source": {
+        "type": "object",
+        "properties": {
+          "text":     { "type": "string",  "example": "Employees are entitled to 20 days of annual leave per year." },
+          "metadata": { "type": "object",  "description": "Document metadata (filename, page, etc.)" }
+        }
+      },
+      "Usage": {
+        "type": "object",
+        "properties": {
+          "inputTokens":  { "type": "integer", "example": 1240 },
+          "outputTokens": { "type": "integer", "example": 312 },
+          "model":        { "type": "string",  "example": "gpt-4o" }
+        }
+      },
+      "ChatResponse": {
+        "type": "object",
+        "properties": {
+          "response": { "type": "string", "example": "Employees are entitled to 20 days of annual leave per year." },
+          "sources":  { "type": "array",  "items": { "$ref": "#/components/schemas/Source" } },
+          "usage":    { "$ref": "#/components/schemas/Usage" },
+          "threadId": { "type": "string", "nullable": true, "description": "Thread UID if the message was sent in a thread" }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string", "example": "Workspace not found" }
+        }
+      }
+    }
+  },
+  "paths": {
+
+    "/workspaces": {
+      "get": {
+        "summary": "List workspaces",
+        "operationId": "listWorkspaces",
+        "tags": ["Workspaces"],
+        "description": "Returns all workspaces with document and chat counts. Use the `slug` in subsequent requests.",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "workspaces": { "type": "array", "items": { "$ref": "#/components/schemas/WorkspaceSummary" } } }
+                },
+                "example": {
+                  "workspaces": [
+                    { "id": 1, "name": "HR Policy Documents", "slug": "hr-policy-documents", "documents": 12, "chats": 340, "createdAt": "2025-01-10T08:00:00.000Z" }
+                  ]
+                }
+              }
+            }
+          },
+          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "post": {
+        "summary": "Create workspace",
+        "operationId": "createWorkspace",
+        "tags": ["Workspaces"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name":         { "type": "string", "example": "Product Knowledge Base" },
+                  "systemPrompt": { "type": "string", "example": "You are a product expert. Answer only from the uploaded documents.", "nullable": true }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Workspace created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "workspace": { "$ref": "#/components/schemas/WorkspaceSummary" } }
+                }
+              }
+            }
+          },
+          "400": { "description": "name is required", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+
+    "/workspaces/{slug}": {
+      "get": {
+        "summary": "Get workspace",
+        "operationId": "getWorkspace",
+        "tags": ["Workspaces"],
+        "parameters": [
+          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" }, "example": "hr-policy-documents" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "workspace": {
+                      "allOf": [
+                        { "$ref": "#/components/schemas/WorkspaceSummary" },
+                        { "type": "object", "properties": { "documents": { "type": "array", "items": { "$ref": "#/components/schemas/Document" } } } }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Workspace not found",    "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+
+    "/workspaces/{slug}/chat": {
+      "post": {
+        "summary": "Send message (JSON)",
+        "operationId": "chatWithWorkspace",
+        "tags": ["Chat"],
+        "description": "Send a message and receive a full JSON response. Optionally pass a `threadId` to continue an existing conversation thread.",
+        "parameters": [
+          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["message"],
+                "properties": {
+                  "message":  { "type": "string", "example": "What is the annual leave entitlement?" },
+                  "threadId": { "type": "string", "description": "Thread UID to continue a conversation", "nullable": true }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "AI-generated answer",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ChatResponse" },
+                "example": {
+                  "response": "Employees are entitled to 20 days of annual leave per year.",
+                  "sources": [{ "text": "Employees are entitled to 20 days of annual leave.", "metadata": { "source": "Handbook.pdf" } }],
+                  "usage": { "inputTokens": 1240, "outputTokens": 312, "model": "gpt-4o" }
+                }
+              }
+            }
+          },
+          "400": { "description": "message is required", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Workspace or thread not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "500": { "description": "LLM provider error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+
+    "/workspaces/{slug}/chat/stream": {
+      "post": {
+        "summary": "Send message (SSE stream)",
+        "operationId": "streamChatWithWorkspace",
+        "tags": ["Chat"],
+        "description": "Send a message and receive the AI response as a **Server-Sent Events** stream. Each event is a JSON object on a `data:` line.\n\n**Event types:**\n- `{ \"chunk\": \"...\" }` — partial response text\n- `{ \"done\": true, \"sources\": [...], \"usage\": {...} }` — final event with sources and token usage\n- `{ \"error\": \"...\" }` — error event\n\nOptionally pass a `threadId` to continue an existing thread.",
+        "parameters": [
+          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["message"],
+                "properties": {
+                  "message":  { "type": "string", "example": "Summarise the leave policy." },
+                  "threadId": { "type": "string", "nullable": true }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "SSE stream of response chunks",
+            "content": {
+              "text/event-stream": {
+                "schema": { "type": "string" },
+                "example": "data: {\"chunk\":\"Employees\"}\n\ndata: {\"chunk\":\" are entitled\"}\n\ndata: {\"done\":true,\"sources\":[],\"usage\":{\"inputTokens\":100,\"outputTokens\":20,\"model\":\"gpt-4o\"}}\n\n"
+              }
+            }
+          },
+          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Workspace not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+
+    "/workspaces/{slug}/chat/history": {
+      "get": {
+        "summary": "Get chat history",
+        "operationId": "getChatHistory",
+        "tags": ["Chat"],
+        "description": "Returns up to 100 messages for the workspace. Pass `threadId` to retrieve a specific thread's history.",
+        "parameters": [
+          { "name": "slug",     "in": "path",  "required": true,  "schema": { "type": "string" } },
+          { "name": "threadId", "in": "query", "required": false, "schema": { "type": "string" }, "description": "Thread UID to filter history" }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of messages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id":      { "type": "integer" },
+                          "role":    { "type": "string", "enum": ["user","assistant"] },
+                          "content": { "type": "string" },
+                          "sources": { "type": "array", "items": { "$ref": "#/components/schemas/Source" } },
+                          "createdAt": { "type": "string", "format": "date-time" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Workspace not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+
+    "/workspaces/{slug}/threads": {
+      "get": {
+        "summary": "List threads",
+        "operationId": "listThreads",
+        "tags": ["Threads"],
+        "parameters": [
+          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of threads",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "threads": { "type": "array", "items": { "$ref": "#/components/schemas/Thread" } } }
+                }
+              }
+            }
+          },
+          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Workspace not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "post": {
+        "summary": "Create thread",
+        "operationId": "createThread",
+        "tags": ["Threads"],
+        "parameters": [
+          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": { "name": { "type": "string", "example": "Q3 Policy Review" } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Thread created",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "thread": { "$ref": "#/components/schemas/Thread" } } }
+              }
+            }
+          },
+          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Workspace not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+
+    "/workspaces/{slug}/threads/{uid}": {
+      "delete": {
+        "summary": "Delete thread",
+        "operationId": "deleteThread",
+        "tags": ["Threads"],
+        "description": "Deletes the thread and all its messages.",
+        "parameters": [
+          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "uid",  "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Thread deleted", "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean" } } } } } },
+          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Thread not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+
+    "/workspaces/{slug}/documents": {
+      "get": {
+        "summary": "List documents",
+        "operationId": "listDocuments",
+        "tags": ["Documents"],
+        "parameters": [
+          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of documents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "documents": { "type": "array", "items": { "$ref": "#/components/schemas/Document" } } }
+                }
+              }
+            }
+          },
+          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Workspace not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+
+    "/workspaces/{slug}/documents/{uid}": {
+      "get": {
+        "summary": "Get document status",
+        "operationId": "getDocument",
+        "tags": ["Documents"],
+        "description": "Useful for polling ingestion status after uploading. `status` will be `queued` → `ingesting` → `ready` (or `failed`).",
+        "parameters": [
+          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "uid",  "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Document details",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "document": { "$ref": "#/components/schemas/Document" } } }
+              }
+            }
+          },
+          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Document not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "delete": {
+        "summary": "Delete document",
+        "operationId": "deleteDocument",
+        "tags": ["Documents"],
+        "description": "Deletes the document record and removes its vectors from the index.",
+        "parameters": [
+          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "uid",  "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Document deleted", "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean" } } } } } },
+          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Document not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+
+    "/workspaces/{slug}/documents/upload": {
+      "post": {
+        "summary": "Upload file",
+        "operationId": "uploadDocument",
+        "tags": ["Documents"],
+        "description": "Upload a file for ingestion. Supported formats: PDF, DOCX, DOC, TXT, MD, CSV, XLSX, XLS, JSON.\n\nIngestion happens asynchronously. Poll `GET /workspaces/{slug}/documents/{uid}` until `status` is `ready`.",
+        "parameters": [
+          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": { "type": "string", "format": "binary", "description": "The file to upload" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "File queued for ingestion",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "document": {
+                      "type": "object",
+                      "properties": {
+                        "uid":    { "type": "string" },
+                        "name":   { "type": "string" },
+                        "status": { "type": "string", "example": "queued" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "No file provided or storage limit exceeded", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Workspace not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+
+    "/workspaces/{slug}/documents/url": {
+      "post": {
+        "summary": "Ingest URL",
+        "operationId": "ingestUrl",
+        "tags": ["Documents"],
+        "description": "Fetch and ingest a public URL. Ingestion is asynchronous — poll the document status to track progress.",
+        "parameters": [
+          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["url"],
+                "properties": {
+                  "url": { "type": "string", "example": "https://example.com/policy.pdf" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "URL queued for ingestion",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "document": {
+                      "type": "object",
+                      "properties": {
+                        "uid":    { "type": "string" },
+                        "name":   { "type": "string" },
+                        "status": { "type": "string", "example": "queued" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "url is required", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Workspace not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+
+    "/workspaces/{slug}/agents": {
+      "get": {
+        "summary": "List agents",
+        "operationId": "listAgents",
+        "tags": ["Agents"],
+        "parameters": [
+          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of agents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "agents": { "type": "array", "items": { "$ref": "#/components/schemas/Agent" } } }
+                }
+              }
+            }
+          },
+          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Workspace not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+
+    "/workspaces/{slug}/agents/{id}/runs": {
+      "get": {
+        "summary": "Get agent run history",
+        "operationId": "getAgentRuns",
+        "tags": ["Agents"],
+        "parameters": [
+          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "id",   "in": "path", "required": true, "schema": { "type": "integer" }, "description": "Agent ID" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Last 20 runs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "runs": { "type": "array", "items": { "$ref": "#/components/schemas/AgentRun" } } }
+                }
+              }
+            }
+          },
+          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Agent not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+
+    "/workspaces/{slug}/agents/{id}/run": {
+      "post": {
+        "summary": "Run agent (SSE stream)",
+        "operationId": "runAgent",
+        "tags": ["Agents"],
+        "description": "Triggers an agent run and streams output as **Server-Sent Events**.\n\n**Event types:**\n- `{ \"tool_calls\": [\"conn_1_search_issues\"] }` — agent is calling a tool\n- `{ \"done\": true, \"output\": \"...\", \"runId\": 42 }` — run completed\n- `{ \"error\": \"...\" }` — run failed",
+        "parameters": [
+          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "id",   "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "input": { "type": "string", "description": "Optional instruction to the agent", "example": "Summarise all open Jira tickets assigned to me." }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "SSE stream of agent output",
+            "content": {
+              "text/event-stream": {
+                "schema": { "type": "string" },
+                "example": "data: {\"tool_calls\":[\"conn_1_search_issues\"]}\n\ndata: {\"done\":true,\"output\":\"Found 3 open tickets...\",\"runId\":42}\n\n"
+              }
+            }
+          },
+          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Agent not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "429": { "description": "Monthly agent run limit reached", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    }
+
+  }
+}

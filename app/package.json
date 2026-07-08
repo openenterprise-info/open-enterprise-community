@@ -1,0 +1,13 @@
+{
+  "name": "open-enterprise",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": ["server", "processor", "frontend"],
+  "scripts": {
+    "dev": "concurrently \"yarn workspace @open-enterprise/server dev\" \"yarn workspace @open-enterprise/processor dev\" \"yarn workspace @open-enterprise/frontend dev\"",
+    "build": "yarn workspace @open-enterprise/frontend build"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
