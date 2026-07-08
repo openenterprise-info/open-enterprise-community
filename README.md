@@ -11,6 +11,8 @@ Most AI agent frameworks require you to write Python, wire up LangGraph nodes, o
 - Import, export, and share agents as single files
 - Any complexity — from a simple Q&A bot to a 10-step automated pipeline
 
+See the [`sample-agents/`](sample-agents/) folder for ready-to-use examples.
+
 ---
 
 ## Tech Stack
