@@ -103,6 +103,22 @@ docker run -d \
 
 ---
 
+## Testing Your Installation
+
+Once the app is running, follow these steps to verify everything works end to end:
+
+1. **Log in** with your `SUPER_ADMIN_EMAIL` and `SUPER_ADMIN_PASSWORD`
+2. **Configure LLM & Embedding** — go to **Settings → Instance Settings** and set your LLM provider and Embedding provider API keys
+3. **Create a workspace** from the admin panel
+4. **Ingest data** — open the workspace, go to **Settings → Knowledge Base** and upload some documents
+5. **Test RAG** — ask questions in the workspace chat related to the ingested data
+6. **Add connectors** — connect databases or enterprise tools (GitHub, Notion, Slack, etc.) from the Connectors panel
+7. **Build & test agents** — create an agent, attach connectors, and run it
+
+Thank you for testing Open Enterprise! If you run into issues, please [open an issue](https://github.com/openenterprise-info/open-enterprise-community/issues).
+
+---
+
 ## License
 
 [AGPL-3.0](LICENSE)
