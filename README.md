@@ -129,6 +129,8 @@ The [`sample-agents/`](sample-agents/) folder contains ready-to-import agent con
 | `devops-agent-security-remediation.yaml` | Automates remediation of common security findings |
 | `marketing-agent-outbound-sales.yaml` | Runs outbound sales outreach workflows |
 | `marketing-agent-reply-tracker.yaml` | Tracks and follows up on email replies |
+| `marketing-agent-blog-publisher.yaml` | Generates and publishes one blog post per run via GitHub, driven by a Google Drive CSV of topics |
+| `marketing-agent-blog-revoker.yaml` | Deletes a published blog post, removes the index card and sitemap entry, and resets the CSV row for republishing |
 | `sql-agent-doctors-by-specialty.yaml` | Queries a database for doctors by specialty |
 | `sql-agent-total-doctors-count.yaml` | Returns total doctor count from a database |
 
