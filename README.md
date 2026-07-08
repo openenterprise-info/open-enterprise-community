@@ -1,6 +1,6 @@
 # Open Enterprise — Community Edition
 
-Lightweight, open-source enterprise AI platform. Deploy workspaces, AI agents, and knowledge bases on your own infrastructure.
+Lightweight, open-source enterprise AI platform. Workspaces, Agents, Connectors and RAG, self-hosted. Single Docker deploy.
 
 ---
 
