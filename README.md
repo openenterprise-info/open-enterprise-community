@@ -2,6 +2,21 @@
 
 Lightweight, open-source enterprise AI platform. Workspaces, Agents, Connectors and RAG, self-hosted. Single Docker deploy.
 
+## Tech Stack
+
+| Component | Technology |
+|-----------|------------|
+| Frontend | React + Vite |
+| Backend | Node.js + Express |
+| Database | SQLite |
+| File Storage | Local filesystem |
+| Queue | In-memory |
+| Vector DB | LanceDB (default) + 7 others |
+| LLM | 17+ providers (OpenAI, Ollama, Anthropic, etc.) |
+| Embedding | Any provider (OpenAI, Ollama, etc.) |
+| Deployment | Single Docker container |
+| Process Manager | PM2 |
+
 ---
 
 ## Prerequisites
