@@ -2,6 +2,17 @@
 
 Lightweight, open-source enterprise AI platform. Workspaces, Agents, Connectors and RAG, self-hosted. Single Docker deploy.
 
+## No Code. Just YAML.
+
+Most AI agent frameworks require you to write Python, wire up LangGraph nodes, or manage complex orchestration code. Open Enterprise is different — define any agent workflow in a simple YAML file. Steps, connectors, schedules, and logic are all declared, not coded.
+
+- No LangGraph, no LangChain, no custom Python
+- Multi-step workflows with conditional logic in plain YAML
+- Import, export, and share agents as single files
+- Any complexity — from a simple Q&A bot to a 10-step automated pipeline
+
+---
+
 ## Tech Stack
 
 | Component | Technology |
