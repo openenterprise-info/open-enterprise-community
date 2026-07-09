@@ -187,7 +187,7 @@ The [`sample-agents/`](sample-agents/) folder contains ready-to-import agent con
 | `sql-agent-doctors-by-specialty.yaml` | Queries a database for doctors by specialty |
 | `sql-agent-total-doctors-count.yaml` | Returns total doctor count from a database |
 
-To use: go to **Admin → Agents → Import**, select a YAML file, configure the required connectors, and run.
+To use: go to **Workspaces → Chat → Agents → Import**, select a YAML file, configure the required connectors, and run.
 
 ---
 
