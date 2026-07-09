@@ -34,6 +34,7 @@ model ApiKey {
   createdById Int?
   lastUsedAt  DateTime?
   revoked     Boolean   @default(false)
+  enabled     Boolean   @default(true)
   createdAt   DateTime  @default(now())
 
   createdBy User? @relation("ApiKeyCreator", fields: [createdById], references: [id], onDelete: SetNull)

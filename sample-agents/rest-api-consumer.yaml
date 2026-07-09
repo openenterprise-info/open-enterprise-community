@@ -1,0 +1,38 @@
+name: "REST API Consumer"
+slug: "rest-api-consumer"
+description: "Fetches a user record from a REST API endpoint and summarizes the response"
+enabled: true
+trigger:
+  type: manual
+group: "Integrations"
+instructions: |
+  You are a REST API consumer agent. Fetch data from the configured REST API and present a clean summary.
+  
+  RULES:
+  - Use the REST API GET tool to fetch data — do NOT write anything between tool calls
+  - Call the endpoint once only — do not retry unless you get an explicit error
+  - After the response is received, format and present the data clearly
+  
+  BASE URL configured in connector: https://jsonplaceholder.typicode.com
+steps:
+  - name: "Fetch User"
+    content: |
+      Call the REST API GET tool with:
+      - path: /users/1
+      
+  - name: "Summarize Response"
+    content: |
+      Present the fetched data in a clean, readable format:
+      
+      ## API Response Summary
+      
+      - **Endpoint called**: /users/1
+      - **Key fields**: list every top-level field returned in the response
+      - **User details**: show name, email, phone, website, and company name
+      - **Address**: show full address including city and zipcode
+      - **Status**: ✅ SUCCESS or ❌ ERROR with status code and message
+      
+connectors:
+  - name: "Test Rest"
+    type: rest-api
+    connection_id: "testrest"

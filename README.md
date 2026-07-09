@@ -186,6 +186,8 @@ The [`sample-agents/`](sample-agents/) folder contains ready-to-import agent con
 | `marketing-agent-blog-revoker.yaml` | Deletes a published blog post, removes the index card and sitemap entry, and resets the CSV row for republishing |
 | `sql-agent-doctors-by-specialty.yaml` | Queries a database for doctors by specialty |
 | `sql-agent-total-doctors-count.yaml` | Returns total doctor count from a database |
+| `rest-agent-api-consumer.yaml` | Fetches data from an external REST API endpoint and summarizes the response |
+| `rest-agent-db-to-api.yaml` | Queries a database and pushes the results to a REST API endpoint via POST |
 
 To use: go to **Workspaces → Chat → Agents → Import**, select a YAML file, configure the required connectors, and run.
 

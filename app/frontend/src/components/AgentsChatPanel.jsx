@@ -448,26 +448,29 @@ export default function AgentsChatPanel({ slug, isManager, onClose, onApprovalDe
     } catch { setError("Failed to export agent"); }
   }
 
-  async function handleImport(file) {
-    if (!file) return;
+  async function handleImport(files) {
+    if (!files?.length) return;
     setImporting(true);
-    try {
-      const text = await file.text();
-      const isYaml = file.name.endsWith(".yaml") || file.name.endsWith(".yml");
-      const agentJson = isYaml ? yamlToAgentJson(yamlLoad(text)) : JSON.parse(text);
-      const { data } = await api.post(`/workspaces/${slug}/agents/import`, { agentJson });
-      setAgents(a => [{ ...data.agent, _owned: true }, ...a]);
-      window.dispatchEvent(new Event("agents-changed"));
-      const warnings = [];
-      if (data.unmatchedTypes?.length) warnings.push(`${data.unmatchedTypes.join(", ")} connector(s) not found and were skipped`);
-      if (data.slugRenamed) warnings.push(`Slug conflict — agent imported as "${data.slugRenamed}" (original slug was already taken)`);
-      if (warnings.length) setError(`Imported — but ${warnings.join("; ")}.`);
-    } catch (e) {
-      setError(e.response?.data?.error || "Invalid agent file");
-    } finally {
-      setImporting(false);
-      if (importRef.current) importRef.current.value = "";
+    const warnings = [];
+    let successCount = 0;
+    for (const file of files) {
+      try {
+        const text = await file.text();
+        const isYaml = file.name.endsWith(".yaml") || file.name.endsWith(".yml");
+        const agentJson = isYaml ? yamlToAgentJson(yamlLoad(text)) : JSON.parse(text);
+        const { data } = await api.post(`/workspaces/${slug}/agents/import`, { agentJson });
+        setAgents(a => [{ ...data.agent, _owned: true }, ...a]);
+        window.dispatchEvent(new Event("agents-changed"));
+        successCount++;
+        if (data.unmatchedTypes?.length) warnings.push(`"${file.name}": ${data.unmatchedTypes.join(", ")} connector(s) not found`);
+        if (data.slugRenamed) warnings.push(`"${file.name}": imported as "${data.slugRenamed}" (slug conflict)`);
+      } catch (e) {
+        warnings.push(`"${file.name}": ${e.response?.data?.error || "Invalid agent file"}`);
+      }
     }
+    setImporting(false);
+    if (importRef.current) importRef.current.value = "";
+    if (warnings.length) setError(`Imported ${successCount}/${files.length} — ${warnings.join("; ")}.`);
   }
 
   function yamlToAgentJson(y) {
@@ -545,8 +548,8 @@ export default function AgentsChatPanel({ slug, isManager, onClose, onApprovalDe
             }
             Import
           </button>
-          <input ref={importRef} type="file" accept=".yaml,.yml" className="hidden"
-            onChange={e => handleImport(e.target.files?.[0])} />
+          <input ref={importRef} type="file" accept=".yaml,.yml" className="hidden" multiple
+            onChange={e => handleImport(Array.from(e.target.files || []))} />
         </div>
       </div>
 

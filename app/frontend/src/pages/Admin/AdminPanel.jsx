@@ -493,7 +493,7 @@ export default function AdminPanel() {
   const [activeSection, setActiveSection]   = useState(initialSection);
   const [expandedGroups, setExpandedGroups] = useState(() => {
     const grp = groupForSection(initialSection);
-    const defaults = new Set(["Workspace", "Agents"]);
+    const defaults = new Set(["Workspace", "Agents", "Users", "Developer", "Settings"]);
     if (grp) defaults.add(grp);
     return defaults;
   });

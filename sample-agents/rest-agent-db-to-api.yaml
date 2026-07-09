@@ -1,0 +1,63 @@
+name: "Database to REST Sync"
+slug: "db-to-rest-sync"
+description: "Queries a database and pushes the results to a REST API endpoint via POST"
+enabled: true
+trigger:
+  type: manual
+group: "Integrations"
+instructions: |
+  You are a data sync agent. Query the database, then POST the results to the configured REST API endpoint.
+
+  RULES:
+  - Run the database query ONCE using the MySQL tool
+  - Do NOT write anything between tool calls — complete all tool calls before outputting anything
+  - After the query completes, immediately POST the results to the REST API
+  - Do NOT modify or filter the query results — send them as-is
+  - Report success or failure clearly after the POST
+
+  BASE URL configured in connector: https://jsonplaceholder.typicode.com
+
+steps:
+  - name: "Query Database"
+    content: |
+      Run this MySQL query:
+        SELECT *
+        FROM your_table
+        LIMIT 100;
+
+      Replace `your_table` with the actual table name you want to sync.
+      Adjust the query and LIMIT as needed for your use case.
+
+  - name: "Push to REST API"
+    content: |
+      Take the full result from the database query and POST it to the REST API.
+
+      Use the REST API POST tool with:
+      - path: /posts
+      - body: {
+          "title": "Database Sync",
+          "body": <stringify the full query result array>,
+          "userId": 1
+        }
+
+      Content-Type is application/json — set automatically by the connector.
+
+  - name: "Report"
+    content: |
+      Write a short sync report:
+
+      ## Sync Report
+
+      - **Records fetched**: count of rows returned from the database
+      - **Endpoint posted to**: /posts
+      - **HTTP status**: the response status from the REST API
+      - **API response**: the id and fields returned by the API
+      - **Result**: ✅ SUCCESS or ❌ FAILED with reason
+
+connectors:
+  - name: "mysql"
+    type: mysql
+    connection_id: "mysqlc"
+  - name: "REST API"
+    type: rest-api
+    connection_id: "rest1"

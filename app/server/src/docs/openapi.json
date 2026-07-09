@@ -121,6 +121,107 @@
   },
   "paths": {
 
+    "/agents": {
+      "get": {
+        "summary": "List all agents",
+        "operationId": "listAllAgents",
+        "tags": ["Agents"],
+        "description": "Returns all agents across all workspaces.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of all agents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "agents": { "type": "array", "items": { "$ref": "#/components/schemas/Agent" } } }
+                }
+              }
+            }
+          },
+          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+
+    "/documents": {
+      "get": {
+        "summary": "List all documents",
+        "operationId": "listAllDocuments",
+        "tags": ["Documents"],
+        "description": "Returns all documents across all workspaces.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of all documents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "documents": { "type": "array", "items": { "$ref": "#/components/schemas/Document" } } }
+                }
+              }
+            }
+          },
+          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+
+    "/threads": {
+      "get": {
+        "summary": "List all threads",
+        "operationId": "listAllThreads",
+        "tags": ["Threads"],
+        "description": "Returns all threads across all workspaces.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of all threads",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "threads": { "type": "array", "items": { "$ref": "#/components/schemas/Thread" } } }
+                }
+              }
+            }
+          },
+          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+
+    "/chats": {
+      "get": {
+        "summary": "List all chats",
+        "operationId": "listAllChats",
+        "tags": ["Chat"],
+        "description": "Returns recent chat messages across all workspaces. Defaults to 100, max 500.",
+        "parameters": [
+          { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer", "default": 100, "maximum": 500 }, "description": "Number of messages to return" }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of chat messages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "chats": { "type": "array", "items": { "$ref": "#/components/schemas/Chat" } },
+                    "limit": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+
     "/workspaces": {
       "get": {
         "summary": "List workspaces",
@@ -184,13 +285,13 @@
       }
     },
 
-    "/workspaces/{slug}": {
+    "/workspaces/{workspaceSlug}": {
       "get": {
         "summary": "Get workspace",
         "operationId": "getWorkspace",
         "tags": ["Workspaces"],
         "parameters": [
-          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" }, "example": "hr-policy-documents" }
+          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug", "example": "hr-policy-documents" }
         ],
         "responses": {
           "200": {
@@ -217,14 +318,14 @@
       }
     },
 
-    "/workspaces/{slug}/chat": {
+    "/workspaces/{workspaceSlug}/chat": {
       "post": {
         "summary": "Send message (JSON)",
         "operationId": "chatWithWorkspace",
         "tags": ["Chat"],
         "description": "Send a message and receive a full JSON response. Optionally pass a `threadId` to continue an existing conversation thread.",
         "parameters": [
-          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } }
+          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug" }
         ],
         "requestBody": {
           "required": true,
@@ -263,14 +364,14 @@
       }
     },
 
-    "/workspaces/{slug}/chat/stream": {
+    "/workspaces/{workspaceSlug}/chat/stream": {
       "post": {
         "summary": "Send message (SSE stream)",
         "operationId": "streamChatWithWorkspace",
         "tags": ["Chat"],
         "description": "Send a message and receive the AI response as a **Server-Sent Events** stream. Each event is a JSON object on a `data:` line.\n\n**Event types:**\n- `{ \"chunk\": \"...\" }` — partial response text\n- `{ \"done\": true, \"sources\": [...], \"usage\": {...} }` — final event with sources and token usage\n- `{ \"error\": \"...\" }` — error event\n\nOptionally pass a `threadId` to continue an existing thread.",
         "parameters": [
-          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } }
+          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug" }
         ],
         "requestBody": {
           "required": true,
@@ -303,14 +404,14 @@
       }
     },
 
-    "/workspaces/{slug}/chat/history": {
+    "/workspaces/{workspaceSlug}/chat/history": {
       "get": {
         "summary": "Get chat history",
         "operationId": "getChatHistory",
         "tags": ["Chat"],
         "description": "Returns up to 100 messages for the workspace. Pass `threadId` to retrieve a specific thread's history.",
         "parameters": [
-          { "name": "slug",     "in": "path",  "required": true,  "schema": { "type": "string" } },
+          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug" },
           { "name": "threadId", "in": "query", "required": false, "schema": { "type": "string" }, "description": "Thread UID to filter history" }
         ],
         "responses": {
@@ -345,13 +446,13 @@
       }
     },
 
-    "/workspaces/{slug}/threads": {
+    "/workspaces/{workspaceSlug}/threads": {
       "get": {
         "summary": "List threads",
         "operationId": "listThreads",
         "tags": ["Threads"],
         "parameters": [
-          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } }
+          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug" }
         ],
         "responses": {
           "200": {
@@ -374,7 +475,7 @@
         "operationId": "createThread",
         "tags": ["Threads"],
         "parameters": [
-          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } }
+          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug" }
         ],
         "requestBody": {
           "content": {
@@ -401,14 +502,14 @@
       }
     },
 
-    "/workspaces/{slug}/threads/{uid}": {
+    "/workspaces/{workspaceSlug}/threads/{uid}": {
       "delete": {
         "summary": "Delete thread",
         "operationId": "deleteThread",
         "tags": ["Threads"],
         "description": "Deletes the thread and all its messages.",
         "parameters": [
-          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug" },
           { "name": "uid",  "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
@@ -419,13 +520,13 @@
       }
     },
 
-    "/workspaces/{slug}/documents": {
+    "/workspaces/{workspaceSlug}/documents": {
       "get": {
         "summary": "List documents",
         "operationId": "listDocuments",
         "tags": ["Documents"],
         "parameters": [
-          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } }
+          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug" }
         ],
         "responses": {
           "200": {
@@ -445,14 +546,14 @@
       }
     },
 
-    "/workspaces/{slug}/documents/{uid}": {
+    "/workspaces/{workspaceSlug}/documents/{uid}": {
       "get": {
         "summary": "Get document status",
         "operationId": "getDocument",
         "tags": ["Documents"],
         "description": "Useful for polling ingestion status after uploading. `status` will be `queued` → `ingesting` → `ready` (or `failed`).",
         "parameters": [
-          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug" },
           { "name": "uid",  "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
@@ -474,7 +575,7 @@
         "tags": ["Documents"],
         "description": "Deletes the document record and removes its vectors from the index.",
         "parameters": [
-          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug" },
           { "name": "uid",  "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
@@ -485,14 +586,14 @@
       }
     },
 
-    "/workspaces/{slug}/documents/upload": {
+    "/workspaces/{workspaceSlug}/documents/upload": {
       "post": {
         "summary": "Upload file",
         "operationId": "uploadDocument",
         "tags": ["Documents"],
-        "description": "Upload a file for ingestion. Supported formats: PDF, DOCX, DOC, TXT, MD, CSV, XLSX, XLS, JSON.\n\nIngestion happens asynchronously. Poll `GET /workspaces/{slug}/documents/{uid}` until `status` is `ready`.",
+        "description": "Upload a file for ingestion. Supported formats: PDF, DOCX, DOC, TXT, MD, CSV, XLSX, XLS, JSON.\n\nIngestion happens asynchronously. Poll `GET /workspaces/{workspaceSlug}/documents/{uid}` until `status` is `ready`.",
         "parameters": [
-          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } }
+          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug" }
         ],
         "requestBody": {
           "required": true,
@@ -536,14 +637,14 @@
       }
     },
 
-    "/workspaces/{slug}/documents/url": {
+    "/workspaces/{workspaceSlug}/documents/url": {
       "post": {
         "summary": "Ingest URL",
         "operationId": "ingestUrl",
         "tags": ["Documents"],
         "description": "Fetch and ingest a public URL. Ingestion is asynchronous — poll the document status to track progress.",
         "parameters": [
-          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } }
+          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug" }
         ],
         "requestBody": {
           "required": true,
@@ -587,13 +688,13 @@
       }
     },
 
-    "/workspaces/{slug}/agents": {
+    "/workspaces/{workspaceSlug}/agents": {
       "get": {
         "summary": "List agents",
         "operationId": "listAgents",
         "tags": ["Agents"],
         "parameters": [
-          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } }
+          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug" }
         ],
         "responses": {
           "200": {
@@ -613,14 +714,14 @@
       }
     },
 
-    "/workspaces/{slug}/agents/{id}/runs": {
+    "/workspaces/{workspaceSlug}/agents/{agentSlug}/runs": {
       "get": {
         "summary": "Get agent run history",
         "operationId": "getAgentRuns",
         "tags": ["Agents"],
         "parameters": [
-          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } },
-          { "name": "id",   "in": "path", "required": true, "schema": { "type": "integer" }, "description": "Agent ID" }
+          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug" },
+          { "name": "agentSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Agent slug" }
         ],
         "responses": {
           "200": {
@@ -640,15 +741,15 @@
       }
     },
 
-    "/workspaces/{slug}/agents/{id}/run": {
+    "/workspaces/{workspaceSlug}/agents/{agentSlug}/run": {
       "post": {
         "summary": "Run agent (SSE stream)",
         "operationId": "runAgent",
         "tags": ["Agents"],
         "description": "Triggers an agent run and streams output as **Server-Sent Events**.\n\n**Event types:**\n- `{ \"tool_calls\": [\"conn_1_search_issues\"] }` — agent is calling a tool\n- `{ \"done\": true, \"output\": \"...\", \"runId\": 42 }` — run completed\n- `{ \"error\": \"...\" }` — run failed",
         "parameters": [
-          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } },
-          { "name": "id",   "in": "path", "required": true, "schema": { "type": "integer" } }
+          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug" },
+          { "name": "agentSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Agent slug" }
         ],
         "requestBody": {
           "content": {

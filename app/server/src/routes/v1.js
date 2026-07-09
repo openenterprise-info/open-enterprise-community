@@ -92,31 +92,116 @@ async function resolveThreadByUid(db, workspaceId, threadUid) {
 // Workspaces
 // ─────────────────────────────────────────────────────────────────────────────
 
-// GET /api/v1/workspaces
-router.get("/workspaces", async (req, res) => {
-  const workspaces = await req.db.workspace.findMany({
+// ─────────────────────────────────────────────────────────────────────────────
+// Master list endpoints (cross-workspace)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// GET /api/v1/agents
+router.get("/agents", async (req, res) => {
+  const agents = await req.db.agent.findMany({
     orderBy: { createdAt: "desc" },
-    include: { _count: { select: { documents: true, chats: true } } },
+    select: {
+      id: true, name: true, slug: true, description: true, group: true,
+      triggerType: true, cronExpression: true, enabled: true, visualize: true,
+      nextAgent: true, nextAgentCondition: true, chains: true,
+      connectorIds: true, params: true, createdAt: true, updatedAt: true,
+      workspace: { select: { id: true, name: true, slug: true } },
+      runs: { orderBy: { startedAt: "desc" }, take: 1, select: { status: true, startedAt: true, completedAt: true } },
+    },
   });
   res.json({
-    workspaces: workspaces.map(ws => ({
-      id: ws.id, name: ws.name, slug: ws.slug,
-      documents: ws._count.documents, chats: ws._count.chats, createdAt: ws.createdAt,
+    agents: agents.map(a => ({
+      ...a,
+      chains:       a.chains       ? JSON.parse(a.chains)       : [],
+      connectorIds: a.connectorIds ? JSON.parse(a.connectorIds) : [],
+      params:       a.params       ? JSON.parse(a.params)       : [],
     })),
   });
 });
 
-// GET /api/v1/workspaces/:slug
-router.get("/workspaces/:slug", async (req, res) => {
-  const ws = await req.db.workspace.findUnique({
-    where: { slug: req.params.slug },
+// GET /api/v1/documents
+router.get("/documents", async (req, res) => {
+  const documents = await req.db.document.findMany({
+    orderBy: { createdAt: "desc" },
+    select: {
+      uid: true, name: true, type: true, size: true, status: true,
+      chunkCount: true, chunksProcessed: true, totalChunks: true,
+      errorMessage: true, embeddingTokens: true, embeddingModel: true,
+      createdAt: true, updatedAt: true,
+      workspace: { select: { id: true, name: true, slug: true } },
+    },
+  });
+  res.json({ documents });
+});
+
+// GET /api/v1/threads
+router.get("/threads", async (req, res) => {
+  const threads = await req.db.thread.findMany({
+    orderBy: [{ pinned: "desc" }, { createdAt: "asc" }],
     include: {
-      documents: { where: { status: "ready" }, select: { uid: true, name: true, type: true, chunkCount: true, createdAt: true }, orderBy: { createdAt: "desc" } },
+      workspace: { select: { id: true, name: true, slug: true } },
       _count: { select: { chats: true } },
     },
   });
+  res.json({ threads: threads.map(t => ({ ...t, chats: t._count.chats, _count: undefined })) });
+});
+
+// GET /api/v1/chats
+router.get("/chats", async (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+  const chats = await req.db.chat.findMany({
+    orderBy: { createdAt: "desc" },
+    take: limit,
+    select: {
+      id: true, role: true, content: true, model: true,
+      inputTokens: true, outputTokens: true, createdAt: true,
+      workspace: { select: { id: true, name: true, slug: true } },
+    },
+  });
+  res.json({ chats, limit });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Workspaces
+// ─────────────────────────────────────────────────────────────────────────────
+
+// GET /api/v1/workspaces
+router.get("/workspaces", async (req, res) => {
+  const workspaces = await req.db.workspace.findMany({
+    orderBy: { createdAt: "desc" },
+    include: { _count: { select: { documents: true, chats: true, agents: true, connectors: true } } },
+  });
+  res.json({
+    workspaces: workspaces.map(ws => ({
+      id: ws.id, name: ws.name, slug: ws.slug,
+      documents: ws._count.documents, chats: ws._count.chats,
+      agents: ws._count.agents, connectors: ws._count.connectors,
+      createdAt: ws.createdAt, updatedAt: ws.updatedAt,
+    })),
+  });
+});
+
+// GET /api/v1/workspaces/:workspaceSlug
+router.get("/workspaces/:workspaceSlug", async (req, res) => {
+  const ws = await req.db.workspace.findUnique({
+    where: { slug: req.params.workspaceSlug },
+    include: {
+      documents: { where: { status: "ready" }, select: { uid: true, name: true, type: true, chunkCount: true, createdAt: true }, orderBy: { createdAt: "desc" } },
+      _count: { select: { chats: true, agents: true, connectors: true } },
+    },
+  });
   if (!ws) return res.status(404).json({ error: "Workspace not found" });
-  res.json({ workspace: { id: ws.id, name: ws.name, slug: ws.slug, chats: ws._count.chats, documents: ws.documents, createdAt: ws.createdAt } });
+  res.json({
+    workspace: {
+      id: ws.id, name: ws.name, slug: ws.slug,
+      systemPrompt: ws.systemPrompt, temperature: ws.temperature,
+      chatHistory: ws.chatHistory, queryRefusalResponse: ws.queryRefusalResponse,
+      embedEnabled: ws.embedEnabled, agentMemoryEnabled: ws.agentMemoryEnabled,
+      chats: ws._count.chats, agents: ws._count.agents, connectors: ws._count.connectors,
+      documents: ws.documents,
+      createdAt: ws.createdAt, updatedAt: ws.updatedAt,
+    },
+  });
 });
 
 // POST /api/v1/workspaces
@@ -126,7 +211,7 @@ router.post("/workspaces", async (req, res) => {
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") + "-" + uuidv4().slice(0, 6);
   const workspace = await req.db.workspace.create({
     data: { name: name.trim(), slug, systemPrompt: systemPrompt?.trim() || null },
-    select: { id: true, name: true, slug: true, createdAt: true },
+    select: { id: true, name: true, slug: true, systemPrompt: true, createdAt: true },
   });
   res.status(201).json({ workspace });
 });
@@ -135,12 +220,12 @@ router.post("/workspaces", async (req, res) => {
 // Chat — JSON (non-streaming)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// POST /api/v1/workspaces/:slug/chat
-router.post("/workspaces/:slug/chat", async (req, res) => {
+// POST /api/v1/workspaces/:workspaceSlug/chat
+router.post("/workspaces/:workspaceSlug/chat", async (req, res) => {
   const { message, threadId: threadUid } = req.body;
   if (!message) return res.status(400).json({ error: "message required" });
 
-  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.slug } });
+  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.workspaceSlug } });
   if (!workspace) return res.status(404).json({ error: "Workspace not found" });
 
   const thread = threadUid ? await resolveThreadByUid(req.db, workspace.id, threadUid) : null;
@@ -170,12 +255,12 @@ router.post("/workspaces/:slug/chat", async (req, res) => {
 // Chat — SSE streaming
 // ─────────────────────────────────────────────────────────────────────────────
 
-// POST /api/v1/workspaces/:slug/chat/stream
-router.post("/workspaces/:slug/chat/stream", async (req, res) => {
+// POST /api/v1/workspaces/:workspaceSlug/chat/stream
+router.post("/workspaces/:workspaceSlug/chat/stream", async (req, res) => {
   const { message, threadId: threadUid } = req.body;
   if (!message) return res.status(400).json({ error: "message required" });
 
-  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.slug } });
+  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.workspaceSlug } });
   if (!workspace) return res.status(404).json({ error: "Workspace not found" });
 
   const thread = threadUid ? await resolveThreadByUid(req.db, workspace.id, threadUid) : null;
@@ -228,9 +313,9 @@ router.post("/workspaces/:slug/chat/stream", async (req, res) => {
   }
 });
 
-// GET /api/v1/workspaces/:slug/chat/history
-router.get("/workspaces/:slug/chat/history", async (req, res) => {
-  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.slug } });
+// GET /api/v1/workspaces/:workspaceSlug/chat/history
+router.get("/workspaces/:workspaceSlug/chat/history", async (req, res) => {
+  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.workspaceSlug } });
   if (!workspace) return res.status(404).json({ error: "Workspace not found" });
 
   const thread = req.query.threadId ? await resolveThreadByUid(req.db, workspace.id, req.query.threadId) : null;
@@ -248,9 +333,9 @@ router.get("/workspaces/:slug/chat/history", async (req, res) => {
 // Threads
 // ─────────────────────────────────────────────────────────────────────────────
 
-// GET /api/v1/workspaces/:slug/threads
-router.get("/workspaces/:slug/threads", async (req, res) => {
-  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.slug } });
+// GET /api/v1/workspaces/:workspaceSlug/threads
+router.get("/workspaces/:workspaceSlug/threads", async (req, res) => {
+  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.workspaceSlug } });
   if (!workspace) return res.status(404).json({ error: "Workspace not found" });
   const threads = await req.db.thread.findMany({
     where: { workspaceId: workspace.id },
@@ -259,10 +344,10 @@ router.get("/workspaces/:slug/threads", async (req, res) => {
   res.json({ threads });
 });
 
-// POST /api/v1/workspaces/:slug/threads
-router.post("/workspaces/:slug/threads", async (req, res) => {
+// POST /api/v1/workspaces/:workspaceSlug/threads
+router.post("/workspaces/:workspaceSlug/threads", async (req, res) => {
   const { name } = req.body;
-  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.slug } });
+  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.workspaceSlug } });
   if (!workspace) return res.status(404).json({ error: "Workspace not found" });
   const thread = await req.db.thread.create({
     data: { uid: uuidv4(), workspaceId: workspace.id, name: name?.trim() || "New Thread" },
@@ -270,9 +355,9 @@ router.post("/workspaces/:slug/threads", async (req, res) => {
   res.status(201).json({ thread });
 });
 
-// DELETE /api/v1/workspaces/:slug/threads/:uid
-router.delete("/workspaces/:slug/threads/:uid", async (req, res) => {
-  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.slug } });
+// DELETE /api/v1/workspaces/:workspaceSlug/threads/:uid
+router.delete("/workspaces/:workspaceSlug/threads/:uid", async (req, res) => {
+  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.workspaceSlug } });
   if (!workspace) return res.status(404).json({ error: "Workspace not found" });
   const thread = await resolveThreadByUid(req.db, workspace.id, req.params.uid);
   if (!thread) return res.status(404).json({ error: "Thread not found" });
@@ -285,33 +370,43 @@ router.delete("/workspaces/:slug/threads/:uid", async (req, res) => {
 // Documents
 // ─────────────────────────────────────────────────────────────────────────────
 
-// GET /api/v1/workspaces/:slug/documents
-router.get("/workspaces/:slug/documents", async (req, res) => {
-  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.slug } });
+// GET /api/v1/workspaces/:workspaceSlug/documents
+router.get("/workspaces/:workspaceSlug/documents", async (req, res) => {
+  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.workspaceSlug } });
   if (!workspace) return res.status(404).json({ error: "Workspace not found" });
   const documents = await req.db.document.findMany({
     where: { workspaceId: workspace.id },
     orderBy: { createdAt: "desc" },
-    select: { uid: true, name: true, type: true, size: true, status: true, chunkCount: true, createdAt: true },
+    select: {
+      uid: true, name: true, type: true, size: true, status: true,
+      chunkCount: true, chunksProcessed: true, totalChunks: true,
+      errorMessage: true, embeddingTokens: true, embeddingModel: true,
+      createdAt: true, updatedAt: true,
+    },
   });
   res.json({ documents });
 });
 
-// GET /api/v1/workspaces/:slug/documents/:uid
-router.get("/workspaces/:slug/documents/:uid", async (req, res) => {
-  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.slug } });
+// GET /api/v1/workspaces/:workspaceSlug/documents/:uid
+router.get("/workspaces/:workspaceSlug/documents/:uid", async (req, res) => {
+  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.workspaceSlug } });
   if (!workspace) return res.status(404).json({ error: "Workspace not found" });
   const doc = await req.db.document.findFirst({
     where: { uid: req.params.uid, workspaceId: workspace.id },
-    select: { uid: true, name: true, type: true, size: true, status: true, chunkCount: true, chunksProcessed: true, totalChunks: true, errorMessage: true, createdAt: true },
+    select: {
+      uid: true, name: true, type: true, size: true, status: true,
+      chunkCount: true, chunksProcessed: true, totalChunks: true,
+      errorMessage: true, embeddingTokens: true, embeddingModel: true,
+      createdAt: true, updatedAt: true,
+    },
   });
   if (!doc) return res.status(404).json({ error: "Document not found" });
   res.json({ document: doc });
 });
 
-// POST /api/v1/workspaces/:slug/documents/upload
-router.post("/workspaces/:slug/documents/upload", upload.single("file"), async (req, res) => {
-  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.slug } });
+// POST /api/v1/workspaces/:workspaceSlug/documents/upload
+router.post("/workspaces/:workspaceSlug/documents/upload", upload.single("file"), async (req, res) => {
+  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.workspaceSlug } });
   if (!workspace) return res.status(404).json({ error: "Workspace not found" });
   if (!req.file)   return res.status(400).json({ error: "file required (multipart/form-data)" });
 
@@ -333,11 +428,11 @@ router.post("/workspaces/:slug/documents/upload", upload.single("file"), async (
   res.status(202).json({ document: { uid: doc.uid, name: doc.name, status: doc.status } });
 });
 
-// POST /api/v1/workspaces/:slug/documents/url
-router.post("/workspaces/:slug/documents/url", async (req, res) => {
+// POST /api/v1/workspaces/:workspaceSlug/documents/url
+router.post("/workspaces/:workspaceSlug/documents/url", async (req, res) => {
   const { url } = req.body;
   if (!url) return res.status(400).json({ error: "url required" });
-  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.slug } });
+  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.workspaceSlug } });
   if (!workspace) return res.status(404).json({ error: "Workspace not found" });
   const uid = uuidv4();
   const doc = await req.db.document.create({
@@ -347,9 +442,9 @@ router.post("/workspaces/:slug/documents/url", async (req, res) => {
   res.status(202).json({ document: { uid: doc.uid, name: doc.name, status: doc.status } });
 });
 
-// DELETE /api/v1/workspaces/:slug/documents/:uid
-router.delete("/workspaces/:slug/documents/:uid", async (req, res) => {
-  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.slug } });
+// DELETE /api/v1/workspaces/:workspaceSlug/documents/:uid
+router.delete("/workspaces/:workspaceSlug/documents/:uid", async (req, res) => {
+  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.workspaceSlug } });
   if (!workspace) return res.status(404).json({ error: "Workspace not found" });
   const doc = await req.db.document.findFirst({ where: { uid: req.params.uid, workspaceId: workspace.id } });
   if (!doc) return res.status(404).json({ error: "Document not found" });
@@ -362,42 +457,57 @@ router.delete("/workspaces/:slug/documents/:uid", async (req, res) => {
 // Agents
 // ─────────────────────────────────────────────────────────────────────────────
 
-// GET /api/v1/workspaces/:slug/agents
-router.get("/workspaces/:slug/agents", async (req, res) => {
-  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.slug } });
+// GET /api/v1/workspaces/:workspaceSlug/agents
+router.get("/workspaces/:workspaceSlug/agents", async (req, res) => {
+  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.workspaceSlug } });
   if (!workspace) return res.status(404).json({ error: "Workspace not found" });
   const agents = await req.db.agent.findMany({
     where: { workspaceId: workspace.id },
     orderBy: { createdAt: "desc" },
-    select: { id: true, name: true, triggerType: true, cronExpression: true, enabled: true, createdAt: true,
-      runs: { orderBy: { startedAt: "desc" }, take: 1, select: { status: true, startedAt: true, completedAt: true } } },
+    select: {
+      id: true, name: true, slug: true, description: true, group: true,
+      triggerType: true, cronExpression: true, enabled: true, visualize: true,
+      nextAgent: true, nextAgentCondition: true, chains: true,
+      connectorIds: true, params: true,
+      createdAt: true, updatedAt: true,
+      runs: { orderBy: { startedAt: "desc" }, take: 1, select: { status: true, startedAt: true, completedAt: true } },
+    },
   });
-  res.json({ agents });
+  res.json({
+    agents: agents.map(a => ({
+      ...a,
+      chains:       a.chains       ? JSON.parse(a.chains)       : [],
+      connectorIds: a.connectorIds ? JSON.parse(a.connectorIds) : [],
+      params:       a.params       ? JSON.parse(a.params)       : [],
+    })),
+  });
 });
 
-// GET /api/v1/workspaces/:slug/agents/:id/runs
-router.get("/workspaces/:slug/agents/:id/runs", async (req, res) => {
-  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.slug } });
+// GET /api/v1/workspaces/:workspaceSlug/agents/:agentSlug/runs
+router.get("/workspaces/:workspaceSlug/agents/:agentSlug/runs", async (req, res) => {
+  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.workspaceSlug } });
   if (!workspace) return res.status(404).json({ error: "Workspace not found" });
-  const agentId = parseInt(req.params.id);
-  const agent = await req.db.agent.findFirst({ where: { id: agentId, workspaceId: workspace.id } });
+  const agent = await req.db.agent.findFirst({ where: { slug: req.params.agentSlug, workspaceId: workspace.id } });
   if (!agent) return res.status(404).json({ error: "Agent not found" });
   const runs = await req.db.agentRun.findMany({
     where: { agentId },
     orderBy: { startedAt: "desc" },
     take: 20,
-    select: { id: true, status: true, triggerType: true, input: true, output: true, error: true, startedAt: true, completedAt: true },
+    select: {
+      id: true, status: true, triggerType: true,
+      input: true, output: true, error: true,
+      cancelRequested: true, startedAt: true, completedAt: true,
+    },
   });
   res.json({ runs });
 });
 
-// POST /api/v1/workspaces/:slug/agents/:id/run  — SSE streaming
-router.post("/workspaces/:slug/agents/:id/run", async (req, res) => {
-  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.slug } });
+// POST /api/v1/workspaces/:workspaceSlug/agents/:agentSlug/run  — SSE streaming
+router.post("/workspaces/:workspaceSlug/agents/:agentSlug/run", async (req, res) => {
+  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.workspaceSlug } });
   if (!workspace) return res.status(404).json({ error: "Workspace not found" });
 
-  const agentId = parseInt(req.params.id);
-  const agent   = await req.db.agent.findFirst({ where: { id: agentId, workspaceId: workspace.id } });
+  const agent = await req.db.agent.findFirst({ where: { slug: req.params.agentSlug, workspaceId: workspace.id } });
   if (!agent) return res.status(404).json({ error: "Agent not found" });
 
   const allowed = await canRunAgent(req.db);
@@ -408,7 +518,7 @@ router.post("/workspaces/:slug/agents/:id/run", async (req, res) => {
   await incrementAgentRun(req.db);
 
   const run = await req.db.agentRun.create({
-    data: { agentId, status: "running", triggerType: "manual", input: req.body.input || null },
+    data: { agentId: agent.id, status: "running", triggerType: "manual", input: req.body.input || null },
   });
 
   res.setHeader("Content-Type", "text/event-stream");

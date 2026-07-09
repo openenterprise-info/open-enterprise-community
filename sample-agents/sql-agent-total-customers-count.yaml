@@ -1,5 +1,5 @@
-name: "Total Doctors Count"
-slug: "total-doctors-count"
+name: "Total Customers Count"
+slug: "total-customers-count"
 description: "Queries the database and displays total doctor count as a chart"
 enabled: true
 trigger:
@@ -13,14 +13,14 @@ instructions: |
   - Do NOT write any text before or between tool calls
   - Return only the query result — no explanation needed
 steps:
-  - name: "Query Doctor Count"
+  - name: "Query Customers Count"
     content: |
       Run this MySQL query:
-        SELECT COUNT(*) AS total_doctors FROM doctors;
+        SELECT COUNT(*) AS total_customers FROM customers;
       
       Return the result as pie chart.
       
 connectors:
-  - name: "mysql"
+  - name: "MySQL"
     type: mysql
     connection_id: "mysqlc"
