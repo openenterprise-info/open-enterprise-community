@@ -129,6 +129,31 @@ docker run -d \
 
 > LLM provider and API keys are configured from the admin panel after first login.
 
+### Data Persistence
+
+The `-v ./data:/app/server/storage` flag mounts a local folder into the container. All your data — workspaces, documents, vector embeddings, agents, connector credentials, and chat history — is stored in `./data` on your host machine, not inside the container.
+
+**This means upgrades never lose your data.** To upgrade to a new version:
+
+```bash
+# Stop the current container
+docker stop <container-id>
+
+# Pull the latest image
+docker pull openenterprise/open-enterprise-community:latest
+
+# Start again with the same flags — all data is preserved
+docker run -d \
+  -p 3001:3001 \
+  -e JWT_SECRET=your-secret \
+  -e SUPER_ADMIN_EMAIL=admin@yourdomain.com \
+  -e SUPER_ADMIN_PASSWORD=your-password \
+  -v ./data:/app/server/storage \
+  openenterprise/open-enterprise-community:latest
+```
+
+> **Important:** Always use the same `JWT_SECRET` value across restarts. Changing it will invalidate all active sessions and log everyone out.
+
 ---
 
 ## Testing Your Installation
