@@ -1,6 +1,6 @@
 name: "Total Customers Count"
 slug: "total-customers-count"
-description: "Queries the database and displays total doctor count as a chart"
+description: "Queries the database and displays total customer count as a chart"
 enabled: true
 trigger:
   type: manual

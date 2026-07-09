@@ -35,4 +35,4 @@ steps:
 connectors:
   - name: "Test Rest"
     type: rest-api
-    connection_id: "testrest"
+    connection_id: "rest1"

@@ -56,3 +56,6 @@ connectors:
   - name: "MySQL"
     type: mysql
     connection_id: "mysqlc"
+  - name: "REST API"
+    type: rest-api
+    connection_id: "rest1"

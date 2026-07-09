@@ -1,6 +1,6 @@
 name: "Products By Category"
 slug: "products-by-category"
-description: "Shows doctor distribution across specialties as a pie chart"
+description: "Shows product distribution across categories as a pie chart"
 enabled: true
 trigger:
   type: manual
