@@ -1,0 +1,186 @@
+import React, { useState } from "react";
+import { Link, Outlet, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import UserMenu from "../UserMenu";
+
+const NAV_GROUPS = [
+  {
+    label: "Overview",
+    managerOnly: true,
+    items: [
+      {
+        id: "dashboard", label: "Dashboard", path: "/dashboard",
+        icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />,
+      },
+    ],
+  },
+  {
+    label: "Workspace",
+    items: [
+      {
+        id: "workspaces", label: "Workspaces", path: "/workspaces",
+        icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />,
+      },
+    ],
+  },
+  {
+    label: "Agents",
+    items: [
+      {
+        id: "agents", label: "Agent Studio", path: "/agents", sub: true,
+        icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21a48.25 48.25 0 01-8.135-.687c-1.718-.293-2.3-2.379-1.067-3.61L5 14.5" />,
+      },
+    ],
+  },
+  {
+    label: "Users",
+    adminOnly: true,
+    items: [
+      {
+        id: "users", label: "Users", path: "/users",
+        icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M17 20h5v-2a4 4 0 00-5-3.87M9 20H4v-2a4 4 0 015-3.87m6-4.13a4 4 0 11-8 0 4 4 0 018 0zm6 0a3 3 0 11-6 0 3 3 0 016 0zM3 17a3 3 0 016 0" />,
+      },
+    ],
+  },
+  {
+    label: "Developer",
+    adminOnly: true,
+    items: [
+      {
+        id: "api-keys", label: "APIs", path: "/developer",
+        icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />,
+      },
+      {
+        id: "embed", label: "Embed", path: "/developer/embed",
+        icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />,
+      },
+    ],
+  },
+  {
+    label: "Settings",
+    adminOnly: true,
+    items: [
+      {
+        id: "settings", label: "Instance Settings", path: "/settings",
+        icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />,
+      },
+      {
+        id: "maintenance", label: "Maintenance", path: "/settings/maintenance",
+        icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />,
+      },
+      {
+        id: "vectors", label: "Vectors", path: "/settings/vectors", adminOnly: true,
+        icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />,
+      },
+    ],
+  },
+];
+
+export default function AppLayout() {
+  const { user, loading, logout } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const pathname = location.pathname;
+
+  const [expandedGroups, setExpandedGroups] = useState(
+    () => new Set(NAV_GROUPS.map(g => g.label))
+  );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-indigo border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (!user) return <Navigate to="/login" replace />;
+
+  function toggleGroup(label) {
+    setExpandedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label); else next.add(label);
+      return next;
+    });
+  }
+
+  return (
+    <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+      <nav className="shrink-0 flex items-center justify-between px-6 py-3" style={{
+        background: "linear-gradient(145deg, #13103a 0%, #1e1b4b 40%, #2e2a80 80%, #4f46e5 100%)",
+        borderBottom: "1px solid rgba(99,102,241,0.25)",
+        boxShadow: "0 1px 24px rgba(79,70,229,0.12)"
+      }}>
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate("/workspaces")} className="flex items-center gap-3 hover:opacity-85 transition-opacity">
+            <div className="relative w-8 h-8 rounded-lg flex items-center justify-center" style={{
+              background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
+              boxShadow: "0 0 12px rgba(99,102,241,0.5)"
+            }}>
+              <span className="text-white font-black text-sm">E</span>
+            </div>
+            <span className="text-white font-semibold text-base tracking-tight">Open Enterprise</span>
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{
+              background: "rgba(99,102,241,0.15)",
+              border: "1px solid rgba(99,102,241,0.3)",
+              color: "#a5b4fc"
+            }}>v{__APP_VERSION__}</span>
+          </button>
+        </div>
+        <UserMenu user={user} logout={logout} />
+      </nav>
+
+      <div className="flex flex-1 overflow-hidden">
+        <aside className="w-52 bg-white border-r border-gray-200 flex flex-col overflow-y-auto shrink-0">
+          <nav className="p-3 flex-1">
+            {NAV_GROUPS.filter(g => {
+              if (g.adminOnly) return user?.role === "admin";
+              if (g.managerOnly) return user?.role === "admin" || user?.role === "manager";
+              return true;
+            }).map(group => {
+              const isOpen = expandedGroups.has(group.label);
+              return (
+                <div key={group.label} className="mb-1">
+                  <button
+                    onClick={() => toggleGroup(group.label)}
+                    className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <span className="text-xs font-semibold uppercase tracking-wider text-indigo">{group.label}</span>
+                    <svg className={`w-3 h-3 text-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {isOpen && (
+                    <div className="mt-0.5 mb-3">
+                      {group.items.filter(item => {
+                        if (item.adminOnly) return user?.role === "admin";
+                        if (item.managerOnly) return user?.role === "admin" || user?.role === "manager";
+                        return true;
+                      }).map(item => (
+                        <Link
+                          key={item.id}
+                          to={item.path}
+                          className={`w-full flex items-center gap-2 rounded-lg text-sm font-medium transition-colors mb-0.5 ${
+                            item.sub ? "pl-5 pr-3 py-1.5" : "px-3 py-2"
+                          } ${pathname === item.path ? "bg-indigo/10 text-indigo" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"}`}
+                        >
+                          <svg className={`shrink-0 fill-none ${item.sub ? "w-3.5 h-3.5" : "w-4 h-4"}`} viewBox="0 0 24 24" stroke="currentColor">
+                            {item.icon}
+                          </svg>
+                          {item.label}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </nav>
+        </aside>
+
+        <main className="flex-1 overflow-y-auto p-8">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+}
