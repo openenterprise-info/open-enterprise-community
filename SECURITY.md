@@ -6,7 +6,7 @@
 
 If you discover a security issue, please email us directly:
 
-**security@openenterprise.info**
+**support@openenterprise.info**
 
 Include:
 - A description of the vulnerability
