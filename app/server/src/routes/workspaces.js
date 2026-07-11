@@ -555,10 +555,14 @@ router.get("/:slug/agent-runs", authenticate, async (req, res) => {
         { triggeredFromWorkspaceId: workspace.id },
       ],
     };
+    const { period } = req.query;
+    const days = { "7d": 7, "30d": 30 }[period];
+    if (days) agentFilter.startedAt = { gte: new Date(Date.now() - days * 86400000) };
+
     const runs = await req.db.agentRun.findMany({
       where: agentFilter,
       orderBy: { startedAt: "desc" },
-      take: 100,
+      take: 200,
       include: {
         agent: { select: { id: true, name: true, slug: true } },
         triggeredBy: { select: { id: true, name: true, email: true } },

@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../../utils/api";
+import { exportMD, exportPDF, exportFilename } from "../../utils/exportOutput";
 import { Spinner } from "../../components/ui";
+
+const PERIODS = [
+  { id: "7d",  label: "Last 7 days" },
+  { id: "30d", label: "Last 30 days" },
+  { id: "all", label: "All time" },
+];
 
 function statusBadge(status) {
   const s = {
@@ -25,17 +32,24 @@ export default function WorkspaceRunLogsPage() {
   const [runs, setRuns]           = useState([]);
   const [loading, setLoading]     = useState(true);
   const [expanded, setExpanded]   = useState(null);
+  const [period, setPeriod]       = useState("all");
+
+  function fetchRuns(p) {
+    setLoading(true);
+    const q = p !== "all" ? `?period=${p}` : "";
+    api.get(`/workspaces/${slug}/agent-runs${q}`)
+      .then(r => setRuns(r.data.runs || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }
 
   useEffect(() => {
     if (!slug) return;
-    Promise.all([
-      api.get(`/workspaces/${slug}`),
-      api.get(`/workspaces/${slug}/agent-runs`),
-    ]).then(([wsRes, runsRes]) => {
-      setWorkspace(wsRes.data.workspace);
-      setRuns(runsRes.data.runs || []);
-    }).catch(() => {}).finally(() => setLoading(false));
+    api.get(`/workspaces/${slug}`).then(r => setWorkspace(r.data.workspace)).catch(() => {});
+    fetchRuns("all");
   }, [slug]);
+
+  useEffect(() => { if (slug) fetchRuns(period); }, [period]);
 
   const fmt = (dt) => dt ? new Date(dt).toLocaleString() : "—";
   const duration = (r) => {
@@ -82,7 +96,7 @@ export default function WorkspaceRunLogsPage() {
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-5">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">
               <button onClick={() => navigate(`/workspace/${slug}/agents`)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-700 transition-colors">
                 ← Back
@@ -92,8 +106,46 @@ export default function WorkspaceRunLogsPage() {
                 <p className="text-sm text-gray-400 mt-0.5">{runs.length > 0 ? `${runs.length} run${runs.length !== 1 ? "s" : ""}` : "Agent run history for this workspace"}</p>
               </div>
             </div>
-            <button onClick={() => { setLoading(true); api.get(`/workspaces/${slug}/agent-runs`).then(r => setRuns(r.data.runs || [])).finally(() => setLoading(false)); }}
-              className="text-xs text-gray-400 hover:text-gray-700 font-medium px-2">↻ Refresh</button>
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+                {PERIODS.map(p => (
+                  <button key={p.id} onClick={() => setPeriod(p.id)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${period === p.id ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+              <button onClick={() => fetchRuns(period)} className="text-xs text-indigo hover:text-indigo/80 font-medium px-2">↻</button>
+              {runs.length > 0 && (
+                <div className="flex gap-1 border border-gray-200 rounded-lg overflow-hidden">
+                  <button onClick={() => {
+                    const headers = ["Agent", "Status", "Trigger", "Triggered By", "Started", "Duration"];
+                    const rows = runs.map(r => [r.agent?.name || "", r.status, r.triggerType, r.triggeredBy ? (r.triggeredBy.name || r.triggeredBy.email) : "", fmt(r.startedAt), duration(r)]);
+                    const csv = [headers, ...rows].map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+                    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" }));
+                    a.download = `run-logs-${new Date().toISOString().slice(0,10)}.csv`; a.click();
+                  }} className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">.csv</button>
+                  <button onClick={() => {
+                    const lines = [`# Run Logs`, `*Generated: ${new Date().toLocaleString()} — ${runs.length} runs*`, ""];
+                    runs.forEach((r, i) => {
+                      lines.push(`## ${i+1}. ${r.agent?.name || "—"}`);
+                      lines.push(`- **Status:** ${r.status} · **Trigger:** ${r.triggerType} · **Started:** ${fmt(r.startedAt)} · **Duration:** ${duration(r)}`);
+                      if (r.output) lines.push("", "```", r.output, "```");
+                      lines.push("", "---", "");
+                    });
+                    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/markdown" }));
+                    a.download = `run-logs-${new Date().toISOString().slice(0,10)}.md`; a.click();
+                  }} className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 border-l border-gray-200 transition-colors">.md</button>
+                  <button onClick={() => {
+                    const escape = s => String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+                    const blocks = runs.map((r,i) => `<div class="run"><h2>${i+1}. ${escape(r.agent?.name)}</h2><div class="meta"><span class="status ${r.status}">${escape(r.status)}</span> · ${escape(r.triggerType)} · ${escape(fmt(r.startedAt))} · ${escape(duration(r))}</div>${r.output ? `<pre>${escape(r.output)}</pre>` : ""}${r.error ? `<pre class="error">${escape(r.error)}</pre>` : ""}</div>`).join("");
+                    const w = window.open("","_blank");
+                    w.document.write(`<html><head><title>Run Logs</title><style>body{font-family:system-ui,sans-serif;font-size:13px;padding:32px;max-width:900px;margin:auto}.run{margin-bottom:24px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden}h2{font-size:14px;font-weight:600;margin:0;padding:10px 14px;background:#f9fafb;border-bottom:1px solid #e5e7eb}.meta{padding:8px 14px;font-size:12px;color:#6b7280}.status{font-weight:600}.status.success{color:#15803d}.status.error{color:#dc2626}pre{margin:0;padding:12px 14px;font-size:11px;white-space:pre-wrap;word-break:break-word;font-family:monospace}pre.error{background:#fef2f2;color:#dc2626}@media print{.run{page-break-inside:avoid}}</style></head><body><h1>Run Logs</h1><p style="color:#888;font-size:12px">Generated: ${new Date().toLocaleString()} · ${runs.length} runs</p>${blocks}</body></html>`);
+                    w.document.close(); w.print();
+                  }} className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 border-l border-gray-200 transition-colors">.pdf</button>
+                </div>
+              )}
+            </div>
           </div>
 
           {loading ? (
