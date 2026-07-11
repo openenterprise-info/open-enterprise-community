@@ -49,10 +49,6 @@ export default function WorkspaceSettingsPage() {
   const [saved, setSaved]                 = useState(false);
   const [error, setError]                 = useState("");
 
-  // General
-  const [name, setName]                   = useState("");
-  const [systemPrompt, setSystemPrompt]   = useState("");
-
   // Agent settings
   const [maxRounds, setMaxRounds]         = useState(25);
   const [maxChainDepth, setMaxChainDepth] = useState(5);
@@ -64,8 +60,6 @@ export default function WorkspaceSettingsPage() {
     api.get(`/workspaces/${slug}`).then(r => {
       const ws = r.data.workspace;
       setWorkspace(ws);
-      setName(ws.name || "");
-      setSystemPrompt(ws.systemPrompt || "");
       setMaxRounds(ws.defaultAgentMaxRounds ?? 25);
       setMaxChainDepth(ws.maxChainDepth ?? 5);
       setMemoryEnabled(ws.agentMemoryEnabled ?? false);
@@ -81,8 +75,6 @@ export default function WorkspaceSettingsPage() {
     setError("");
     try {
       const { data } = await api.put(`/workspaces/${slug}`, {
-        name: name.trim(),
-        systemPrompt: systemPrompt || null,
         defaultAgentMaxRounds: maxRounds,
         maxChainDepth,
         agentMemoryEnabled: memoryEnabled,
@@ -119,29 +111,6 @@ export default function WorkspaceSettingsPage() {
             {error && <div className="text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg px-4 py-3">{error}</div>}
 
             <form onSubmit={handleSave} className="flex flex-col gap-6">
-
-              {/* General */}
-              <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col gap-4">
-                <h3 className="text-sm font-semibold text-gray-800">General</h3>
-                <div>
-                  <label className="text-xs font-medium text-gray-500 mb-1.5 block">Workspace Name</label>
-                  <input value={name} onChange={e => setName(e.target.value)} className="input py-2 text-sm w-full" placeholder="My Workspace" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-500 mb-1.5 block">Slug</label>
-                  <input value={workspace?.slug || slug} disabled className="input py-2 text-sm w-full bg-gray-50 text-gray-400 cursor-not-allowed" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-500 mb-1.5 block">System Prompt</label>
-                  <textarea
-                    value={systemPrompt}
-                    onChange={e => setSystemPrompt(e.target.value)}
-                    rows={3}
-                    className="input py-2 text-sm w-full resize-none"
-                    placeholder="Optional system prompt applied to all chats in this workspace…"
-                  />
-                </div>
-              </div>
 
               {/* Agent Settings */}
               <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col gap-5">
@@ -203,7 +172,7 @@ export default function WorkspaceSettingsPage() {
               </div>
 
               <div className="flex items-center gap-3">
-                <button type="submit" disabled={saving || !name.trim()} className="btn-primary px-5 py-2 text-sm disabled:opacity-50">
+                <button type="submit" disabled={saving} className="btn-primary px-5 py-2 text-sm disabled:opacity-50">
                   {saving ? "Saving…" : "Save Changes"}
                 </button>
                 {saved && <span className="text-green-600 text-sm font-medium">Saved!</span>}
