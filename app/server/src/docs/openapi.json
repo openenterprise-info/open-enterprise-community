@@ -263,9 +263,9 @@
                 "required": ["url"],
                 "properties": {
                   "url":      { "type": "string",  "example": "https://docs.example.com" },
-                  "crawl":    { "type": "boolean", "default": false, "description": "Set true to crawl all pages on the same domain (BFS)" },
-                  "maxPages": { "type": "integer", "default": 50,    "description": "Max pages to crawl (crawl mode only)" },
-                  "maxDepth": { "type": "integer", "default": 2,     "description": "Max link depth from start URL (crawl mode only)" }
+                  "crawl":    { "type": "boolean", "default": false, "example": false, "description": "Set true to crawl all pages on the same domain (BFS)" },
+                  "maxPages": { "type": "integer", "default": 50,    "example": 50,   "description": "Max pages to crawl (crawl mode only)" },
+                  "maxDepth": { "type": "integer", "default": 2,     "example": 2,    "description": "Max link depth from start URL (crawl mode only)" }
                 }
               }
             }
