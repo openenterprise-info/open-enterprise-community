@@ -25,7 +25,6 @@ import WorkspaceAgentsPage     from "./pages/Workspace/WorkspaceAgentsPage";
 import DashboardPage   from "./pages/Dashboard/DashboardPage";
 import WorkspacesPage  from "./pages/Workspaces/WorkspacesPage";
 import ChatsPage       from "./pages/Chats/ChatsPage";
-import AgentsPage      from "./pages/Agents/AgentsPage";
 import AgentRunsPage   from "./pages/Agents/AgentRunsPage";
 import UsersPage       from "./pages/Users/UsersPage";
 import ApiKeysPage     from "./pages/Developer/ApiKeysPage";
@@ -54,7 +53,6 @@ function AppRoutes() {
         <Route path="/dashboard"           element={<DashboardPage />} />
         <Route path="/workspaces"          element={<WorkspacesPage />} />
         <Route path="/chats"               element={<ChatsPage />} />
-        <Route path="/agents"              element={<AgentsPage />} />
         <Route path="/agent-runs"          element={<AgentRunsPage />} />
         <Route path="/approvals"           element={<ApprovalsPage />} />
         <Route path="/users"               element={<UsersPage />} />

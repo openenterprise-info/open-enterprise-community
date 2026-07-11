@@ -9,9 +9,9 @@ export default function ApprovalsPage() {
           <h2 className="text-xl font-bold text-gray-900">Approvals</h2>
           <p className="text-sm text-gray-400 mt-0.5">Review and approve pending agent actions</p>
         </div>
-        <Link to="/agents"
+        <Link to="/workspaces"
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-700 transition-colors">
-          ← Agent Studio
+          ← Workspaces
         </Link>
       </div>
 
