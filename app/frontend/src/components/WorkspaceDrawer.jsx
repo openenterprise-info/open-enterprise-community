@@ -654,7 +654,7 @@ function AgentsTab({ ws, setWs, setError, onUpdated, agentSharingEnabled = true 
 
 
 
-function VectorDBTab({ ws, setWs, setError, isAdmin, onInsertMention }) {
+function VectorDBTab({ ws, setWs, setError, isAdmin, onInsertMention, chatOnly = false }) {
   const [subTab, setSubTab]                 = useState("documents");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
@@ -665,8 +665,10 @@ function VectorDBTab({ ws, setWs, setError, isAdmin, onInsertMention }) {
 
   const SUB_TABS = [
     { id: "documents",      label: "Documents" },
-    { id: "databases",      label: "Databases" },
-    { id: "integrations",   label: "Connectors" },
+    ...(!chatOnly ? [
+      { id: "databases",    label: "Databases" },
+      { id: "integrations", label: "Connectors" },
+    ] : []),
     { id: "ingestion-logs", label: "Ingestion Logs" },
 
   ];
@@ -1180,11 +1182,16 @@ function AgentsPanel({ workspaceId }) {
 
 // ── Main drawer ───────────────────────────────────────────────────────────────
 
-export default function WorkspaceDrawer({ workspaceId, initialTab = "chat", isAdmin = false, onClose, onDeleted, onUpdated, onInsertMention }) {
+// mode: "chat" = Knowledge Base + Chat Settings (default, used inside WorkspaceChat)
+//       "connectors" = Databases + Connectors as main tabs (opened from workspace card)
+//       "agents"     = Agents settings only (opened from workspace card)
+export default function WorkspaceDrawer({ workspaceId, mode = "chat", initialTab, isAdmin = false, onClose, onDeleted, onUpdated, onInsertMention }) {
+  const defaultTab = initialTab ?? (mode === "connectors" ? "databases" : mode === "agents" ? "agents" : "sources");
+
   const [ws, setWs]             = useState(null);
   const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading]   = useState(true);
-  const [tab, setTab]           = useState(initialTab);
+  const [tab, setTab]           = useState(defaultTab);
   const [error, setError]       = useState("");
   const [features, setFeatures] = useState({ kbSharing: true, agentSharing: true });
 
@@ -1251,12 +1258,10 @@ export default function WorkspaceDrawer({ workspaceId, initialTab = "chat", isAd
     }
   }
 
-  const TABS = [
-    ["sources", "Knowledge Base"],
-    ["chat",    "Chat Settings"],
-    ["members", "Members"],
-    ["agents",  "Agents"],
-  ];
+  const TABS =
+    mode === "connectors" ? [["databases", "Databases"], ["integrations", "Connectors"]] :
+    mode === "agents"     ? [["agents", "Agents"]] :
+    /* chat */              [["sources", "Knowledge Base"], ["chat", "Chat Settings"]];
 
   return (
     <div className="fixed inset-0 z-50 flex">
@@ -1344,15 +1349,21 @@ export default function WorkspaceDrawer({ workspaceId, initialTab = "chat", isAd
 
             {/* Scrollable content */}
             <div className="flex-1 overflow-y-auto">
-              {tab === "members" && (
-                <MembersTab ws={ws} setWs={setWs} allUsers={allUsers} setError={setError} />
-              )}
+              {/* chat mode */}
               {tab === "sources" && (
-                <VectorDBTab ws={ws} setWs={setWs} setError={setError} isAdmin={isAdmin} onInsertMention={onInsertMention} />
+                <VectorDBTab ws={ws} setWs={setWs} setError={setError} isAdmin={isAdmin} onInsertMention={onInsertMention} chatOnly />
               )}
               {tab === "chat" && (
                 <ChatSettingsTab ws={ws} setWs={setWs} setError={setError} onUpdated={onUpdated} />
               )}
+              {/* connectors mode — render EnterpriseConnectorsPanel directly as top-level tabs */}
+              {tab === "databases" && (
+                <EnterpriseConnectorsPanel workspaceId={ws?.id} workspaceSlug={ws?.slug} onIngestionStarted={() => {}} onDocumentAdded={() => {}} section="databases" refreshTrigger={0} />
+              )}
+              {tab === "integrations" && (
+                <EnterpriseConnectorsPanel workspaceId={ws?.id} workspaceSlug={ws?.slug} onIngestionStarted={() => {}} onDocumentAdded={() => {}} section="integrations" refreshTrigger={0} />
+              )}
+              {/* agents mode */}
               {tab === "agents" && (
                 <AgentsTab ws={ws} setWs={setWs} setError={setError} onUpdated={onUpdated} agentSharingEnabled={features.agentSharing} />
               )}
