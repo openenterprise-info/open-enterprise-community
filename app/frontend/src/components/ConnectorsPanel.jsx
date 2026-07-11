@@ -505,7 +505,118 @@ const INTEGRATION_TYPES = [
   { id: "recruit-crm",  label: "Recruit CRM",      color: "bg-blue-600",   initial: "RC",  live: false, desc: "Manage candidates, contacts, and job pipelines in Recruit CRM" },
   { id: "vincere",      label: "Vincere",          color: "bg-indigo-600", initial: "VN",  live: false, desc: "Search candidates and jobs in Vincere recruitment platform" },
   { id: "manatal",      label: "Manatal",          color: "bg-teal-600",   initial: "MN",  live: false, desc: "Access candidates, jobs, and pipelines in Manatal ATS" },
-  { id: "zoho-recruit", label: "Zoho Recruit",     color: "bg-red-600",    initial: "ZR",  live: false, desc: "Search candidates, job openings, and interviews in Zoho Recruit" },
+  { id: "zoho-recruit",      label: "Zoho Recruit",      color: "bg-red-600",    initial: "ZR",  live: false, desc: "Search candidates, job openings, and interviews in Zoho Recruit" },
+  // Databases (coming soon)
+  { id: "dynamodb",          label: "DynamoDB",          color: "bg-orange-500",  initial: "DY",  live: false, desc: "Query Amazon DynamoDB tables and indexes" },
+  { id: "cassandra",         label: "Cassandra",         color: "bg-blue-800",    initial: "CA",  live: false, desc: "Query Apache Cassandra keyspaces and tables" },
+  { id: "mariadb",           label: "MariaDB",           color: "bg-amber-700",   initial: "MA",  live: false, desc: "Query MariaDB databases with full SQL support" },
+  { id: "neo4j",             label: "Neo4j",             color: "bg-blue-600",    initial: "NJ",  live: false, desc: "Query Neo4j graph database with Cypher" },
+  { id: "influxdb",          label: "InfluxDB",          color: "bg-purple-700",  initial: "IF",  live: false, desc: "Query InfluxDB time-series data" },
+  { id: "clickhouse",        label: "ClickHouse",        color: "bg-yellow-600",  initial: "CH",  live: false, desc: "Query ClickHouse columnar analytics database" },
+  { id: "couchdb",           label: "CouchDB",           color: "bg-red-800",     initial: "CO",  live: false, desc: "Query Apache CouchDB document store" },
+  { id: "firestore",         label: "Firestore",         color: "bg-orange-400",  initial: "FS",  live: false, desc: "Query Google Firestore NoSQL database" },
+  { id: "arangodb",          label: "ArangoDB",          color: "bg-teal-700",    initial: "AR",  live: false, desc: "Query ArangoDB multi-model database" },
+  { id: "db2",               label: "IBM Db2",           color: "bg-blue-900",    initial: "D2",  live: false, desc: "Query IBM Db2 relational databases" },
+  { id: "teradata",          label: "Teradata",          color: "bg-orange-700",  initial: "TD",  live: false, desc: "Query Teradata enterprise data warehouse" },
+  { id: "duckdb",            label: "DuckDB",            color: "bg-yellow-500",  initial: "DK",  live: false, desc: "Query DuckDB in-process analytical database" },
+  { id: "supabase",          label: "Supabase",          color: "bg-emerald-600", initial: "SB",  live: false, desc: "Query Supabase Postgres-backed database" },
+  { id: "neon",              label: "Neon",              color: "bg-green-500",   initial: "NE",  live: false, desc: "Query serverless Neon Postgres database" },
+  { id: "planetscale",       label: "PlanetScale",       color: "bg-gray-900",    initial: "PL",  live: false, desc: "Query PlanetScale serverless MySQL database" },
+  // CRM / Sales
+  { id: "pipedrive",         label: "Pipedrive",         color: "bg-green-600",   initial: "PD",  live: false, desc: "Read deals, contacts, and pipeline stages" },
+  { id: "close-crm",         label: "Close CRM",         color: "bg-blue-500",    initial: "CL",  live: false, desc: "Search leads, contacts, and activity history" },
+  { id: "copper",            label: "Copper",            color: "bg-teal-500",    initial: "CP",  live: false, desc: "Access contacts, opportunities, and tasks in Copper" },
+  { id: "activecampaign",    label: "ActiveCampaign",    color: "bg-blue-600",    initial: "AC",  live: false, desc: "Manage contacts, deals, and automations" },
+  { id: "keap",              label: "Keap",              color: "bg-green-500",   initial: "KP",  live: false, desc: "Access contacts, campaigns, and orders in Keap" },
+  { id: "dynamics-crm",      label: "Dynamics 365",      color: "bg-blue-700",    initial: "DC",  live: false, desc: "Query Microsoft Dynamics 365 CRM records" },
+  { id: "sugarcrm",          label: "SugarCRM",          color: "bg-red-700",     initial: "SC",  live: false, desc: "Search accounts, contacts, and opportunities" },
+  { id: "capsule",           label: "Capsule CRM",       color: "bg-cyan-600",    initial: "CA",  live: false, desc: "Read contacts, opportunities, and cases" },
+  { id: "nutshell",          label: "Nutshell",          color: "bg-green-600",   initial: "NU",  live: false, desc: "Access leads, contacts, and pipelines in Nutshell" },
+  { id: "streak",            label: "Streak",            color: "bg-blue-500",    initial: "SK",  live: false, desc: "Access Gmail-based CRM pipelines and contacts" },
+  // Marketing
+  { id: "mailchimp",         label: "Mailchimp",         color: "bg-yellow-500",  initial: "MC",  live: false, desc: "Manage audiences, campaigns, and subscriber lists" },
+  { id: "sendgrid",          label: "SendGrid",          color: "bg-blue-500",    initial: "SG",  live: false, desc: "Send transactional emails and manage contacts" },
+  { id: "klaviyo",           label: "Klaviyo",           color: "bg-green-600",   initial: "KL",  live: false, desc: "Access profiles, flows, and campaign metrics" },
+  { id: "marketo",           label: "Marketo",           color: "bg-purple-700",  initial: "MK",  live: false, desc: "Query leads, programs, and campaign activities" },
+  { id: "brevo",             label: "Brevo",             color: "bg-teal-600",    initial: "BV",  live: false, desc: "Send emails and manage contacts via Brevo" },
+  { id: "constant-contact",  label: "Constant Contact",  color: "bg-blue-600",    initial: "CT",  live: false, desc: "Manage lists, campaigns, and email contacts" },
+  { id: "drip",              label: "Drip",              color: "bg-indigo-500",  initial: "DP",  live: false, desc: "Access subscriber segments and email automations" },
+  { id: "convertkit",        label: "ConvertKit",        color: "bg-red-500",     initial: "CK",  live: false, desc: "Manage subscribers, tags, and email sequences" },
+  { id: "campaign-monitor",  label: "Campaign Monitor",  color: "bg-blue-600",    initial: "CM",  live: false, desc: "Send campaigns and manage subscriber lists" },
+  { id: "mailerlite",        label: "MailerLite",        color: "bg-green-500",   initial: "ML",  live: false, desc: "Manage email campaigns and subscriber groups" },
+  // Communication
+  { id: "twilio",            label: "Twilio",            color: "bg-red-500",     initial: "TW",  live: false, desc: "Send SMS, make calls, and manage conversations" },
+  { id: "discord",           label: "Discord",           color: "bg-indigo-500",  initial: "DS",  live: false, desc: "Post messages and read Discord channel content" },
+  { id: "telegram",          label: "Telegram",          color: "bg-blue-400",    initial: "TG",  live: false, desc: "Send messages and manage Telegram bot interactions" },
+  { id: "whatsapp-business", label: "WhatsApp Business", color: "bg-green-500",   initial: "WA",  live: false, desc: "Send WhatsApp messages via Business API" },
+  { id: "intercom",          label: "Intercom",          color: "bg-blue-500",    initial: "IC",  live: false, desc: "Read conversations, contacts, and help articles" },
+  { id: "drift",             label: "Drift",             color: "bg-blue-600",    initial: "DF",  live: false, desc: "Access conversations and visitor intelligence" },
+  { id: "crisp",             label: "Crisp",             color: "bg-indigo-400",  initial: "CR",  live: false, desc: "Manage chat conversations and contact profiles" },
+  { id: "messagebird",       label: "MessageBird",       color: "bg-blue-500",    initial: "MB",  live: false, desc: "Send SMS, voice, and omnichannel messages" },
+  { id: "vonage",            label: "Vonage",            color: "bg-purple-600",  initial: "VG",  live: false, desc: "Send SMS and make voice calls via Vonage API" },
+  { id: "bandwidth",         label: "Bandwidth",         color: "bg-blue-700",    initial: "BW",  live: false, desc: "Send messages and manage voice calls via Bandwidth" },
+  // Project Management
+  { id: "trello",            label: "Trello",            color: "bg-blue-500",    initial: "TR",  live: false, desc: "Read boards, cards, and list activity" },
+  { id: "asana",             label: "Asana",             color: "bg-pink-500",    initial: "AS",  live: false, desc: "Manage tasks, projects, and team workspaces" },
+  { id: "monday",            label: "Monday.com",        color: "bg-red-500",     initial: "MN",  live: false, desc: "Query boards, items, and project documentation" },
+  { id: "linear",            label: "Linear",            color: "bg-indigo-600",  initial: "LN",  live: false, desc: "Search issues, cycles, and engineering projects" },
+  { id: "basecamp",          label: "Basecamp",          color: "bg-green-600",   initial: "BC",  live: false, desc: "Access to-dos, messages, and project schedules" },
+  { id: "clickup",           label: "ClickUp",           color: "bg-purple-600",  initial: "CU",  live: false, desc: "Manage tasks, docs, and workspace hierarchies" },
+  { id: "wrike",             label: "Wrike",             color: "bg-green-600",   initial: "WK",  live: false, desc: "Query tasks, projects, and workflow timelines" },
+  { id: "smartsheet",        label: "Smartsheet",        color: "bg-blue-600",    initial: "SS",  live: false, desc: "Read sheets, rows, and project tracking data" },
+  { id: "airtable",          label: "Airtable",          color: "bg-yellow-500",  initial: "AT",  live: false, desc: "Query Airtable bases, tables, and records" },
+  { id: "height",            label: "Height",            color: "bg-gray-800",    initial: "HT",  live: false, desc: "Access tasks and project data in Height" },
+  // HR / Payroll
+  { id: "bamboohr",          label: "BambooHR",          color: "bg-green-600",   initial: "BM",  live: false, desc: "Access employee records, time-off, and org data" },
+  { id: "workday",           label: "Workday",           color: "bg-orange-600",  initial: "WY",  live: false, desc: "Query HR, payroll, and workforce data" },
+  { id: "adp",               label: "ADP",               color: "bg-red-600",     initial: "AD",  live: false, desc: "Access payroll, benefits, and employee records" },
+  { id: "gusto",             label: "Gusto",             color: "bg-green-500",   initial: "GS",  live: false, desc: "Read payroll runs, employees, and benefits data" },
+  { id: "rippling",          label: "Rippling",          color: "bg-yellow-600",  initial: "RL",  live: false, desc: "Access HR, IT, and finance employee data" },
+  { id: "personio",          label: "Personio",          color: "bg-blue-500",    initial: "PE",  live: false, desc: "Read employee profiles, absences, and payroll" },
+  { id: "hibob",             label: "HiBob",             color: "bg-blue-600",    initial: "HB",  live: false, desc: "Access people data, org structure, and time-off" },
+  { id: "namely",            label: "Namely",            color: "bg-teal-600",    initial: "NM",  live: false, desc: "Query HR records, payroll, and time-tracking" },
+  // Accounting / Finance
+  { id: "quickbooks",        label: "QuickBooks",        color: "bg-green-600",   initial: "QB",  live: false, desc: "Read invoices, customers, and financial reports" },
+  { id: "xero",              label: "Xero",              color: "bg-blue-500",    initial: "XR",  live: false, desc: "Access accounting records, invoices, and contacts" },
+  { id: "freshbooks",        label: "FreshBooks",        color: "bg-blue-600",    initial: "FN",  live: false, desc: "Read invoices, expenses, and client records" },
+  { id: "wave",              label: "Wave",              color: "bg-blue-400",    initial: "WV",  live: false, desc: "Access accounting, invoicing, and payment data" },
+  { id: "zoho-books",        label: "Zoho Books",        color: "bg-red-500",     initial: "ZB",  live: false, desc: "Query invoices, contacts, and financial records" },
+  { id: "netsuite",          label: "NetSuite",          color: "bg-orange-600",  initial: "NS",  live: false, desc: "Access ERP financials, inventory, and CRM data" },
+  { id: "sage",              label: "Sage",              color: "bg-green-700",   initial: "SE",  live: false, desc: "Query accounting, payroll, and business data" },
+  // E-commerce
+  { id: "shopify",           label: "Shopify",           color: "bg-green-600",   initial: "SH",  live: false, desc: "Read orders, products, customers, and inventory" },
+  { id: "woocommerce",       label: "WooCommerce",       color: "bg-purple-600",  initial: "WO",  live: false, desc: "Access store orders, products, and customer data" },
+  { id: "bigcommerce",       label: "BigCommerce",       color: "bg-blue-700",    initial: "BG",  live: false, desc: "Query catalog, orders, and customer records" },
+  { id: "stripe",            label: "Stripe",            color: "bg-indigo-600",  initial: "ST",  live: false, desc: "Read payments, subscriptions, and customer data" },
+  { id: "square",            label: "Square",            color: "bg-gray-900",    initial: "SQ",  live: false, desc: "Access payments, orders, and inventory records" },
+  { id: "paypal",            label: "PayPal",            color: "bg-blue-700",    initial: "PP",  live: false, desc: "Read transactions, invoices, and account details" },
+  { id: "magento",           label: "Magento",           color: "bg-orange-600",  initial: "MG",  live: false, desc: "Query catalog, orders, and customer segments" },
+  // Cloud / DevOps
+  { id: "aws-s3",            label: "Amazon S3",         color: "bg-orange-500",  initial: "S3",  live: false, desc: "List and read files from Amazon S3 buckets" },
+  { id: "azure-blob",        label: "Azure Blob",        color: "bg-blue-600",    initial: "AZ",  live: false, desc: "Access files and containers in Azure Blob Storage" },
+  { id: "gcs",               label: "Google Cloud",      color: "bg-blue-500",    initial: "GC",  live: false, desc: "Read files and buckets from Google Cloud Storage" },
+  { id: "jenkins",           label: "Jenkins",           color: "bg-red-600",     initial: "JK",  live: false, desc: "Trigger builds and read pipeline status" },
+  { id: "circleci",          label: "CircleCI",          color: "bg-gray-800",    initial: "CI",  live: false, desc: "Read pipeline runs, jobs, and test results" },
+  { id: "gitlab",            label: "GitLab",            color: "bg-orange-600",  initial: "GL",  live: false, desc: "Search issues, MRs, and GitLab project data" },
+  { id: "bitbucket",         label: "Bitbucket",         color: "bg-blue-600",    initial: "BT",  live: false, desc: "Access repos, PRs, and Bitbucket pipeline runs" },
+  { id: "datadog",           label: "Datadog",           color: "bg-purple-600",  initial: "DD",  live: false, desc: "Query metrics, logs, and infrastructure monitors" },
+  // Observability / ITSM
+  { id: "sentry",            label: "Sentry",            color: "bg-purple-700",  initial: "SY",  live: false, desc: "Search errors, issues, and release health data" },
+  { id: "pagerduty",         label: "PagerDuty",         color: "bg-green-600",   initial: "PG",  live: false, desc: "Read incidents, on-call schedules, and alerts" },
+  { id: "newrelic",          label: "New Relic",         color: "bg-blue-500",    initial: "NR",  live: false, desc: "Query APM metrics, traces, and alert conditions" },
+  { id: "splunk",            label: "Splunk",            color: "bg-orange-500",  initial: "SP",  live: false, desc: "Search logs, events, and Splunk dashboards" },
+  { id: "servicenow",        label: "ServiceNow",        color: "bg-green-600",   initial: "SN",  live: false, desc: "Query incidents, CMDB records, and knowledge base" },
+  { id: "opsgenie",          label: "Opsgenie",          color: "bg-blue-500",    initial: "OG",  live: false, desc: "Read alerts, on-call schedules, and incident data" },
+  { id: "grafana",           label: "Grafana",           color: "bg-orange-600",  initial: "GF",  live: false, desc: "Access dashboards, alerts, and metric annotations" },
+  { id: "kibana",            label: "Kibana",            color: "bg-pink-600",    initial: "KB",  live: false, desc: "Search Elasticsearch indices via Kibana" },
+  // Analytics
+  { id: "mixpanel",          label: "Mixpanel",          color: "bg-purple-600",  initial: "MX",  live: false, desc: "Query user events, funnels, and retention reports" },
+  { id: "amplitude",         label: "Amplitude",         color: "bg-blue-600",    initial: "AP",  live: false, desc: "Read product analytics, cohorts, and event data" },
+  { id: "segment",           label: "Segment",           color: "bg-green-600",   initial: "SG",  live: false, desc: "Access customer data streams and profile traits" },
+  { id: "heap",              label: "Heap",              color: "bg-purple-500",  initial: "HP",  live: false, desc: "Query auto-captured user events and sessions" },
+  { id: "posthog",           label: "PostHog",           color: "bg-orange-500",  initial: "PH",  live: false, desc: "Read product events, feature flags, and recordings" },
+  { id: "google-analytics",  label: "Google Analytics",  color: "bg-orange-500",  initial: "GA",  live: false, desc: "Query traffic, conversions, and audience reports" },
+  { id: "tableau",           label: "Tableau",           color: "bg-blue-700",    initial: "TB",  live: false, desc: "Access Tableau workbooks, views, and data sources" },
 ];
 
 // Fields required per API-key integration type
@@ -562,7 +673,34 @@ function setNestedValue(obj, path, value) {
 
 const OAUTH_TYPES = new Set(["gmail", "gdrive", "onedrive", "dropbox", "box"]);
 const CLOUD_STORAGE_TYPES = new Set(["gdrive", "onedrive", "dropbox", "box"]);
-const INTEGRATION_CONNECTOR_TYPES = new Set(["gmail", "gdrive", "onedrive", "dropbox", "box", "slack", "github", "jira", "confluence", "notion", "hubspot", "freshdesk", "zendesk", "rest-api", "zoho-mail", "ssh"]);
+const INTEGRATION_CONNECTOR_TYPES = new Set([
+  "gmail", "gdrive", "onedrive", "dropbox", "box", "slack", "github", "jira", "confluence", "notion",
+  "hubspot", "freshdesk", "zendesk", "rest-api", "zoho-mail", "ssh",
+  "teams", "outlook", "sharepoint", "salesforce", "bullhorn", "recruit-crm", "vincere", "manatal", "zoho-recruit",
+  // Databases (new — no form yet, treated as integrations)
+  "dynamodb", "cassandra", "mariadb", "neo4j", "influxdb", "clickhouse", "couchdb", "firestore", "arangodb",
+  "db2", "teradata", "duckdb", "supabase", "neon", "planetscale",
+  // CRM / Sales
+  "pipedrive", "close-crm", "copper", "activecampaign", "keap", "dynamics-crm", "sugarcrm", "capsule", "nutshell", "streak",
+  // Marketing
+  "mailchimp", "sendgrid", "klaviyo", "marketo", "brevo", "constant-contact", "drip", "convertkit", "campaign-monitor", "mailerlite",
+  // Communication
+  "twilio", "discord", "telegram", "whatsapp-business", "intercom", "drift", "crisp", "messagebird", "vonage", "bandwidth",
+  // Project Management
+  "trello", "asana", "monday", "linear", "basecamp", "clickup", "wrike", "smartsheet", "airtable", "height",
+  // HR / Payroll
+  "bamboohr", "workday", "adp", "gusto", "rippling", "personio", "hibob", "namely",
+  // Accounting / Finance
+  "quickbooks", "xero", "freshbooks", "wave", "zoho-books", "netsuite", "sage",
+  // E-commerce
+  "shopify", "woocommerce", "bigcommerce", "stripe", "square", "paypal", "magento",
+  // Cloud / DevOps
+  "aws-s3", "azure-blob", "gcs", "jenkins", "circleci", "gitlab", "bitbucket", "datadog",
+  // Observability / ITSM
+  "sentry", "pagerduty", "newrelic", "splunk", "servicenow", "opsgenie", "grafana", "kibana",
+  // Analytics
+  "mixpanel", "amplitude", "segment", "heap", "posthog", "google-analytics", "tableau",
+]);
 
 export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngestionStarted, onInsertMention, section, focusType, focusEditConnector, onConnected }) {
   const [subTab, setSubTab]                 = useState("integrations");
