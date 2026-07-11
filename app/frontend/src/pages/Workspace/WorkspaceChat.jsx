@@ -832,13 +832,13 @@ export default function WorkspaceChat() {
         {/* Back nav */}
         <div className="px-3 py-3 border-b border-gray-200">
           <button
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/workspaces")}
             className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition-colors w-full px-2 py-1.5 rounded-lg hover:bg-gray-100"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            <span className="font-medium">Dashboard</span>
+            <span className="font-medium">Workspaces</span>
           </button>
         </div>
 
