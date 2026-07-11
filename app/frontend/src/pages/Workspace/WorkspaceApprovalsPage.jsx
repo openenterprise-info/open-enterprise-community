@@ -50,9 +50,14 @@ export default function WorkspaceApprovalsPage() {
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-5">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">Approvals</h2>
-            <p className="text-sm text-gray-400 mt-0.5">Review and approve pending agent actions</p>
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate(`/workspace/${slug}/agents`)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-700 transition-colors">
+              ← Back
+            </button>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Approvals</h2>
+              <p className="text-sm text-gray-400 mt-0.5">Review and approve pending agent actions</p>
+            </div>
           </div>
           <div className="flex-1 flex flex-col items-center justify-center py-24 text-center">
             <div className="w-12 h-12 rounded-xl bg-indigo/10 flex items-center justify-center mb-4">

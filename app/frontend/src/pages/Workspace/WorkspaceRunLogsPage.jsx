@@ -83,9 +83,14 @@ export default function WorkspaceRunLogsPage() {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-5">
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Run Logs</h2>
-              <p className="text-sm text-gray-400 mt-0.5">{runs.length > 0 ? `${runs.length} run${runs.length !== 1 ? "s" : ""}` : "Agent run history for this workspace"}</p>
+            <div className="flex items-center gap-3">
+              <button onClick={() => navigate(`/workspace/${slug}/agents`)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-700 transition-colors">
+                ← Back
+              </button>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Run Logs</h2>
+                <p className="text-sm text-gray-400 mt-0.5">{runs.length > 0 ? `${runs.length} run${runs.length !== 1 ? "s" : ""}` : "Agent run history for this workspace"}</p>
+              </div>
             </div>
             <button onClick={() => { setLoading(true); api.get(`/workspaces/${slug}/agent-runs`).then(r => setRuns(r.data.runs || [])).finally(() => setLoading(false)); }}
               className="text-xs text-gray-400 hover:text-gray-700 font-medium px-2">↻ Refresh</button>

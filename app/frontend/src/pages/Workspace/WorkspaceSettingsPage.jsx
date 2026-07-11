@@ -103,9 +103,14 @@ export default function WorkspaceSettingsPage() {
         <div className="flex-1 overflow-y-auto p-6">
           <div className="max-w-xl flex flex-col gap-6">
 
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Settings</h2>
-              <p className="text-sm text-gray-400 mt-0.5">Workspace and agent configuration</p>
+            <div className="flex items-center gap-3">
+              <button onClick={() => navigate(`/workspace/${slug}/agents`)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-700 transition-colors">
+                ← Back
+              </button>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Settings</h2>
+                <p className="text-sm text-gray-400 mt-0.5">Workspace and agent configuration</p>
+              </div>
             </div>
 
             {error && <div className="text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg px-4 py-3">{error}</div>}
