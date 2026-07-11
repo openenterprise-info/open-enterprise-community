@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 
 function DangerIcon() {
   return (
@@ -21,12 +21,18 @@ export default function ConfirmDialog({
   message,
   detail,
   confirmLabel = "Confirm",
+  confirmText,        // if set, user must type this exact string to enable confirm
   variant = "danger",
   loading = false,
   onConfirm,
   onCancel,
 }) {
   const isDanger = variant === "danger";
+  const [typed, setTyped] = useState("");
+
+  useEffect(() => { setTyped(""); }, [confirmText]);
+
+  const canConfirm = !confirmText || typed === confirmText;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
@@ -48,7 +54,23 @@ export default function ConfirmDialog({
           </p>
         )}
 
-        <p className="text-center text-xs text-gray-400 mb-5">This action cannot be undone.</p>
+        <p className="text-center text-xs text-gray-400 mb-4">This action cannot be undone.</p>
+
+        {confirmText && (
+          <div className="mb-5">
+            <p className="text-xs text-gray-500 mb-1.5 text-center">
+              Type <span className="font-semibold text-gray-800">{confirmText}</span> to confirm
+            </p>
+            <input
+              autoFocus
+              value={typed}
+              onChange={e => setTyped(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter" && canConfirm && !loading) onConfirm(); }}
+              placeholder={confirmText}
+              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-300 text-center font-mono"
+            />
+          </div>
+        )}
 
         <div className="flex gap-3">
           <button
@@ -60,8 +82,8 @@ export default function ConfirmDialog({
           </button>
           <button
             onClick={onConfirm}
-            disabled={loading}
-            className={`flex-1 py-2 rounded-xl text-white text-sm font-semibold transition-colors disabled:opacity-60 ${
+            disabled={loading || !canConfirm}
+            className={`flex-1 py-2 rounded-xl text-white text-sm font-semibold transition-colors disabled:opacity-40 ${
               isDanger
                 ? "bg-red-600 hover:bg-red-700"
                 : "bg-amber-500 hover:bg-amber-600"

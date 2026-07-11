@@ -233,7 +233,7 @@ function MembersTab({ ws, setWs, allUsers, setError }) {
 
 // ── Agent Sharing section (inside Chat Settings) ──────────────────────────────
 
-function AgentSharingSection({ ws }) {
+export function AgentSharingSection({ ws }) {
   const [shares, setShares]       = useState([]);
   const [agents, setAgents]       = useState([]);
   const [workspaces, setWorkspaces] = useState([]);
@@ -1195,11 +1195,6 @@ export default function WorkspaceDrawer({ workspaceId, mode = "chat", initialTab
   const [error, setError]       = useState("");
   const [features, setFeatures] = useState({ kbSharing: true, agentSharing: true });
 
-  // Inline name editing
-  const [editingName, setEditingName] = useState(false);
-  const [nameValue, setNameValue]     = useState("");
-  const nameInputRef                  = useRef();
-
   useEffect(() => {
     Promise.all([
       api.get(`/admin/workspaces/${workspaceId}`),
@@ -1207,9 +1202,7 @@ export default function WorkspaceDrawer({ workspaceId, mode = "chat", initialTab
       api.get("/features"),
     ])
       .then(([wsRes, usersRes, featRes]) => {
-        const workspace = wsRes.data.workspace;
-        setWs(workspace);
-        setNameValue(workspace.name);
+        setWs(wsRes.data.workspace);
         setAllUsers(usersRes.data.users || []);
         setFeatures(featRes.data);
       })
@@ -1217,51 +1210,10 @@ export default function WorkspaceDrawer({ workspaceId, mode = "chat", initialTab
       .finally(() => setLoading(false));
   }, [workspaceId]);
 
-  function startNameEdit() {
-    setEditingName(true);
-    setTimeout(() => { nameInputRef.current?.select(); }, 10);
-  }
-
-  async function commitName() {
-    const trimmed = nameValue.trim();
-    if (trimmed && trimmed !== ws.name) {
-      try {
-        const { data } = await api.put(`/admin/workspaces/${ws.id}`, { name: trimmed });
-        setWs(prev => ({ ...prev, name: data.workspace.name }));
-        onUpdated?.(data.workspace);
-      } catch { setNameValue(ws.name); }
-    } else {
-      setNameValue(ws.name);
-    }
-    setEditingName(false);
-  }
-
-  function handleNameKey(e) {
-    if (e.key === "Enter") { e.preventDefault(); commitName(); }
-    if (e.key === "Escape") { setNameValue(ws.name); setEditingName(false); }
-  }
-
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteConfirmName, setDeleteConfirmName] = useState("");
-  const [deleting, setDeleting] = useState(false);
-
-  async function handleDelete() {
-    if (deleteConfirmName !== ws.name) return;
-    setDeleting(true);
-    try {
-      await api.delete(`/admin/workspaces/${ws.id}`);
-      onDeleted(ws.id);
-      onClose();
-    } catch {
-      setError("Failed to delete workspace");
-      setDeleting(false);
-    }
-  }
-
   const TABS =
     mode === "connectors" ? [["databases", "Databases"], ["integrations", "Connectors"]] :
     mode === "agents"     ? [["agents", "Agents"]] :
-    /* chat */              [["sources", "Knowledge Base"], ["chat", "Chat Settings"]];
+    /* chat */              [["sources", "Knowledge Base"], ["chat", "Chat Settings"], ["members", "Members"]];
 
   return (
     <div className="fixed inset-0 z-50 flex">
@@ -1278,49 +1230,13 @@ export default function WorkspaceDrawer({ workspaceId, mode = "chat", initialTab
           </div>
         ) : (
           <>
-            {/* Header — inline-editable name */}
+            {/* Header */}
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between gap-3 shrink-0">
               <div className="flex-1 min-w-0">
-                {editingName ? (
-                  <input
-                    ref={nameInputRef}
-                    value={nameValue}
-                    onChange={e => setNameValue(e.target.value)}
-                    onBlur={commitName}
-                    onKeyDown={handleNameKey}
-                    className="w-full text-lg font-bold text-gray-900 bg-transparent border-b-2 border-indigo outline-none leading-tight pb-0.5"
-                  />
-                ) : (
-                  <button
-                    onClick={startNameEdit}
-                    className="group flex items-center gap-2 text-left w-full"
-                    title="Click to rename"
-                  >
-                    <h2 className="font-bold text-gray-900 text-lg leading-tight truncate">{ws.name}</h2>
-                    <svg className="w-3.5 h-3.5 text-gray-400 group-hover:text-indigo shrink-0 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                  </button>
-                )}
+                <h2 className="font-bold text-gray-900 text-lg leading-tight truncate">{ws.name}</h2>
                 <p className="text-xs text-gray-400 font-mono mt-0.5">{ws.slug}</p>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={() => { setShowDeleteModal(true); setDeleteConfirmName(""); }}
-                  title="Delete workspace"
-                  className="text-gray-300 hover:text-red-500 transition-colors p-1 rounded"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-                <button
-                  onClick={onClose}
-                  className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
-                >
-                  &times;
-                </button>
-              </div>
+              <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none shrink-0">&times;</button>
             </div>
 
             {/* Tabs */}
@@ -1356,6 +1272,9 @@ export default function WorkspaceDrawer({ workspaceId, mode = "chat", initialTab
               {tab === "chat" && (
                 <ChatSettingsTab ws={ws} setWs={setWs} setError={setError} onUpdated={onUpdated} />
               )}
+              {tab === "members" && (
+                <MembersTab ws={ws} setWs={setWs} allUsers={allUsers} setError={setError} />
+              )}
               {/* connectors mode — render EnterpriseConnectorsPanel directly as top-level tabs */}
               {tab === "databases" && (
                 <EnterpriseConnectorsPanel workspaceId={ws?.id} workspaceSlug={ws?.slug} onIngestionStarted={() => {}} onDocumentAdded={() => {}} section="databases" refreshTrigger={0} />
@@ -1369,48 +1288,6 @@ export default function WorkspaceDrawer({ workspaceId, mode = "chat", initialTab
               )}
             </div>
 
-            {/* Delete modal */}
-            {showDeleteModal && (
-              <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 p-6">
-                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-                  <div className="flex items-center justify-center w-11 h-11 rounded-full bg-red-100 mx-auto mb-4">
-                    <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </div>
-                  <h3 className="text-center font-bold text-gray-900 mb-1">Delete Workspace</h3>
-                  <p className="text-center text-xs text-gray-500 mb-4 leading-relaxed">
-                    This will permanently delete <strong>{ws.name}</strong> and all its documents, embeddings, and chat history. This cannot be undone.
-                  </p>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Type <span className="font-bold text-gray-800">{ws.name}</span> to confirm
-                  </label>
-                  <input
-                    className="input text-sm mb-4"
-                    value={deleteConfirmName}
-                    onChange={e => setDeleteConfirmName(e.target.value)}
-                    placeholder={ws.name}
-                    autoComplete="off"
-                  />
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setShowDeleteModal(false)}
-                      disabled={deleting}
-                      className="flex-1 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleDelete}
-                      disabled={deleteConfirmName !== ws.name || deleting}
-                      className="flex-1 py-2 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white text-sm font-semibold transition-colors"
-                    >
-                      {deleting ? "Deleting…" : "Delete"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
           </>
         )}
       </div>

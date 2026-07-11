@@ -3,6 +3,7 @@ import { exportMD, exportPDF, exportFilename } from "../utils/exportOutput";
 import api from "../utils/api";
 import ConfirmDialog from "./ConfirmDialog";
 import AgentStudio from "./AgentStudio";
+import { AgentSharingSection } from "./WorkspaceDrawer";
 import { load as yamlLoad } from "js-yaml";
 
 function Spinner() {
@@ -190,7 +191,7 @@ function ApprovalCard({ approval, onDecide }) {
   );
 }
 
-export default function AgentsChatPanel({ slug, isManager, onClose, onApprovalDecided }) {
+export default function AgentsChatPanel({ slug, isManager, onClose, onApprovalDecided, standalone = false }) {
   const [agents, setAgents]         = useState([]);
   const [connectors, setConnectors] = useState([]);
   const [loading, setLoading]       = useState(true);
@@ -221,6 +222,12 @@ export default function AgentsChatPanel({ slug, isManager, onClose, onApprovalDe
   const [paramsModal, setParamsModal] = useState(null); // { agent, values }
   const [maxRounds, setMaxRounds]         = useState(25);
   const [maxChainDepth, setMaxChainDepth] = useState(5);
+  const [memoryEnabled, setMemoryEnabled] = useState(false);
+  const [memoryRuns, setMemoryRuns]       = useState(5);
+  const [agentSharingEnabled, setAgentSharingEnabled] = useState(true);
+  const [ws, setWs]                       = useState(null);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [savedSettings, setSavedSettings]   = useState(false);
   const importRef                   = useRef(null);
 
   function fetchAgents() {
@@ -229,11 +236,17 @@ export default function AgentsChatPanel({ slug, isManager, onClose, onApprovalDe
       api.get(`/workspaces/${slug}/agents`),
       api.get(`/workspaces/${slug}/connectors`),
       api.get(`/workspaces/${slug}`),
-    ]).then(([ar, cr, wr]) => {
+      api.get("/features").catch(() => ({ data: { agentSharing: true } })),
+    ]).then(([ar, cr, wr, fr]) => {
       setAgents(ar.data.agents || []);
       setConnectors(cr.data.connectors || []);
-      setMaxRounds(wr.data.workspace?.defaultAgentMaxRounds || 25);
-      setMaxChainDepth(wr.data.workspace?.maxChainDepth || 5);
+      const w = wr.data.workspace;
+      setWs(w);
+      setMaxRounds(w?.defaultAgentMaxRounds || 25);
+      setMaxChainDepth(w?.maxChainDepth || 5);
+      setMemoryEnabled(w?.agentMemoryEnabled ?? false);
+      setMemoryRuns(w?.agentMemoryRuns ?? 5);
+      setAgentSharingEnabled(fr.data?.agentSharing !== false);
     }).catch(() => setError("Failed to load agents"))
       .finally(() => setLoading(false));
   }
@@ -473,6 +486,23 @@ export default function AgentsChatPanel({ slug, isManager, onClose, onApprovalDe
     if (warnings.length) setError(`Imported ${successCount}/${files.length} — ${warnings.join("; ")}.`);
   }
 
+  async function handleSaveSettings(e) {
+    e.preventDefault();
+    setSavingSettings(true);
+    try {
+      const { data } = await api.put(`/admin/workspaces/${ws.id}`, {
+        defaultAgentMaxRounds: Math.min(100, Math.max(1, parseInt(maxRounds) || 25)),
+        maxChainDepth:         Math.min(100, Math.max(1, parseInt(maxChainDepth) || 5)),
+        agentMemoryEnabled:    memoryEnabled,
+        agentMemoryRuns:       memoryRuns,
+      });
+      setWs(prev => ({ ...prev, ...data.workspace }));
+      setSavedSettings(true);
+      setTimeout(() => setSavedSettings(false), 2500);
+    } catch { setError("Failed to save settings"); }
+    finally { setSavingSettings(false); }
+  }
+
   function yamlToAgentJson(y) {
     return {
       name:               y.name,
@@ -503,10 +533,11 @@ export default function AgentsChatPanel({ slug, isManager, onClose, onApprovalDe
   const PRESET_CRON_VALUES = PRESET_CRONS.slice(0, -1).map(p => p.cron);
 
   return (
-    <div className={`${expanded ? "w-1/2" : "w-[320px]"} bg-[#f9f9f9] border-l border-gray-200 flex flex-col flex-shrink-0 overflow-hidden transition-all duration-200`}>
+    <div className={standalone ? "flex-1 flex flex-col overflow-hidden bg-[#f9f9f9]" : `${expanded ? "w-1/2" : "w-[320px]"} bg-[#f9f9f9] border-l border-gray-200 flex flex-col flex-shrink-0 overflow-hidden transition-all duration-200`}>
 
       {/* Header */}
-      <div className="px-4 pt-3 pb-3 border-b border-gray-200 shrink-0 bg-white">
+      <div className={`${standalone ? "px-6" : "px-4"} pt-3 pb-3 border-b border-gray-200 shrink-0 bg-white`}>
+        <div className={standalone ? "max-w-3xl mx-auto" : ""}>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <svg className="w-4 h-4 text-indigo" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -527,12 +558,17 @@ export default function AgentsChatPanel({ slug, isManager, onClose, onApprovalDe
               <button onClick={() => setActiveTab("logs")} className={`px-2.5 py-1 text-sm font-medium rounded transition-colors ${activeTab === "logs" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
                 Logs
               </button>
+              {standalone && (
+                <button onClick={() => setActiveTab("settings")} className={`px-2.5 py-1 text-sm font-medium rounded transition-colors ${activeTab === "settings" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
+                  Settings
+                </button>
+              )}
             </div>
           </div>
-          <button onClick={onClose} title="Collapse" className="text-gray-400 hover:text-gray-600 transition-colors text-lg leading-none">&times;</button>
+          {!standalone && <button onClick={onClose} title="Collapse" className="text-gray-400 hover:text-gray-600 transition-colors text-lg leading-none">&times;</button>}
         </div>
-        <div className="flex gap-2 py-2 border-t border-b border-gray-100 -mx-4 px-4">
-          <button onClick={openCreate} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-indigo text-white text-xs font-semibold hover:bg-indigo/90 transition-colors shadow-sm">
+        <div className={`flex gap-2 py-2 border-t border-gray-100 ${standalone ? "mt-1" : "border-b -mx-4 px-4"}`}>
+          <button onClick={openCreate} className={`${standalone ? "" : "flex-1"} flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-indigo text-white text-xs font-semibold hover:bg-indigo/90 transition-colors shadow-sm`}>
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
             New Agent
           </button>
@@ -540,7 +576,7 @@ export default function AgentsChatPanel({ slug, isManager, onClose, onApprovalDe
             onClick={() => importRef.current?.click()}
             disabled={importing}
             title="Import from YAML"
-            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-600 text-xs font-medium hover:border-indigo hover:text-indigo transition-colors disabled:opacity-50"
+            className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-600 text-xs font-medium hover:border-indigo hover:text-indigo transition-colors disabled:opacity-50"
           >
             {importing
               ? <Spinner />
@@ -551,14 +587,16 @@ export default function AgentsChatPanel({ slug, isManager, onClose, onApprovalDe
           <input ref={importRef} type="file" accept=".yaml,.yml" className="hidden" multiple
             onChange={e => handleImport(Array.from(e.target.files || []))} />
         </div>
+        </div>{/* end max-w wrapper */}
       </div>
 
       {/* Body */}
-      <div className="flex-1 overflow-y-auto">
+      <div className={`flex-1 overflow-y-auto${standalone ? " p-6" : ""}`}>
+        <div className={standalone ? "max-w-3xl mx-auto" : ""}>
 
         {/* ── Logs Tab ── */}
         {activeTab === "logs" && (
-          <div className="px-3 pt-3 pb-6 space-y-2">
+          <div className={`${standalone ? "" : "px-3 pt-3"} pb-6 space-y-2`}>
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">All Agent Runs</span>
               <div className="flex items-center gap-2">
@@ -582,7 +620,7 @@ export default function AgentsChatPanel({ slug, isManager, onClose, onApprovalDe
 
         {/* ── Approvals Tab ── */}
         {activeTab === "approvals" && (
-          <div className="px-3 pt-3 pb-6 space-y-3">
+          <div className={`${standalone ? "" : "px-3 pt-3"} pb-6 space-y-3`}>
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Chain Approvals</span>
               <button onClick={loadApprovals} className="text-xs text-indigo hover:text-indigo/80 font-medium">↻ Refresh</button>
@@ -609,11 +647,91 @@ export default function AgentsChatPanel({ slug, isManager, onClose, onApprovalDe
           </div>
         )}
 
+        {/* ── Settings Tab (standalone only) ── */}
+        {activeTab === "settings" && ws && (
+          <form onSubmit={handleSaveSettings} className={`${standalone ? "" : "px-6 py-5"} space-y-6 max-w-xl`}>
+            {/* Max Rounds */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Default Agent Max Rounds</label>
+              <p className="text-xs text-gray-400 mb-2">
+                Maximum number of tool calls an agent can make per run. Simple agents need 5–10; complex ones with many steps need 25–40.
+              </p>
+              <input
+                className="input"
+                type="number" min={1} max={100} step={1}
+                value={maxRounds}
+                onChange={e => { const v = parseInt(e.target.value); setMaxRounds(isNaN(v) ? "" : v); }}
+                onBlur={e => { const v = parseInt(e.target.value); setMaxRounds(Math.min(100, Math.max(1, isNaN(v) ? 25 : v))); }}
+              />
+              <p className="text-[10px] text-gray-400 mt-1">Range: 1–100. Default: 25.</p>
+            </div>
+
+            {/* Max Chain Depth */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Max Agent Chain Depth</label>
+              <p className="text-xs text-gray-400 mb-2">
+                How many agents can be linked in a single chain. e.g. Monitor → Remediation → Notification = 3.
+              </p>
+              <input
+                className="input"
+                type="number" min={1} max={100} step={1}
+                value={maxChainDepth}
+                onChange={e => { const v = parseInt(e.target.value); setMaxChainDepth(isNaN(v) ? "" : v); }}
+                onBlur={e => { const v = parseInt(e.target.value); setMaxChainDepth(Math.min(100, Math.max(1, isNaN(v) ? 5 : v))); }}
+              />
+              <p className="text-[10px] text-gray-400 mt-1">Range: 1–100. Default: 5.</p>
+            </div>
+
+            {/* Agent Memory */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-sm font-medium text-slate-700">Agent Memory</label>
+                <button
+                  type="button"
+                  onClick={() => setMemoryEnabled(v => !v)}
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${memoryEnabled ? "bg-indigo" : "bg-gray-200"}`}
+                >
+                  <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${memoryEnabled ? "translate-x-4.5" : "translate-x-0.5"}`} />
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mb-2">
+                When enabled, each agent receives context from its last N runs before executing.
+              </p>
+              {memoryEnabled && (
+                <div className="mt-2">
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Runs to remember</label>
+                  <input
+                    className="input"
+                    type="number" min={1} max={20} step={1}
+                    value={memoryRuns}
+                    onChange={e => setMemoryRuns(parseInt(e.target.value) || 5)}
+                  />
+                  <p className="text-[10px] text-gray-400 mt-1">Default: 5. Max: 20.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-1 border-t border-gray-100">
+              {savedSettings && <span className="text-green-600 text-sm font-medium">Saved!</span>}
+              <button type="submit" className="btn-primary px-5 py-2" disabled={savingSettings}>
+                {savingSettings ? "Saving…" : "Save Changes"}
+              </button>
+            </div>
+
+            {/* Agent Sharing */}
+            {agentSharingEnabled && (
+              <div className="pt-2 border-t border-gray-100">
+                <AgentSharingSection ws={ws} />
+              </div>
+            )}
+          </form>
+        )}
+
         {/* ── Agents Tab ── */}
         {loading ? (
           <div className="flex items-center justify-center py-12"><Spinner /></div>
         ) : activeTab === "agents" && (
-          <div className="px-3 pt-3 pb-6 space-y-2.5">
+          <div className={`${standalone ? "" : "px-3 pt-3"} pb-6 space-y-2.5`}>
 
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg px-3 py-2 flex items-center justify-between">
@@ -800,6 +918,7 @@ export default function AgentsChatPanel({ slug, isManager, onClose, onApprovalDe
             })()}
           </div>
         )}
+        </div>{/* end max-w wrapper */}
       </div>
 
       {confirmDel && (

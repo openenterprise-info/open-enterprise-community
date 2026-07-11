@@ -18,7 +18,9 @@ function AuthRequired({ children }) {
 import AppLayout      from "./components/layout/AppLayout";
 import Login          from "./pages/Auth/Login";
 import EmbedChat      from "./pages/Embed/EmbedChat";
-import WorkspaceChat  from "./pages/Workspace/WorkspaceChat";
+import WorkspaceChat       from "./pages/Workspace/WorkspaceChat";
+import WorkspaceConnectorsPage from "./pages/Workspace/WorkspaceConnectorsPage";
+import WorkspaceAgentsPage     from "./pages/Workspace/WorkspaceAgentsPage";
 
 import DashboardPage   from "./pages/Dashboard/DashboardPage";
 import WorkspacesPage  from "./pages/Workspaces/WorkspacesPage";
@@ -42,6 +44,8 @@ function AppRoutes() {
 
       {/* Full-screen routes — auth required, no sidebar shell */}
       <Route path="/workspace/:slug" element={<AuthRequired><WorkspaceChat /></AuthRequired>} />
+      <Route path="/workspace/:slug/connectors" element={<AuthRequired><WorkspaceConnectorsPage /></AuthRequired>} />
+      <Route path="/workspace/:slug/agents"     element={<AuthRequired><WorkspaceAgentsPage /></AuthRequired>} />
 
       {/* Authenticated shell — AppLayout handles auth guard + sidebar */}
       <Route element={<AppLayout />}>

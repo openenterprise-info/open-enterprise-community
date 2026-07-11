@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../utils/api";
-import WorkspaceDrawer from "../../components/WorkspaceDrawer";
 import { Spinner, EmptyState, ErrorBanner } from "../../components/ui";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 export default function WorkspacesPage() {
   const { user } = useAuth();
@@ -16,8 +16,18 @@ export default function WorkspacesPage() {
   const [showCreate, setShowCreate]   = useState(false);
   const [newName, setNewName]         = useState("");
   const [creating, setCreating]       = useState(false);
-  const [connectorsWsId, setConnectorsWsId] = useState(null);
-  const [agentsWsId, setAgentsWsId]         = useState(null);
+
+  // inline rename
+  const [editingId, setEditingId]   = useState(null);
+  const [editName, setEditName]     = useState("");
+  const [renaming, setRenaming]     = useState(false);
+  const editInputRef                = useRef();
+
+  // delete
+  const [confirmDelete, setConfirmDelete] = useState(null); // workspace object
+  const [deleting, setDeleting]           = useState(false);
+
+  const canManage = user?.role === "admin" || user?.role === "manager";
 
   const filteredWorkspaces = search.trim()
     ? workspaces.filter(ws => {
@@ -48,8 +58,35 @@ export default function WorkspacesPage() {
     finally { setCreating(false); }
   }
 
-  function handleDeleted(id) { setWorkspaces(w => w.filter(ws => ws.id !== id)); }
-  function handleUpdated(updated) { setWorkspaces(w => w.map(ws => ws.id === updated.id ? { ...ws, ...updated } : ws)); }
+  function startEdit(ws) {
+    setEditingId(ws.id);
+    setEditName(ws.name);
+    setTimeout(() => { editInputRef.current?.focus(); editInputRef.current?.select(); }, 10);
+  }
+
+  async function commitRename() {
+    if (!editName.trim() || renaming) return;
+    const ws = workspaces.find(w => w.id === editingId);
+    if (!ws || editName.trim() === ws.name) { setEditingId(null); return; }
+    setRenaming(true);
+    try {
+      const { data } = await api.put(`/admin/workspaces/${editingId}`, { name: editName.trim() });
+      setWorkspaces(w => w.map(x => x.id === editingId ? { ...x, ...data.workspace } : x));
+      setEditingId(null);
+    } catch (err) { setError(err.response?.data?.error || "Failed to rename"); }
+    finally { setRenaming(false); }
+  }
+
+  async function handleDelete() {
+    if (!confirmDelete) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/admin/workspaces/${confirmDelete.id}`);
+      setWorkspaces(w => w.filter(x => x.id !== confirmDelete.id));
+      setConfirmDelete(null);
+    } catch (err) { setError(err.response?.data?.error || "Failed to delete workspace"); }
+    finally { setDeleting(false); }
+  }
 
   return (
     <div>
@@ -64,7 +101,7 @@ export default function WorkspacesPage() {
             <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 111 11a6 6 0 0116 0z" /></svg>
             <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search workspaces…" className="input pl-8 py-1.5 text-sm w-full" />
           </div>
-          {user?.role !== "user" && (showCreate ? (
+          {canManage && (showCreate ? (
             <form onSubmit={createWorkspace} className="flex items-center gap-2">
               <input className="input py-1.5 text-sm w-52" value={newName} onChange={e => setNewName(e.target.value)} placeholder="Workspace name…" autoFocus />
               <button type="submit" className="btn-primary px-3 py-1.5 text-sm" disabled={creating}>{creating ? "…" : "Create"}</button>
@@ -78,11 +115,11 @@ export default function WorkspacesPage() {
         {loading ? (
           <div className="flex justify-center py-12"><Spinner /></div>
         ) : workspaces.length === 0 ? (
-          <EmptyState message="No workspaces yet." action={user?.role !== "user" ? () => setShowCreate(true) : undefined} actionLabel="Create your first workspace →" />
+          <EmptyState message="No workspaces yet." action={canManage ? () => setShowCreate(true) : undefined} actionLabel="Create your first workspace →" />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 p-4">
             {filteredWorkspaces.map((ws) => (
-              <div key={ws.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-md hover:border-indigo/30 transition-all duration-200 flex flex-col">
+              <div key={ws.id} className="group/card bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-md hover:border-indigo/30 transition-all duration-200 flex flex-col">
 
                 {/* Header */}
                 <div className="px-4 py-3.5 border-b border-gray-100 flex items-center gap-3">
@@ -90,9 +127,43 @@ export default function WorkspacesPage() {
                     {ws.name[0].toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-gray-800 leading-tight truncate">{ws.name}</p>
+                    {editingId === ws.id ? (
+                      <input
+                        ref={editInputRef}
+                        value={editName}
+                        onChange={e => setEditName(e.target.value)}
+                        onBlur={commitRename}
+                        onKeyDown={e => { if (e.key === "Enter") commitRename(); if (e.key === "Escape") setEditingId(null); }}
+                        className="w-full text-sm font-bold text-gray-800 border border-indigo rounded px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-indigo/30"
+                        disabled={renaming}
+                      />
+                    ) : (
+                      <p className="text-sm font-bold text-gray-800 leading-tight truncate">{ws.name}</p>
+                    )}
                     <p className="text-[10px] text-gray-400 font-mono truncate mt-0.5">{ws.slug}</p>
                   </div>
+                  {canManage && editingId !== ws.id && (
+                    <div className="flex items-center gap-0.5 opacity-0 group-hover/card:opacity-100 transition-opacity shrink-0">
+                      <button
+                        onClick={() => startEdit(ws)}
+                        title="Rename"
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-indigo hover:bg-indigo/8 transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => setConfirmDelete(ws)}
+                        title="Delete"
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Stats */}
@@ -120,7 +191,7 @@ export default function WorkspacesPage() {
                     <span className="text-[10px] font-semibold">Chat</span>
                   </button>
                   <button
-                    onClick={() => setConnectorsWsId(ws.id)}
+                    onClick={() => navigate(`/workspace/${ws.slug}/connectors`)}
                     className="flex flex-col items-center gap-1 py-3 text-gray-500 hover:bg-indigo/5 hover:text-indigo transition-colors"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -129,7 +200,7 @@ export default function WorkspacesPage() {
                     <span className="text-[10px] font-semibold">Connectors</span>
                   </button>
                   <button
-                    onClick={() => setAgentsWsId(ws.id)}
+                    onClick={() => navigate(`/workspace/${ws.slug}/agents`)}
                     className="flex flex-col items-center gap-1 py-3 text-gray-500 hover:bg-indigo/5 hover:text-indigo transition-colors"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -145,11 +216,17 @@ export default function WorkspacesPage() {
         )}
       </div>
 
-      {connectorsWsId && (
-        <WorkspaceDrawer workspaceId={connectorsWsId} mode="connectors" isAdmin={user?.role === "admin"} onClose={() => setConnectorsWsId(null)} onDeleted={handleDeleted} onUpdated={handleUpdated} />
-      )}
-      {agentsWsId && (
-        <WorkspaceDrawer workspaceId={agentsWsId} mode="agents" isAdmin={user?.role === "admin"} onClose={() => setAgentsWsId(null)} onDeleted={handleDeleted} onUpdated={handleUpdated} />
+      {confirmDelete && (
+        <ConfirmDialog
+          title="Delete Workspace"
+          message="This will permanently remove all chats, documents, and agent history."
+          confirmLabel="Delete"
+          confirmText={confirmDelete.name}
+          variant="danger"
+          loading={deleting}
+          onConfirm={handleDelete}
+          onCancel={() => !deleting && setConfirmDelete(null)}
+        />
       )}
     </div>
   );
