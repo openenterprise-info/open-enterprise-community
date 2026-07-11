@@ -102,13 +102,17 @@ router.post("/", authenticate, requireManagerOrAdmin, async (req, res) => {
 
 // Update workspace (manager or admin)
 router.put("/:slug", authenticate, requireManagerOrAdmin, async (req, res) => {
-  const { name, systemPrompt, embedEnabled } = req.body;
+  const { name, systemPrompt, embedEnabled, defaultAgentMaxRounds, maxChainDepth, agentMemoryEnabled, agentMemoryRuns } = req.body;
   const workspace = await req.db.workspace.update({
     where: { slug: req.params.slug },
     data: {
       ...(name && { name }),
       ...(systemPrompt !== undefined && { systemPrompt: systemPrompt || null }),
       ...(embedEnabled !== undefined && { embedEnabled: Boolean(embedEnabled) }),
+      ...(defaultAgentMaxRounds !== undefined && { defaultAgentMaxRounds: Math.max(1, Math.min(100, parseInt(defaultAgentMaxRounds) || 25)) }),
+      ...(maxChainDepth !== undefined && { maxChainDepth: Math.max(1, Math.min(100, parseInt(maxChainDepth) || 5)) }),
+      ...(agentMemoryEnabled !== undefined && { agentMemoryEnabled: Boolean(agentMemoryEnabled) }),
+      ...(agentMemoryRuns !== undefined && { agentMemoryRuns: Math.max(1, Math.min(20, parseInt(agentMemoryRuns) || 5)) }),
     }
   });
   res.json({ workspace });
