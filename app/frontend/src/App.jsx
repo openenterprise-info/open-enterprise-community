@@ -21,6 +21,9 @@ import EmbedChat      from "./pages/Embed/EmbedChat";
 import WorkspaceChat       from "./pages/Workspace/WorkspaceChat";
 import WorkspaceConnectorsPage from "./pages/Workspace/WorkspaceConnectorsPage";
 import WorkspaceAgentsPage     from "./pages/Workspace/WorkspaceAgentsPage";
+import WorkspaceApprovalsPage  from "./pages/Workspace/WorkspaceApprovalsPage";
+import WorkspaceRunLogsPage    from "./pages/Workspace/WorkspaceRunLogsPage";
+import WorkspaceSettingsPage   from "./pages/Workspace/WorkspaceSettingsPage";
 
 import DashboardPage   from "./pages/Dashboard/DashboardPage";
 import WorkspacesPage  from "./pages/Workspaces/WorkspacesPage";
@@ -45,6 +48,9 @@ function AppRoutes() {
       <Route path="/workspace/:slug" element={<AuthRequired><WorkspaceChat /></AuthRequired>} />
       <Route path="/workspace/:slug/connectors" element={<AuthRequired><WorkspaceConnectorsPage /></AuthRequired>} />
       <Route path="/workspace/:slug/agents"     element={<AuthRequired><WorkspaceAgentsPage /></AuthRequired>} />
+      <Route path="/workspace/:slug/approvals" element={<AuthRequired><WorkspaceApprovalsPage /></AuthRequired>} />
+      <Route path="/workspace/:slug/run-logs"  element={<AuthRequired><WorkspaceRunLogsPage /></AuthRequired>} />
+      <Route path="/workspace/:slug/settings"  element={<AuthRequired><WorkspaceSettingsPage /></AuthRequired>} />
 
       {/* Authenticated shell — AppLayout handles auth guard + sidebar */}
       <Route element={<AppLayout />}>
