@@ -35,49 +35,42 @@ function TriggerBadge({ type, cron }) {
 }
 
 function AgentCard({ agent, running, onOpen, onRun, onYaml, onDownload, onDelete }) {
-  const runs = agent._count?.runs ?? 0;
-  const fmt  = dt => dt ? new Date(dt).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "—";
+  const lastRun = agent.runs?.[0];
 
   return (
     <div onClick={onOpen} className="bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col hover:shadow-sm hover:border-indigo/30 transition-all duration-150 cursor-pointer">
-      {/* Header */}
+      {/* Body */}
       <div className="px-4 pt-4 pb-3 flex-1">
-        <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="flex items-start justify-between gap-2 mb-1.5">
           <p className="text-sm font-bold text-gray-900 leading-snug">{agent.name}</p>
-          <TriggerBadge type={agent.triggerType} cron={agent.cronExpression} />
+          <div className={`w-2 h-2 rounded-full shrink-0 mt-1 ${lastRun?.status === "success" ? "bg-green-400" : lastRun?.status === "error" ? "bg-red-400" : "bg-gray-300"}`} />
         </div>
-        {agent.description ? (
-          <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">{agent.description}</p>
-        ) : (
-          <p className="text-xs text-gray-300 italic">No description</p>
-        )}
+        {agent.slug && <p className="text-xs font-mono text-indigo mb-1.5">@{agent.slug}</p>}
+        {agent.description
+          ? <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">{agent.description}</p>
+          : <p className="text-xs text-gray-300 italic">No description</p>
+        }
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-2.5 border-t border-gray-100 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-xs text-gray-400 min-w-0">
-          <span className="font-semibold text-gray-600">{runs} runs</span>
-          <span className="text-gray-200">·</span>
-          <span className="truncate">{fmt(agent.createdAt)}</span>
-        </div>
-        <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+      <div className="px-3 py-2 border-t border-gray-100 flex items-center justify-between gap-1">
+        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${agent.triggerType === "scheduled" ? "bg-amber-50 text-amber-600" : "bg-indigo/8 text-indigo"}`}>
+          {agent.triggerType === "scheduled" ? "Scheduled" : "Manual"}
+        </span>
+        <div className="flex items-center gap-0.5" onClick={e => e.stopPropagation()}>
           <button onClick={() => onRun(agent)} disabled={running === agent.id} title="Run"
             className="p-1.5 rounded-lg text-gray-400 hover:text-green-600 hover:bg-green-50 disabled:opacity-40 transition-colors">
             {running === agent.id
-              ? <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
-              : <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>}
+              ? <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+              : <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>}
           </button>
-          <button onClick={() => onYaml(agent)} title="View YAML"
-            className="p-1.5 rounded-lg text-gray-400 hover:text-indigo hover:bg-indigo/5 transition-colors">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
-          </button>
-          <button onClick={() => onDownload(agent)} title="Download YAML"
+          <button onClick={() => onDownload(agent)} title="Export YAML"
             className="p-1.5 rounded-lg text-gray-400 hover:text-teal-600 hover:bg-teal-50 transition-colors">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
           </button>
           <button onClick={() => onDelete(agent)} title="Delete"
             className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
           </button>
         </div>
       </div>

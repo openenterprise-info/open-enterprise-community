@@ -666,8 +666,8 @@ export default function AgentsChatPanel({ slug, isManager, onClose, onApprovalDe
       )}
 
       {/* Body */}
-      <div className={`flex-1 overflow-y-auto${standalone ? " p-6" : ""}`}>
-        <div className={standalone ? "max-w-7xl mx-auto" : ""}>
+      <div className={`flex-1 overflow-y-auto${standalone ? " px-8 py-6" : ""}`}>
+        <div>
 
         {/* ── Logs Tab ── */}
         {activeTab === "logs" && (
@@ -818,7 +818,7 @@ export default function AgentsChatPanel({ slug, isManager, onClose, onApprovalDe
 
             {/* Active Connectors */}
             {connectors.length > 0 && (
-              <details className="w-1/2 border border-gray-200 rounded-xl bg-white overflow-hidden group/conn">
+              <details className={`${standalone ? "w-1/2" : ""} border border-gray-200 rounded-xl bg-white overflow-hidden group/conn`}>
                 <summary className="px-3 py-2 bg-gray-50/60 flex items-center gap-1.5 cursor-pointer list-none select-none">
                   <svg className="w-3 h-3 text-gray-400 transition-transform group-open/conn:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -850,7 +850,7 @@ export default function AgentsChatPanel({ slug, isManager, onClose, onApprovalDe
               </div>
             )}
 
-            {/* Agent list — grouped as cards */}
+            {/* Agent list — grouped */}
             {(() => {
               const grouped = {};
               agents.forEach(a => {
@@ -865,93 +865,190 @@ export default function AgentsChatPanel({ slug, isManager, onClose, onApprovalDe
               });
               return groupKeys.map(groupKey => {
                 const groupAgents = grouped[groupKey];
-                const label = groupKey === "__ungrouped__" ? null : groupKey;
                 const isGroupOpen = expandedGroups[groupKey] !== false;
+
+                if (standalone) {
+                  // ── Card grid (standalone full-page view) ──────────────────
+                  const label = groupKey === "__ungrouped__" ? null : groupKey;
+                  return (
+                    <div key={groupKey} className="space-y-2">
+                      {label && (
+                        <button onClick={() => setExpandedGroups(g => ({ ...g, [groupKey]: !isGroupOpen }))}
+                          className="flex items-center gap-1.5 w-full text-left">
+                          <svg className={`w-3 h-3 text-gray-400 shrink-0 transition-transform ${isGroupOpen ? "rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                          <span className="text-xs font-semibold text-gray-500 uppercase tracking-widest">{label}</span>
+                          <span className="text-xs bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded-full font-medium">{groupAgents.length}</span>
+                        </button>
+                      )}
+                      {isGroupOpen && (
+                        <div className="grid grid-cols-4 gap-3 w-full">
+                          {groupAgents.map(agent => {
+                            const lastRun = agent.runs?.[0];
+                            return (
+                              <div key={agent.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col hover:shadow-sm hover:border-indigo/30 transition-all duration-150">
+                                <div className="px-4 pt-4 pb-3 flex-1 cursor-pointer" onClick={() => agent._owned && openEdit(agent)}>
+                                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                                    <p className="text-sm font-bold text-gray-900 leading-snug">{agent.name}</p>
+                                    <div className={`w-2 h-2 rounded-full shrink-0 mt-1 ${lastRun?.status === "success" ? "bg-green-400" : lastRun?.status === "error" ? "bg-red-400" : "bg-gray-300"}`} />
+                                  </div>
+                                  {agent.slug && <p className="text-xs font-mono text-indigo mb-1.5">@{agent.slug}</p>}
+                                  {agent.description
+                                    ? <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">{agent.description}</p>
+                                    : <p className="text-xs text-gray-300 italic">No description</p>}
+                                  {!agent._owned && <span className="inline-block mt-1.5 text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">shared</span>}
+                                </div>
+                                <div className="px-3 py-2 border-t border-gray-100 flex items-center justify-between gap-1">
+                                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${agent.triggerType === "scheduled" ? "bg-amber-50 text-amber-600" : "bg-indigo/8 text-indigo"}`}>
+                                    {agent.triggerType === "scheduled" ? "Scheduled" : "Manual"}
+                                  </span>
+                                  {agent._owned ? (
+                                    <div className="flex items-center gap-0.5" onClick={e => e.stopPropagation()}>
+                                      <button onClick={() => handleRun(agent)} disabled={running === agent.id} title="Run"
+                                        className="p-1.5 rounded-lg text-gray-400 hover:text-green-600 hover:bg-green-50 disabled:opacity-40 transition-colors">
+                                        {running === agent.id
+                                          ? <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                                          : <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>}
+                                      </button>
+                                      <button onClick={() => handleExport(agent)} title="Export"
+                                        className="p-1.5 rounded-lg text-gray-400 hover:text-teal-600 hover:bg-teal-50 transition-colors">
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                      </button>
+                                      <button onClick={() => setConfirmDel(agent)} title="Delete"
+                                        className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <span className="text-[10px] text-gray-400">@{agent.slug}</span>
+                                  )}
+                                </div>
+                                {(running === agent.id || runOutput[agent.id] !== undefined) && (
+                                  <div className="bg-gray-900 p-2.5 text-[11px] font-mono text-gray-200 whitespace-pre-wrap max-h-40 overflow-y-auto relative border-t border-gray-800">
+                                    {running === agent.id && !runOutput[agent.id] ? <span className="text-gray-400">Running…</span> : runOutput[agent.id] || <span className="text-gray-400">No output</span>}
+                                    <button onClick={() => setRunOutput(o => { const n = { ...o }; delete n[agent.id]; return n; })} className="absolute top-1.5 right-1.5 text-gray-500 hover:text-gray-300 text-xs leading-none">×</button>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                // ── Original row list (chat sidebar) ──────────────────────────
+                const label = groupKey === "__ungrouped__" ? "Ungrouped" : groupKey;
                 return (
-                <div key={groupKey} className="space-y-2">
-                  {label && (
-                    <button
-                      onClick={() => setExpandedGroups(g => ({ ...g, [groupKey]: !isGroupOpen }))}
-                      className="flex items-center gap-1.5 w-full text-left"
-                    >
+                  <div key={groupKey} className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+                    <button onClick={() => setExpandedGroups(g => ({ ...g, [groupKey]: !isGroupOpen }))}
+                      className="w-full px-3 py-2 bg-gray-50/60 flex items-center gap-1.5 hover:bg-gray-100/60 transition-colors">
                       <svg className={`w-3 h-3 text-gray-400 shrink-0 transition-transform ${isGroupOpen ? "rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
-                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-widest">{label}</span>
-                      <span className="text-xs bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded-full font-medium">{groupAgents.length}</span>
+                      <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide flex-1 text-left">{label}</span>
+                      <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full font-medium">{groupAgents.length}</span>
                     </button>
-                  )}
-                  {isGroupOpen && (
-                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                    {groupAgents.map(agent => {
-                      const lastRun = agent.runs?.[0];
-                      return (
-                        <div key={agent.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col hover:shadow-sm hover:border-indigo/30 transition-all duration-150">
-                          {/* Card body */}
-                          <div className="px-4 pt-4 pb-3 flex-1 cursor-pointer" onClick={() => agent._owned && openEdit(agent)}>
-                            <div className="flex items-start justify-between gap-2 mb-1.5">
-                              <p className="text-sm font-bold text-gray-900 leading-snug">{agent.name}</p>
-                              <div className={`w-2 h-2 rounded-full shrink-0 mt-1 ${lastRun?.status === "success" ? "bg-green-400" : lastRun?.status === "error" ? "bg-red-400" : "bg-gray-300"}`} />
-                            </div>
-                            {agent.slug && <p className="text-xs font-mono text-indigo mb-1.5">@{agent.slug}</p>}
-                            {agent.description
-                              ? <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">{agent.description}</p>
-                              : <p className="text-xs text-gray-300 italic">No description</p>
-                            }
-                            {!agent._owned && (
-                              <span className="inline-block mt-1.5 text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">shared</span>
-                            )}
-                          </div>
-
-                          {/* Card footer */}
-                          <div className="px-3 py-2 border-t border-gray-100 flex items-center justify-between gap-1">
-                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${agent.triggerType === "scheduled" ? "bg-amber-50 text-amber-600" : "bg-indigo/8 text-indigo"}`}>
-                              {agent.triggerType === "scheduled" ? "Scheduled" : "Manual"}
-                            </span>
-                            {agent._owned ? (
-                              <div className="flex items-center gap-0.5" onClick={e => e.stopPropagation()}>
-                                <button onClick={() => openEdit(agent)} title="Edit"
-                                  className="p-1.5 rounded-lg text-gray-400 hover:text-indigo hover:bg-indigo/5 transition-colors">
-                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                </button>
-                                <button onClick={() => handleRun(agent)} disabled={running === agent.id} title="Run"
-                                  className="p-1.5 rounded-lg text-gray-400 hover:text-green-600 hover:bg-green-50 disabled:opacity-40 transition-colors">
-                                  {running === agent.id
-                                    ? <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
-                                    : <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>}
-                                </button>
-                                <button onClick={() => handleExport(agent)} title="Export"
-                                  className="p-1.5 rounded-lg text-gray-400 hover:text-teal-600 hover:bg-teal-50 transition-colors">
-                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                                </button>
-                                <button onClick={() => setConfirmDel(agent)} title="Delete"
-                                  className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
-                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                </button>
+                    {isGroupOpen && (
+                      <div className="divide-y divide-gray-100">
+                        {groupAgents.map(agent => {
+                          const lastRun = agent.runs?.[0];
+                          const isOpen  = expandedAgent === agent.id;
+                          return (
+                            <React.Fragment key={agent.id}>
+                              <div onClick={() => setExpandedAgent(isOpen ? null : agent.id)}
+                                className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
+                                <div className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1 ${lastRun?.status === "success" ? "bg-green-400" : lastRun?.status === "error" ? "bg-red-400" : "bg-gray-300"}`} />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-sm font-medium text-gray-800 truncate">{agent.name}</span>
+                                    {!agent._owned && <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md shrink-0">shared</span>}
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    {agent.slug && <span className="text-xs font-mono text-indigo">@{agent.slug}</span>}
+                                    {!agent._owned && <span className="text-[11px] text-gray-400">by {agent.createdBy?.name || "another workspace"}</span>}
+                                  </div>
+                                </div>
+                                <svg className={`w-3 h-3 text-gray-400 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
                               </div>
-                            ) : (
-                              <span className="text-[10px] text-gray-400">@{agent.slug}</span>
-                            )}
-                          </div>
-
-                          {/* Run output (shown below card if active) */}
-                          {(running === agent.id || runOutput[agent.id] !== undefined) && (
-                            <div className="bg-gray-900 p-2.5 text-[11px] font-mono text-gray-200 whitespace-pre-wrap max-h-40 overflow-y-auto relative border-t border-gray-800">
-                              {running === agent.id && !runOutput[agent.id]
-                                ? <span className="text-gray-400">Running…</span>
-                                : runOutput[agent.id] || <span className="text-gray-400">No output</span>}
-                              <button
-                                onClick={() => setRunOutput(o => { const n = { ...o }; delete n[agent.id]; return n; })}
-                                className="absolute top-1.5 right-1.5 text-gray-500 hover:text-gray-300 text-xs leading-none">×</button>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                    </div>
-                  )}
-                </div>
-              );
+                              {isOpen && (
+                                <div className="px-3 pb-3 border-t border-gray-100 bg-gray-50/60 space-y-2">
+                                  {agent._owned && (
+                                    <div className="grid grid-cols-4 gap-1.5 pt-2">
+                                      <button onClick={() => openEdit(agent)}
+                                        className="flex flex-col items-center gap-1 py-2 rounded-lg border border-gray-200 bg-white hover:border-indigo hover:text-indigo text-gray-600 transition-colors text-xs font-medium">
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                        Edit
+                                      </button>
+                                      <button onClick={() => handleExport(agent)}
+                                        className="flex flex-col items-center gap-1 py-2 rounded-lg border border-gray-200 bg-white hover:border-indigo hover:text-indigo text-gray-600 transition-colors text-xs font-medium">
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                        Export
+                                      </button>
+                                      <button onClick={() => handleRun(agent)} disabled={running === agent.id}
+                                        className="flex flex-col items-center gap-1 py-2 rounded-lg border border-gray-200 bg-white hover:border-green-500 hover:text-green-600 text-gray-600 transition-colors text-[10px] font-medium disabled:opacity-40">
+                                        {running === agent.id ? <Spinner /> : <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>}
+                                        Run
+                                      </button>
+                                      <button onClick={() => setConfirmDel(agent)}
+                                        className="flex flex-col items-center gap-1 py-2 rounded-lg border border-gray-200 bg-white hover:border-red-400 hover:text-red-500 text-gray-600 transition-colors text-xs font-medium">
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        Delete
+                                      </button>
+                                    </div>
+                                  )}
+                                  {!agent._owned && (
+                                    <p className="text-xs text-gray-400 pt-2 text-center">Shared agent — trigger via <span className="font-mono">@{agent.slug}</span> in chat</p>
+                                  )}
+                                  {(running === agent.id || runOutput[agent.id] !== undefined) && (
+                                    <div className="bg-gray-900 rounded-lg p-2.5 text-[11px] font-mono text-gray-200 whitespace-pre-wrap max-h-40 overflow-y-auto relative">
+                                      {running === agent.id && !runOutput[agent.id] ? <span className="text-gray-400">Running…</span> : runOutput[agent.id] || <span className="text-gray-400">No output</span>}
+                                      <button onClick={() => setRunOutput(o => { const n = { ...o }; delete n[agent.id]; return n; })} className="absolute top-1.5 right-1.5 text-gray-500 hover:text-gray-300 text-xs leading-none">×</button>
+                                    </div>
+                                  )}
+                                  {showHistory === agent.id && (
+                                    <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+                                      <div className="px-3 py-1.5 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                                        <span className="text-xs font-semibold text-gray-500">Run Logs</span>
+                                        <button onClick={() => setShowHistory(null)} className="text-xs text-gray-400 hover:text-gray-600">✕ Close</button>
+                                      </div>
+                                      {!(runHistory[agent.id]?.length) ? (
+                                        <p className="text-xs text-gray-400 px-3 py-2">No runs yet.</p>
+                                      ) : (
+                                        <div className="divide-y divide-gray-50 max-h-48 overflow-y-auto">
+                                          {(runHistory[agent.id] || []).map(run => (
+                                            <div key={run.id} className="px-3 py-2">
+                                              <div className="flex items-center gap-2 mb-0.5">
+                                                <span className={`text-xs font-semibold ${run.status === "success" ? "text-green-600" : run.status === "error" ? "text-red-500" : "text-gray-400"}`}>{run.status}</span>
+                                                <span className="text-xs text-gray-400">{new Date(run.startedAt).toLocaleString()}</span>
+                                              </div>
+                                              {run.output && <p className="text-xs text-gray-600 whitespace-pre-wrap max-h-40 overflow-y-auto">{run.output}</p>}
+                                              {run.error  && <p className="text-xs text-red-500">{run.error}</p>}
+                                              {run.output && (
+                                                <div className="flex gap-2 mt-1">
+                                                  <button onClick={() => exportMD(run.output, exportFilename(agent.name, run.startedAt))} className="text-xs text-indigo hover:underline">.md</button>
+                                                  <button onClick={() => exportPDF(run.output, exportFilename(agent.name, run.startedAt))} className="text-xs text-indigo hover:underline">.pdf</button>
+                                                </div>
+                                              )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
               });
             })()}
           </div>

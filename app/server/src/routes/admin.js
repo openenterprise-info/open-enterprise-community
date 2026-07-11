@@ -411,6 +411,7 @@ router.get("/agents", requireManagerOrAdminOrUser, async (req, res) => {
         workspace: { select: { id: true, name: true, slug: true } },
         createdBy: { select: { id: true, name: true, email: true } },
         _count: { select: { runs: true } },
+        runs: { orderBy: { startedAt: "desc" }, take: 1, select: { status: true } },
       },
     });
     res.json({ agents });

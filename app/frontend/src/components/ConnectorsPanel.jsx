@@ -564,7 +564,7 @@ const OAUTH_TYPES = new Set(["gmail", "gdrive", "onedrive", "dropbox", "box"]);
 const CLOUD_STORAGE_TYPES = new Set(["gdrive", "onedrive", "dropbox", "box"]);
 const INTEGRATION_CONNECTOR_TYPES = new Set(["gmail", "gdrive", "onedrive", "dropbox", "box", "slack", "github", "jira", "confluence", "notion", "hubspot", "freshdesk", "zendesk", "rest-api", "zoho-mail", "ssh"]);
 
-export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngestionStarted, onInsertMention, section }) {
+export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngestionStarted, onInsertMention, section, focusType, focusEditConnector }) {
   const [subTab, setSubTab]                 = useState("integrations");
   const [connectors, setConnectors]         = useState([]);
   const [totalConnectors, setTotalConnectors] = useState(0);
@@ -696,6 +696,41 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
     }, 400);
     return () => clearTimeout(oauthSetupSlugDebounce.current);
   }, [_oauthSlug]);
+
+  const isFocused = !!focusType || !!focusEditConnector;
+
+  useEffect(() => {
+    if (!focusType) return;
+    if (INTEGRATION_CONNECTOR_TYPES.has(focusType)) {
+      const intg = INTEGRATION_TYPES.find(t => t.id === focusType);
+      const isGoogle = focusType === "gmail" || focusType === "gdrive";
+      const isCloudOAuth = !!intg?.oauthSetup;
+      if (isGoogle) {
+        setShowGmailSetup(true);
+        setGmailCreds({ clientId: "", clientSecret: "", _for: focusType });
+      } else if (isCloudOAuth) {
+        setOauthSetupId(focusType);
+        setOauthSetupCreds({});
+      } else if (API_KEY_FIELDS[focusType]) {
+        setApiKeySetup(focusType);
+        setApiKeyFields({});
+        setApiKeyError("");
+      }
+    } else {
+      setForm(f => ({ ...f, type: focusType, config: {}, auth: {} }));
+      setShowForm(true);
+    }
+  }, [focusType]);
+
+  useEffect(() => {
+    if (!focusEditConnector) return;
+    if (INTEGRATION_CONNECTOR_TYPES.has(focusEditConnector.type)) {
+      startIntgEdit(focusEditConnector, focusEditConnector.type);
+    } else {
+      startDbEdit(focusEditConnector);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusEditConnector?.id]);
 
   function setEditDbField(path, value) {
     setEditDbForm(f => {
@@ -945,26 +980,32 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
       )}
 
       {/* ── Databases section ── */}
-      {(section === "databases" || section === "both" || (!section && subTab === "data-sources")) && (
+      {(section === "databases" || section === "both" || (!section && subTab === "data-sources")) &&
+       (!isFocused || (focusType && !INTEGRATION_CONNECTOR_TYPES.has(focusType)) || (focusEditConnector && !INTEGRATION_CONNECTOR_TYPES.has(focusEditConnector.type))) && (
         <>
-          {section === "both" && (
+          {section === "both" && !isFocused && (
             <div className="border-t border-gray-100 -mx-4 px-4 pt-4 pb-2">
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Databases</p>
             </div>
           )}
-          <div className="flex gap-2 flex-wrap">
-            {!atLimit ? CONNECTOR_TYPES.map(t => (
-              <button key={t.id}
-                onClick={() => { setForm(f => ({ ...f, type: t.id, config: {}, auth: {} })); setShowForm(true); }}
-                className={`px-3 py-1 text-xs rounded-lg border font-medium transition-all ${
-                  showForm && form.type === t.id
-                    ? "border-indigo bg-indigo text-white"
-                    : "border-gray-200 text-gray-600 hover:border-indigo hover:text-indigo"
-                }`}>{t.label}</button>
-            )) : <span className="text-amber-600 font-medium text-xs">Connector limit reached</span>}
-          </div>
+          {!isFocused && (
+            <div className="flex gap-2 flex-wrap">
+              {!atLimit ? CONNECTOR_TYPES.map(t => (
+                <button key={t.id}
+                  onClick={() => { setForm(f => ({ ...f, type: t.id, config: {}, auth: {} })); setShowForm(true); }}
+                  className={`px-3 py-1 text-xs rounded-lg border font-medium transition-all ${
+                    showForm && form.type === t.id
+                      ? "border-indigo bg-indigo text-white"
+                      : "border-gray-200 text-gray-600 hover:border-indigo hover:text-indigo"
+                  }`}>{t.label}</button>
+              )) : <span className="text-amber-600 font-medium text-xs">Connector limit reached</span>}
+            </div>
+          )}
 
-          {connectors.filter(c => !INTEGRATION_CONNECTOR_TYPES.has(c.type)).map(c => {
+          {(isFocused
+            ? (focusEditConnector ? connectors.filter(c => c.id === focusEditConnector.id) : [])
+            : connectors.filter(c => !INTEGRATION_CONNECTOR_TYPES.has(c.type))
+          ).map(c => {
             const ct = CONNECTOR_TYPES.find(t => t.id === c.type);
             const tr = testResult[c.id];
             const isEditing = editingDbId === c.id;
@@ -1063,7 +1104,7 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-gray-600 mb-1">
-                          Connection ID <span className="text-[10px] text-gray-400 font-normal">— @id in chat</span>
+                          Connection ID <span className="text-[10px] text-gray-400 font-normal">— @id</span>
                         </label>
                         <input className={`input text-sm py-1.5 font-mono ${dbSlugStatus === "taken" ? "border-red-400 focus:ring-red-300" : dbSlugStatus === "available" ? "border-green-400 focus:ring-green-300" : ""}`}
                           placeholder="e.g. proddb"
@@ -1120,7 +1161,7 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
                       </div>
                     </div>
                     <div className="flex gap-2 pt-1">
-                      <button onClick={() => setEditingDbId(null)} className="btn-secondary px-4 py-1.5 text-xs flex-1">Cancel</button>
+                      {!isFocused && <button onClick={() => setEditingDbId(null)} className="btn-secondary px-4 py-1.5 text-xs flex-1">Cancel</button>}
                       <button onClick={handleSaveDbEdit} disabled={editDbSaving || !editDbForm.name.trim()}
                         className="btn-primary px-4 py-1.5 text-xs flex-1 disabled:opacity-50">
                         {editDbSaving ? "Saving…" : "Save Changes"}
@@ -1132,7 +1173,7 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
             );
           })}
 
-          {connectors.filter(c => !INTEGRATION_CONNECTOR_TYPES.has(c.type)).length === 0 && !showForm && (
+          {!isFocused && connectors.filter(c => !INTEGRATION_CONNECTOR_TYPES.has(c.type)).length === 0 && !showForm && (
             <p className="text-xs text-gray-400 text-center py-4">No databases yet. Add one to query live data in chat.</p>
           )}
 
@@ -1156,7 +1197,7 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Connection ID <span className="font-normal text-[10px] text-gray-400">— @id in chat</span>
+                    Connection ID <span className="font-normal text-[10px] text-gray-400">— @id</span>
                   </label>
                   <input
                     className={`input text-sm py-1.5 font-mono ${createSlugStatus === "taken" ? "border-red-400 focus:ring-red-300" : createSlugStatus === "available" ? "border-green-400 focus:ring-green-300" : ""}`}
@@ -1215,8 +1256,8 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
                 <p className="text-[10px] text-gray-400 mt-1">Match the permissions granted to the DB user you're connecting with.</p>
               </div>
               <div className="flex gap-2 pt-1">
-                <button onClick={() => { setShowForm(false); setForm({ name: "", slug: "", type: "postgresql", config: {}, auth: {}, allowedOps: ["SELECT"] }); setCreateSlugStatus(null); }}
-                  className="btn-secondary px-4 py-1.5 text-xs flex-1">Cancel</button>
+                {!isFocused && <button onClick={() => { setShowForm(false); setForm({ name: "", slug: "", type: "postgresql", config: {}, auth: {}, allowedOps: ["SELECT"] }); setCreateSlugStatus(null); }}
+                  className="btn-secondary px-4 py-1.5 text-xs flex-1">Cancel</button>}
                 <button onClick={handleAdd} disabled={saving || !form.name.trim() || createSlugStatus === "taken"}
                   className="btn-primary px-4 py-1.5 text-xs flex-1 disabled:opacity-50">
                   {saving ? "Adding…" : "Add Connector"}
@@ -1228,9 +1269,10 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
       )}
 
       {/* ── Integrations section ── */}
-      {(section === "integrations" || section === "both" || (!section && subTab === "integrations")) && (
-        <div className="space-y-2">
-          {section === "both" && (
+      {(section === "integrations" || section === "both" || (!section && subTab === "integrations")) &&
+       (!isFocused || (focusType && INTEGRATION_CONNECTOR_TYPES.has(focusType)) || (focusEditConnector && INTEGRATION_CONNECTOR_TYPES.has(focusEditConnector.type))) && (
+        <div className="space-y-3">
+          {section === "both" && !isFocused && (
             <div className="border-t border-gray-100 -mx-4 px-4 pt-4 pb-1">
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Integrations</p>
             </div>
@@ -1243,10 +1285,13 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
               <button onClick={() => setOauthSuccess("")} className="ml-2 font-bold shrink-0">×</button>
             </div>
           )}
-          <p className="text-[10px] text-gray-400">Connect external services so the AI agent can take actions — send emails, create tickets, post messages, and more.</p>
-          {atLimit && <p className="text-[10px] text-amber-600 font-medium">Connector limit reached — remove an existing connector to add a new one.</p>}
+          {!isFocused && <p className="text-[10px] text-gray-400">Connect external services so the AI agent can take actions — send emails, create tickets, post messages, and more.</p>}
+          {!isFocused && atLimit && <p className="text-[10px] text-amber-600 font-medium">Connector limit reached — remove an existing connector to add a new one.</p>}
 
-          {[...INTEGRATION_TYPES].sort((a, b) => {
+          <div className={isFocused ? "space-y-3" : "grid grid-cols-4 gap-3"}>
+          {[...INTEGRATION_TYPES]
+            .filter(intg => !isFocused || intg.id === (focusType || focusEditConnector?.type))
+            .sort((a, b) => {
             const aC = connectors.some(c => c.type === a.id) ? 0 : 1;
             const bC = connectors.some(c => c.type === b.id) ? 0 : 1;
             return aC - bC;
@@ -1266,9 +1311,9 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
               : fields.filter(f => !f.optional && f.key !== "name" && f.key !== "connectorName").every(f => apiKeyFields[f.key]?.trim());
 
             return (
-              <div key={intg.id} className={`border rounded-xl overflow-hidden ${connected.length ? "border-green-200" : "border-gray-200"}`}>
-                {/* Header */}
-                <div className="flex items-center gap-3 px-3 py-2.5 bg-gray-50/60">
+              <div key={intg.id} className={`border rounded-xl overflow-hidden flex flex-col ${setupOpen ? "col-span-4" : ""} ${connected.length ? "border-green-200" : "border-gray-200"}`}>
+                {/* Card header */}
+                {!isFocused && <div className="flex items-center gap-3 px-3 py-2.5 bg-gray-50/60">
                   <div className={`w-7 h-7 rounded-lg ${intg.color} flex items-center justify-center shrink-0`}>
                     <span className="text-white text-[9px] font-bold">{intg.initial}</span>
                   </div>
@@ -1295,7 +1340,7 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
                       className="text-[10px] text-gray-400 hover:text-gray-600 shrink-0">Cancel</button>
                   )}
                   {!intg.live && <span className="text-[10px] font-semibold text-gray-300 shrink-0">Soon</span>}
-                </div>
+                </div>}
 
                 {/* Gmail OAuth form */}
                 {isGoogle && setupOpen && (gmailCreds._for || "gmail") === intg.id && (
@@ -1342,7 +1387,7 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
                           }} />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Connection ID <span className="text-gray-400">— @id in chat</span></label>
+                        <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Connection ID <span className="text-gray-400">— @id</span></label>
                         <input className={`input text-xs py-1.5 w-full font-mono ${oauthSetupSlugStatus === "taken" ? "border-red-400 focus:ring-red-300" : oauthSetupSlugStatus === "available" ? "border-green-400 focus:ring-green-300" : ""}`}
                           placeholder="auto from name"
                           value={gmailCreds._slug || ""}
@@ -1418,7 +1463,7 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
                           }} />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Connection ID <span className="text-gray-400">— @id in chat</span></label>
+                        <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Connection ID <span className="text-gray-400">— @id</span></label>
                         <input className={`input text-xs py-1.5 w-full font-mono ${oauthSetupSlugStatus === "taken" ? "border-red-400 focus:ring-red-300" : oauthSetupSlugStatus === "available" ? "border-green-400 focus:ring-green-300" : ""}`}
                           placeholder="auto from name"
                           value={oauthSetupCreds._slug || ""}
@@ -1477,7 +1522,7 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
                       </div>
                       <div>
                         <label className="block text-[10px] font-medium text-gray-500 mb-0.5">
-                          Connection ID <span className="text-gray-400">— @id in chat</span>
+                          Connection ID <span className="text-gray-400">— @id</span>
                         </label>
                         <input className={`input text-xs py-1.5 w-full font-mono ${apiKeySlugStatus === "taken" ? "border-red-400 focus:ring-red-300" : apiKeySlugStatus === "available" ? "border-green-400 focus:ring-green-300" : ""}`}
                           placeholder="auto from name"
@@ -1536,7 +1581,7 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
                 )}
 
                 {/* Connected state */}
-                {connected.map(c => (
+                {!isFocused && connected.map(c => (
                   <div key={c.id}>
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border-t border-green-100">
                       <span className="text-green-500 text-[10px] shrink-0">✓</span>
@@ -1614,7 +1659,7 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
                           </div>
                           <div>
                             <label className="block text-[10px] font-medium text-gray-500 mb-0.5">
-                              Connection ID <span className="text-gray-400">— @id in chat</span>
+                              Connection ID <span className="text-gray-400">— @id</span>
                             </label>
                             <input className={`input text-xs py-1.5 w-full font-mono ${intgSlugStatus === "taken" ? "border-red-400 focus:ring-red-300" : intgSlugStatus === "available" ? "border-green-400 focus:ring-green-300" : ""}`}
                               placeholder="e.g. myslack"
@@ -1656,6 +1701,7 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
               </div>
             );
           })}
+          </div>
         </div>
       )}
 
