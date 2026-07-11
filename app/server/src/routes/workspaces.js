@@ -242,16 +242,23 @@ router.get("/:slug/agents/:id/export", authenticate, async (req, res) => {
       slug:           agent.slug || "",
       description:    agent.description || "",
       group:          agent.group || "",
+      systemPrompt:   agent.systemPrompt || "",
       instructions:   agent.systemPrompt || "",
       steps:          agent.workflow ? JSON.parse(agent.workflow) : null,
       params:         JSON.parse(agent.params || "[]"),
       chains:         agent.chains ? JSON.parse(agent.chains) : [],
+      connectorIds:   connectorIds,
       connectors:     connectors.map(c => ({ type: c.type, name: c.name, ...(c.slug ? { connection_id: c.slug } : {}) })),
       trigger: {
         type: agent.triggerType,
         ...(agent.cronExpression ? { cron: agent.cronExpression } : {}),
       },
-      enabled: agent.enabled,
+      triggerType:    agent.triggerType,
+      cronExpression: agent.cronExpression || null,
+      enabled:        agent.enabled,
+      visualize:      agent.visualize || false,
+      nextAgent:      agent.nextAgent || null,
+      nextAgentCondition: agent.nextAgentCondition || null,
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
