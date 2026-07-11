@@ -102,13 +102,17 @@ router.post("/", authenticate, requireManagerOrAdmin, async (req, res) => {
 
 // Update workspace (manager or admin)
 router.put("/:slug", authenticate, requireManagerOrAdmin, async (req, res) => {
-  const { name, systemPrompt, embedEnabled, defaultAgentMaxRounds, maxChainDepth, agentMemoryEnabled, agentMemoryRuns } = req.body;
+  const { name, systemPrompt, embedEnabled, temperature, chatHistory, queryRefusalResponse, starterPrompts, defaultAgentMaxRounds, maxChainDepth, agentMemoryEnabled, agentMemoryRuns } = req.body;
   const workspace = await req.db.workspace.update({
     where: { slug: req.params.slug },
     data: {
       ...(name && { name }),
       ...(systemPrompt !== undefined && { systemPrompt: systemPrompt || null }),
       ...(embedEnabled !== undefined && { embedEnabled: Boolean(embedEnabled) }),
+      ...(temperature !== undefined && { temperature: parseFloat(temperature) }),
+      ...(chatHistory !== undefined && { chatHistory: parseInt(chatHistory) }),
+      ...(queryRefusalResponse !== undefined && { queryRefusalResponse: queryRefusalResponse || null }),
+      ...(starterPrompts !== undefined && { starterPrompts: JSON.stringify(starterPrompts) }),
       ...(defaultAgentMaxRounds !== undefined && { defaultAgentMaxRounds: Math.max(1, Math.min(100, parseInt(defaultAgentMaxRounds) || 25)) }),
       ...(maxChainDepth !== undefined && { maxChainDepth: Math.max(1, Math.min(100, parseInt(maxChainDepth) || 5)) }),
       ...(agentMemoryEnabled !== undefined && { agentMemoryEnabled: Boolean(agentMemoryEnabled) }),

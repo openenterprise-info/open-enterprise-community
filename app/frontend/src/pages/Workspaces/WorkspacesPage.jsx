@@ -145,7 +145,7 @@ export default function WorkspacesPage() {
                   {canManage && editingId !== ws.id && (
                     <div className="flex items-center gap-0.5 shrink-0">
                       <button
-                        onClick={() => navigate(`/workspace/${ws.slug}/settings`)}
+                        onClick={() => navigate(`/workspace/${ws.slug}?settings=1`)}
                         title="Settings"
                         className="p-1.5 rounded-lg text-gray-400 hover:text-indigo hover:bg-indigo/8 transition-colors"
                       >

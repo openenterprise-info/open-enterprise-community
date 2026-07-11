@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import VisualizationCard from "../../components/VisualizationCard";
 import { exportMD, exportPDF, exportFilename } from "../../utils/exportOutput";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../utils/api";
 import WorkspaceDrawer from "../../components/WorkspaceDrawer";
@@ -440,6 +440,7 @@ export default function WorkspaceChat() {
   const { slug } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [workspace, setWorkspace]       = useState(null);
   const [starterPrompts, setStarterPrompts] = useState([]);
@@ -482,6 +483,14 @@ export default function WorkspaceChat() {
   // Drawer
   const [drawerWorkspaceId, setDrawerWorkspaceId] = useState(null);
   const [drawerInitialTab, setDrawerInitialTab]   = useState("chat");
+
+  // Auto-open chat settings drawer when ?settings=1 is in the URL
+  useEffect(() => {
+    if (workspace && searchParams.get("settings") === "1") {
+      setDrawerInitialTab("chat");
+      setDrawerWorkspaceId(workspace.id);
+    }
+  }, [workspace, searchParams]);
 
   // Audio
   const [ttsSettings, setTtsSettings] = useState({});
