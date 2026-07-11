@@ -60,6 +60,84 @@ app.use("/api/superadmin",    superAdminRoutes);
 
 // Swagger UI — public, must be registered before the authenticated v1 router
 app.get("/api/v1/docs/openapi.json", (_req, res) => res.json(openApiSpec));
+
+// Postman Collection v2.1 — grouped by tag so every endpoint lands in the right folder
+app.get("/api/v1/docs/postman.json", (req, res) => {
+  const baseUrl = `${req.protocol}://${req.get("host")}`;
+  const METHOD_ORDER = ["get","post","put","patch","delete"];
+
+  // Build tag → items map
+  const folders = {};
+  (openApiSpec.tags || []).forEach(t => { folders[t.name] = { name: t.name, description: t.description, item: [] }; });
+
+  Object.entries(openApiSpec.paths || {}).forEach(([rawPath, pathObj]) => {
+    METHOD_ORDER.forEach(method => {
+      const op = pathObj[method];
+      if (!op) return;
+      const tag = op.tags?.[0] || "Other";
+      if (!folders[tag]) folders[tag] = { name: tag, item: [] };
+
+      // Convert {param} → :param for Postman path variable syntax
+      const postmanPath = rawPath.replace(/\{(\w+)\}/g, ":$1");
+      const urlRaw = `{{base_url}}/api/v1${postmanPath}`;
+      const pathParts = ["api", "v1", ...postmanPath.replace(/^\//, "").split("/")];
+
+      const headers = [];
+      if (["post","put","patch"].includes(method) && op.requestBody?.content?.["application/json"]) {
+        headers.push({ key: "Content-Type", value: "application/json", type: "text" });
+      }
+
+      // Build body
+      let body = { mode: "none" };
+      const jsonSchema = op.requestBody?.content?.["application/json"]?.schema;
+      if (jsonSchema?.properties) {
+        const example = Object.fromEntries(Object.entries(jsonSchema.properties).map(([k,v]) => [k, v.example ?? `<${v.type}>`]));
+        body = { mode: "raw", raw: JSON.stringify(example, null, 2), options: { raw: { language: "json" } } };
+      }
+      const multipartSchema = op.requestBody?.content?.["multipart/form-data"]?.schema;
+      if (multipartSchema?.properties) {
+        body = { mode: "formdata", formdata: Object.keys(multipartSchema.properties).map(k => ({ key: k, type: k === "file" ? "file" : "text", src: k === "file" ? [] : undefined })) };
+      }
+
+      const pathVars = (op.parameters || []).filter(p => p.in === "path").map(p => ({ key: p.name, value: "", description: p.description || "" }));
+      const queryVars = (op.parameters || []).filter(p => p.in === "query").map(p => ({ key: p.name, value: String(p.schema?.default ?? ""), description: p.description || "", disabled: !p.required }));
+
+      folders[tag].item.push({
+        name: op.summary || `${method.toUpperCase()} ${rawPath}`,
+        request: {
+          method: method.toUpperCase(),
+          header: headers,
+          body,
+          url: {
+            raw: urlRaw,
+            host: ["{{base_url}}"],
+            path: pathParts,
+            variable: pathVars.length ? pathVars : undefined,
+            query: queryVars.length ? queryVars : undefined,
+          },
+          description: op.description || "",
+        },
+      });
+    });
+  });
+
+  const collection = {
+    info: {
+      name: openApiSpec.info.title,
+      schema: "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+      description: openApiSpec.info.description,
+    },
+    auth: { type: "bearer", bearer: [{ key: "token", value: "emb_your_key_here", type: "string" }] },
+    item: Object.values(folders),
+    variable: [
+      { key: "base_url", value: baseUrl, type: "string" },
+    ],
+  };
+
+  res.setHeader("Content-Disposition", "attachment; filename=\"openenterprise-postman.json\"");
+  res.json(collection);
+});
+
 app.use("/api/v1/docs", swaggerUi.serve, swaggerUi.setup(openApiSpec, {
   customSiteTitle: "Open Enterprise API Docs",
   customCss: ".swagger-ui .topbar { display: none }",

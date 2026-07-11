@@ -1,6 +1,25 @@
 import React, { useState, useEffect, useRef } from "react";
 import { load as yamlLoad } from "js-yaml";
 
+class StepErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(e) { return { error: e }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="p-6 max-w-xl">
+          <p className="text-sm font-semibold text-red-600 mb-1">Something went wrong rendering this step</p>
+          <pre className="text-xs text-red-500 bg-red-50 rounded-lg p-3 overflow-auto whitespace-pre-wrap">
+            {this.state.error?.message || String(this.state.error)}
+          </pre>
+          <p className="text-xs text-gray-400 mt-2">Check your browser console for the full stack trace.</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function copyToClipboard(text) {
   if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
   const el = document.createElement("textarea");
@@ -61,7 +80,7 @@ function toYaml(form, connectors) {
     lines.push(`instructions: |`);
     form.systemPrompt.split("\n").forEach(l => lines.push(`  ${l}`));
   }
-  const steps = form.steps || [];
+  const steps = Array.isArray(form.steps) ? form.steps : [];
   if (steps.length) {
     lines.push(`steps:`);
     steps.forEach(step => {
@@ -72,7 +91,7 @@ function toYaml(form, connectors) {
       }
     });
   }
-  const selected = connectors.filter(c => form.connectorIds.includes(c.id));
+  const selected = connectors.filter(c => (Array.isArray(form.connectorIds) ? form.connectorIds : []).includes(c.id));
   if (selected.length) {
     lines.push(`connectors:`);
     selected.forEach(c => {
@@ -81,7 +100,7 @@ function toYaml(form, connectors) {
       if (c.slug) lines.push(`    connection_id: "${c.slug}"`);
     });
   }
-  const chains = (form.chains || []).filter(c => c.nextAgent);
+  const chains = ((Array.isArray(form.chains) ? form.chains : [])).filter(c => c.nextAgent);
   if (chains.length) {
     lines.push(`chains:`);
     chains.forEach(c => {
@@ -90,7 +109,7 @@ function toYaml(form, connectors) {
       if (c.triggerType && c.triggerType !== "automatic") lines.push(`    trigger_type: ${c.triggerType}`);
     });
   }
-  const params = form.params || [];
+  const params = (Array.isArray(form.params) ? form.params : []);
   if (params.length) {
     lines.push(`params:`);
     params.forEach(p => {
@@ -102,6 +121,14 @@ function toYaml(form, connectors) {
   return lines.join("\n");
 }
 
+function safeJson(str, fallback) {
+  try { return str ? JSON.parse(str) : fallback; } catch { return fallback; }
+}
+function safeArray(str) {
+  const v = safeJson(str, []);
+  return Array.isArray(v) ? v : [];
+}
+
 export default function AgentStudio({ initialAgent, connectors = [], agents = [], onSave, onClose, saving, maxRounds = 25, maxChainDepth = 5 }) {
   const [activeStep, setActiveStep] = useState("trigger");
   const [form, setForm]             = useState({
@@ -110,15 +137,15 @@ export default function AgentStudio({ initialAgent, connectors = [], agents = []
     description:        initialAgent?.description        || "",
     group:              initialAgent?.group              || "",
     systemPrompt:       initialAgent?.systemPrompt       || "",
-    steps:              initialAgent?.workflow ? JSON.parse(initialAgent.workflow) : [],
-    connectorIds:       initialAgent ? JSON.parse(initialAgent.connectorIds || "[]") : [],
+    steps:              safeArray(initialAgent?.workflow),
+    connectorIds:       safeArray(initialAgent?.connectorIds),
     triggerType:        initialAgent?.triggerType        || "manual",
     cronExpression:     initialAgent?.cronExpression     || "",
     enabled:            initialAgent?.enabled !== false,
-    params:             initialAgent ? JSON.parse(initialAgent.params || "[]") : [],
+    params:             safeArray(initialAgent?.params),
     nextAgent:          initialAgent?.nextAgent          || "",
     nextAgentCondition: initialAgent?.nextAgentCondition || "on_critical",
-    chains:             initialAgent?.chains ? JSON.parse(initialAgent.chains) : [],
+    chains:             safeArray(initialAgent?.chains),
     visualize:          initialAgent?.visualize          || false,
   });
 
@@ -189,12 +216,14 @@ export default function AgentStudio({ initialAgent, connectors = [], agents = []
 
             {/* Step config panel */}
             <div className="flex-1 overflow-y-auto p-8">
+              <StepErrorBoundary key={activeStep}>
               {activeStep === "trigger"      && <TriggerStep form={form} set={set} agentId={initialAgent?.id} onSlugStatus={s => setSlugTaken(s === "taken")} />}
               {activeStep === "connectors"   && <ConnectorsStep form={form} set={set} connectors={connectors} />}
               {activeStep === "instructions" && <InstructionsStep form={form} set={set} />}
               {activeStep === "params"       && <ParamsStep form={form} set={set} />}
               {activeStep === "chain"        && <ChainStep form={form} set={set} agents={agents} currentSlug={initialAgent?.slug} />}
               {activeStep === "preview"      && <PreviewStep form={form} set={set} connectors={connectors} maxRounds={maxRounds} maxChainDepth={maxChainDepth} />}
+              </StepErrorBoundary>
             </div>
           </>
       </div>
@@ -336,7 +365,7 @@ function TriggerStep({ form, set, agentId, onSlugStatus }) {
 
 function ChainStep({ form, set, agents, currentSlug }) {
   const available = agents.filter(a => a.slug && a.slug !== currentSlug);
-  const chains    = form.chains || [];
+  const chains    = (Array.isArray(form.chains) ? form.chains : []);
 
   function addChain() {
     set("chains", [...chains, { condition: "always", nextAgent: "", triggerType: "automatic" }]);
@@ -546,7 +575,7 @@ function estimateRounds(steps) {
 }
 
 function FlowChart({ form, connectors, standalone, maxRounds = 25, maxChainDepth = 5 }) {
-  const selected = connectors.filter(c => form.connectorIds.includes(c.id));
+  const selected = connectors.filter(c => (Array.isArray(form.connectorIds) ? form.connectorIds : []).includes(c.id));
 
   const Node = ({ color, icon, label, sublabel }) => (
     <div className={`flex flex-col items-center gap-1.5 px-4 py-3 rounded-2xl border-2 min-w-[110px] text-center ${color}`}>
@@ -572,7 +601,7 @@ function FlowChart({ form, connectors, standalone, maxRounds = 25, maxChainDepth
       {!standalone && <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-6">Flow Preview</p>}
 
       {/* Rounds budget — shown at top when steps exist */}
-      {(form.steps || []).length > 0 && (() => {
+      {((Array.isArray(form.steps) ? form.steps : [])).length > 0 && (() => {
         const est = estimateRounds(form.steps);
         const pct = Math.min(Math.round((est / maxRounds) * 100), 100);
         const color = pct < 70 ? "bg-emerald-500" : pct < 90 ? "bg-amber-400" : "bg-red-500";
@@ -596,7 +625,7 @@ function FlowChart({ form, connectors, standalone, maxRounds = 25, maxChainDepth
 
       {/* Chain depth indicator */}
       {(() => {
-        const chainCount = (form.chains || []).filter(c => c.nextAgent).length;
+        const chainCount = ((Array.isArray(form.chains) ? form.chains : [])).filter(c => c.nextAgent).length;
         if (chainCount === 0) return null;
         const pct = Math.min(Math.round((chainCount / maxChainDepth) * 100), 100);
         const color = pct < 70 ? "bg-amber-400" : pct < 90 ? "bg-orange-500" : "bg-red-500";
@@ -658,7 +687,7 @@ function FlowChart({ form, connectors, standalone, maxRounds = 25, maxChainDepth
         />
 
         {/* Steps */}
-        {(form.steps || []).map((step, i) => (
+        {((Array.isArray(form.steps) ? form.steps : [])).map((step, i) => (
           <React.Fragment key={step.id || i}>
             <Arrow />
             <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border-2 border-indigo/20 bg-indigo/5 text-indigo w-full max-w-[260px]">
@@ -681,7 +710,7 @@ function FlowChart({ form, connectors, standalone, maxRounds = 25, maxChainDepth
         />
 
         {/* Chains */}
-        {(form.chains || []).filter(c => c.nextAgent).map((chain, i) => (
+        {((Array.isArray(form.chains) ? form.chains : [])).filter(c => c.nextAgent).map((chain, i) => (
           <React.Fragment key={i}>
             <Arrow />
             <div className="flex flex-col gap-0.5 px-4 py-2.5 rounded-2xl border-2 border-amber-200 bg-amber-50 text-amber-700 w-full max-w-[260px]">
@@ -709,7 +738,7 @@ function FlowChart({ form, connectors, standalone, maxRounds = 25, maxChainDepth
 function uid() { return Math.random().toString(36).slice(2, 9); }
 
 function InstructionsStep({ form, set }) {
-  const steps = form.steps || [];
+  const steps = (Array.isArray(form.steps) ? form.steps : []);
 
   const addStep = () => set("steps", [...steps, { id: uid(), name: "", content: "" }]);
   const updateStep = (i, key, val) => set("steps", steps.map((s, si) => si === i ? { ...s, [key]: val } : s));
@@ -793,9 +822,9 @@ function ConnectorsStep({ form, set, connectors }) {
       ) : (
         <div className="space-y-2">
           {connectors.map(c => {
-            const checked = form.connectorIds.includes(c.id);
+            const checked = (Array.isArray(form.connectorIds) ? form.connectorIds : []).includes(c.id);
             return (
-              <button key={c.id} onClick={() => set("connectorIds", checked ? form.connectorIds.filter(id => id !== c.id) : [...form.connectorIds, c.id])}
+              <button key={c.id} onClick={() => set("connectorIds", checked ? (Array.isArray(form.connectorIds) ? form.connectorIds : []).filter(id => id !== c.id) : [...(Array.isArray(form.connectorIds) ? form.connectorIds : []), c.id])}
                 className={`w-full flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all text-left ${
                   checked ? "border-indigo bg-indigo/5" : "border-gray-200 hover:border-gray-300"
                 }`}>
@@ -822,7 +851,7 @@ function ConnectorsStep({ form, set, connectors }) {
 }
 
 function ParamsStep({ form, set }) {
-  const params = form.params || [];
+  const params = (Array.isArray(form.params) ? form.params : []);
 
   function addParam() {
     set("params", [...params, { name: "", label: "", default: "" }]);

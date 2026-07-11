@@ -267,16 +267,20 @@ export default function AgentsChatPanel({ slug, isManager, onClose, onApprovalDe
     setShowForm(true);
   }
 
+  function safeJson(str, fallback) {
+    try { return str ? JSON.parse(str) : fallback; } catch { return fallback; }
+  }
+
   function openEdit(agent) {
     setEditAgent(agent);
     setForm({
       name:           agent.name,
       systemPrompt:   agent.systemPrompt || "",
-      connectorIds:   JSON.parse(agent.connectorIds || "[]"),
+      connectorIds:   safeJson(agent.connectorIds, []),
       triggerType:    agent.triggerType || "manual",
       cronExpression: agent.cronExpression || "",
       enabled:        agent.enabled !== false,
-      params:         JSON.parse(agent.params || "[]"),
+      params:         safeJson(agent.params, []),
     });
     setShowForm(true);
   }
@@ -306,11 +310,11 @@ export default function AgentsChatPanel({ slug, isManager, onClose, onApprovalDe
       const { data } = await api.post(`/workspaces/${slug}/agents`, {
         name:           `Copy of ${agent.name}`,
         systemPrompt:   agent.systemPrompt || "",
-        connectorIds:   JSON.parse(agent.connectorIds || "[]"),
+        connectorIds:   safeJson(agent.connectorIds, []),
         triggerType:    agent.triggerType || "manual",
         cronExpression: agent.cronExpression || "",
         enabled:        agent.enabled !== false,
-        params:         JSON.parse(agent.params || "[]"),
+        params:         safeJson(agent.params, []),
       });
       setAgents(a => [{ ...data.agent, _owned: true }, ...a]);
       window.dispatchEvent(new Event("agents-changed"));
@@ -536,8 +540,84 @@ export default function AgentsChatPanel({ slug, isManager, onClose, onApprovalDe
     <div className={standalone ? "flex-1 flex flex-col overflow-hidden bg-[#f9f9f9]" : `${expanded ? "w-1/2" : "w-[320px]"} bg-[#f9f9f9] border-l border-gray-200 flex flex-col flex-shrink-0 overflow-hidden transition-all duration-200`}>
 
       {/* Header */}
-      <div className={`${standalone ? "px-6" : "px-4"} pt-3 pb-3 border-b border-gray-200 shrink-0 bg-white`}>
-        <div className={standalone ? "max-w-3xl mx-auto" : ""}>
+      {standalone ? (
+        <div className="px-6 py-4 border-b border-gray-200 shrink-0 bg-white">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="font-bold text-gray-900">Agents</h2>
+              <p className="text-sm text-gray-400 mt-0.5">Build, manage and run agents in this workspace</p>
+              <div className="flex items-center gap-2 mt-2">
+                {[
+                  { label: "Total",      value: agents.length,                                           dot: "bg-indigo"   },
+                  { label: "Scheduled",  value: agents.filter(a => a.triggerType === "scheduled").length, dot: "bg-amber-400" },
+                  { label: "Manual",     value: agents.filter(a => a.triggerType !== "scheduled").length, dot: "bg-gray-300"  },
+                  { label: "Total Runs", value: allRuns.length,                                          dot: "bg-green-400" },
+                ].map(s => (
+                  <div key={s.label} className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-md px-2 py-1">
+                    <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${s.dot}`} />
+                    <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{s.label}</span>
+                    <span className="text-xs font-bold text-gray-900">{s.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={openCreate}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-indigo rounded-lg hover:bg-indigo/90 transition-colors">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                New Agent
+              </button>
+              <input ref={importRef} type="file" accept=".yaml,.yml" className="hidden" multiple
+                onChange={e => handleImport(Array.from(e.target.files || []))} />
+              <button onClick={() => importRef.current?.click()} disabled={importing}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-800 transition-colors disabled:opacity-50">
+                {importing
+                  ? <Spinner />
+                  : <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                }
+                Import
+              </button>
+              <button onClick={() => setActiveTab("approvals")}
+                className={`relative flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition-colors ${activeTab === "approvals" ? "bg-indigo/5 border-indigo/30 text-indigo" : "text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-800"}`}>
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Approvals
+                {approvals.filter(a => a.status === "pending").length > 0 && (
+                  <span className="ml-0.5 w-4 h-4 bg-red-500 rounded-full text-white text-[10px] font-bold flex items-center justify-center">
+                    {approvals.filter(a => a.status === "pending").length}
+                  </span>
+                )}
+              </button>
+              <button onClick={() => setActiveTab("logs")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition-colors ${activeTab === "logs" ? "bg-indigo/5 border-indigo/30 text-indigo" : "text-gray-500 border-gray-200 hover:bg-gray-50 hover:text-gray-700"}`}>
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                Run Logs
+              </button>
+              <button onClick={() => setActiveTab("settings")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition-colors ${activeTab === "settings" ? "bg-indigo/5 border-indigo/30 text-indigo" : "text-gray-500 border-gray-200 hover:bg-gray-50 hover:text-gray-700"}`}>
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Settings
+              </button>
+              {activeTab !== "agents" && (
+                <button onClick={() => setActiveTab("agents")}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo border border-indigo/30 bg-indigo/5 rounded-lg hover:bg-indigo/10 transition-colors">
+                  ← Agents
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="px-4 pt-3 pb-3 border-b border-gray-200 shrink-0 bg-white">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <svg className="w-4 h-4 text-indigo" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -558,17 +638,12 @@ export default function AgentsChatPanel({ slug, isManager, onClose, onApprovalDe
               <button onClick={() => setActiveTab("logs")} className={`px-2.5 py-1 text-sm font-medium rounded transition-colors ${activeTab === "logs" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
                 Logs
               </button>
-              {standalone && (
-                <button onClick={() => setActiveTab("settings")} className={`px-2.5 py-1 text-sm font-medium rounded transition-colors ${activeTab === "settings" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
-                  Settings
-                </button>
-              )}
             </div>
           </div>
-          {!standalone && <button onClick={onClose} title="Collapse" className="text-gray-400 hover:text-gray-600 transition-colors text-lg leading-none">&times;</button>}
+          <button onClick={onClose} title="Collapse" className="text-gray-400 hover:text-gray-600 transition-colors text-lg leading-none">&times;</button>
         </div>
-        <div className={`flex gap-2 py-2 border-t border-gray-100 ${standalone ? "mt-1" : "border-b -mx-4 px-4"}`}>
-          <button onClick={openCreate} className={`${standalone ? "" : "flex-1"} flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-indigo text-white text-xs font-semibold hover:bg-indigo/90 transition-colors shadow-sm`}>
+        <div className={`flex gap-2 py-2 border-t border-gray-100 border-b -mx-4 px-4`}>
+          <button onClick={openCreate} className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-indigo text-white text-xs font-semibold hover:bg-indigo/90 transition-colors shadow-sm">
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
             New Agent
           </button>
@@ -587,12 +662,12 @@ export default function AgentsChatPanel({ slug, isManager, onClose, onApprovalDe
           <input ref={importRef} type="file" accept=".yaml,.yml" className="hidden" multiple
             onChange={e => handleImport(Array.from(e.target.files || []))} />
         </div>
-        </div>{/* end max-w wrapper */}
-      </div>
+        </div>
+      )}
 
       {/* Body */}
       <div className={`flex-1 overflow-y-auto${standalone ? " p-6" : ""}`}>
-        <div className={standalone ? "max-w-3xl mx-auto" : ""}>
+        <div className={standalone ? "max-w-7xl mx-auto" : ""}>
 
         {/* ── Logs Tab ── */}
         {activeTab === "logs" && (
@@ -743,7 +818,7 @@ export default function AgentsChatPanel({ slug, isManager, onClose, onApprovalDe
 
             {/* Active Connectors */}
             {connectors.length > 0 && (
-              <details className="border border-gray-200 rounded-xl bg-white overflow-hidden group/conn">
+              <details className="w-1/2 border border-gray-200 rounded-xl bg-white overflow-hidden group/conn">
                 <summary className="px-3 py-2 bg-gray-50/60 flex items-center gap-1.5 cursor-pointer list-none select-none">
                   <svg className="w-3 h-3 text-gray-400 transition-transform group-open/conn:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -775,7 +850,7 @@ export default function AgentsChatPanel({ slug, isManager, onClose, onApprovalDe
               </div>
             )}
 
-            {/* Agent list — grouped */}
+            {/* Agent list — grouped as cards */}
             {(() => {
               const grouped = {};
               agents.forEach(a => {
@@ -790,127 +865,90 @@ export default function AgentsChatPanel({ slug, isManager, onClose, onApprovalDe
               });
               return groupKeys.map(groupKey => {
                 const groupAgents = grouped[groupKey];
-                const label = groupKey === "__ungrouped__" ? "Ungrouped" : groupKey;
+                const label = groupKey === "__ungrouped__" ? null : groupKey;
                 const isGroupOpen = expandedGroups[groupKey] !== false;
                 return (
-                <div key={groupKey} className="border border-gray-200 rounded-xl overflow-hidden bg-white">
-                  <button
-                    onClick={() => setExpandedGroups(g => ({ ...g, [groupKey]: !isGroupOpen }))}
-                    className="w-full px-3 py-2 bg-gray-50/60 flex items-center gap-1.5 hover:bg-gray-100/60 transition-colors"
-                  >
-                    <svg className={`w-3 h-3 text-gray-400 shrink-0 transition-transform ${isGroupOpen ? "rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                    <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide flex-1 text-left">{label}</span>
-                    <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full font-medium">{groupAgents.length}</span>
-                  </button>
+                <div key={groupKey} className="space-y-2">
+                  {label && (
+                    <button
+                      onClick={() => setExpandedGroups(g => ({ ...g, [groupKey]: !isGroupOpen }))}
+                      className="flex items-center gap-1.5 w-full text-left"
+                    >
+                      <svg className={`w-3 h-3 text-gray-400 shrink-0 transition-transform ${isGroupOpen ? "rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-widest">{label}</span>
+                      <span className="text-xs bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded-full font-medium">{groupAgents.length}</span>
+                    </button>
+                  )}
                   {isGroupOpen && (
-                  <div className="divide-y divide-gray-100">
-                  {groupAgents.map(agent => {
-                    const lastRun = agent.runs?.[0];
-                    const isOpen  = expandedAgent === agent.id;
-                    return (
-                      <React.Fragment key={agent.id}>
-                        <div
-                          onClick={() => setExpandedAgent(isOpen ? null : agent.id)}
-                          className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-50 transition-colors"
-                        >
-                          <div className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1 ${lastRun?.status === "success" ? "bg-green-400" : lastRun?.status === "error" ? "bg-red-400" : "bg-gray-300"}`} />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-sm font-medium text-gray-800 truncate">{agent.name}</span>
-                              {!agent._owned && <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md shrink-0">shared</span>}
+                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                    {groupAgents.map(agent => {
+                      const lastRun = agent.runs?.[0];
+                      return (
+                        <div key={agent.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col hover:shadow-sm hover:border-indigo/30 transition-all duration-150">
+                          {/* Card body */}
+                          <div className="px-4 pt-4 pb-3 flex-1 cursor-pointer" onClick={() => agent._owned && openEdit(agent)}>
+                            <div className="flex items-start justify-between gap-2 mb-1.5">
+                              <p className="text-sm font-bold text-gray-900 leading-snug">{agent.name}</p>
+                              <div className={`w-2 h-2 rounded-full shrink-0 mt-1 ${lastRun?.status === "success" ? "bg-green-400" : lastRun?.status === "error" ? "bg-red-400" : "bg-gray-300"}`} />
                             </div>
-                            <div className="flex items-center gap-1.5">
-                              {agent.slug && <span className="text-xs font-mono text-indigo">@{agent.slug}</span>}
-                              {!agent._owned && <span className="text-[11px] text-gray-400">by {agent.createdBy?.name || "another workspace"}</span>}
-                            </div>
-                          </div>
-                          <svg className={`w-3 h-3 text-gray-400 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </div>
-                        {isOpen && (
-                          <div className="px-3 pb-3 border-t border-gray-100 bg-gray-50/60 space-y-2">
-                            {agent._owned && (
-                            <div className="grid grid-cols-4 gap-1.5 pt-2">
-                              <button onClick={() => openEdit(agent)}
-                                className="flex flex-col items-center gap-1 py-2 rounded-lg border border-gray-200 bg-white hover:border-indigo hover:text-indigo text-gray-600 transition-colors text-xs font-medium">
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                Edit
-                              </button>
-                              <button onClick={() => handleExport(agent)}
-                                className="flex flex-col items-center gap-1 py-2 rounded-lg border border-gray-200 bg-white hover:border-indigo hover:text-indigo text-gray-600 transition-colors text-xs font-medium">
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                                Export
-                              </button>
-                              <button onClick={() => handleRun(agent)} disabled={running === agent.id}
-                                className="flex flex-col items-center gap-1 py-2 rounded-lg border border-gray-200 bg-white hover:border-green-500 hover:text-green-600 text-gray-600 transition-colors text-[10px] font-medium disabled:opacity-40">
-                                {running === agent.id
-                                  ? <Spinner />
-                                  : <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>}
-                                Run
-                              </button>
-                              <button onClick={() => setConfirmDel(agent)}
-                                className="flex flex-col items-center gap-1 py-2 rounded-lg border border-gray-200 bg-white hover:border-red-400 hover:text-red-500 text-gray-600 transition-colors text-xs font-medium">
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                Delete
-                              </button>
-                            </div>
-                            )}
+                            {agent.slug && <p className="text-xs font-mono text-indigo mb-1.5">@{agent.slug}</p>}
+                            {agent.description
+                              ? <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">{agent.description}</p>
+                              : <p className="text-xs text-gray-300 italic">No description</p>
+                            }
                             {!agent._owned && (
-                              <p className="text-xs text-gray-400 pt-2 text-center">Shared agent — trigger via <span className="font-mono">@{agent.slug}</span> in chat</p>
-                            )}
-
-                            {/* Run output */}
-                            {(running === agent.id || runOutput[agent.id] !== undefined) && (
-                              <div className="bg-gray-900 rounded-lg p-2.5 text-[11px] font-mono text-gray-200 whitespace-pre-wrap max-h-40 overflow-y-auto relative">
-                                {running === agent.id && !runOutput[agent.id]
-                                  ? <span className="text-gray-400">Running…</span>
-                                  : runOutput[agent.id] || <span className="text-gray-400">No output</span>}
-                                <button
-                                  onClick={() => setRunOutput(o => { const n = { ...o }; delete n[agent.id]; return n; })}
-                                  className="absolute top-1.5 right-1.5 text-gray-500 hover:text-gray-300 text-xs leading-none">×</button>
-                              </div>
-                            )}
-
-                            {/* Run history logs */}
-                            {showHistory === agent.id && (
-                              <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-                                <div className="px-3 py-1.5 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-                                  <span className="text-xs font-semibold text-gray-500">Run Logs</span>
-                                  <button onClick={() => setShowHistory(null)} className="text-xs text-gray-400 hover:text-gray-600">✕ Close</button>
-                                </div>
-                                {!(runHistory[agent.id]?.length) ? (
-                                  <p className="text-xs text-gray-400 px-3 py-2">No runs yet.</p>
-                                ) : (
-                                  <div className="divide-y divide-gray-50 max-h-48 overflow-y-auto">
-                                    {(runHistory[agent.id] || []).map(run => (
-                                      <div key={run.id} className="px-3 py-2">
-                                        <div className="flex items-center gap-2 mb-0.5">
-                                          <span className={`text-xs font-semibold ${run.status === "success" ? "text-green-600" : run.status === "error" ? "text-red-500" : "text-gray-400"}`}>{run.status}</span>
-                                          <span className="text-xs text-gray-400">{new Date(run.startedAt).toLocaleString()}</span>
-                                        </div>
-                                        {run.output && <p className="text-xs text-gray-600 whitespace-pre-wrap max-h-40 overflow-y-auto">{run.output}</p>}
-                                        {run.error  && <p className="text-xs text-red-500">{run.error}</p>}
-                                        {run.output && (
-                                          <div className="flex gap-2 mt-1">
-                                            <button onClick={() => exportMD(run.output, exportFilename(agent.name, run.startedAt))} className="text-xs text-indigo hover:underline">.md</button>
-                                            <button onClick={() => exportPDF(run.output, exportFilename(agent.name, run.startedAt))} className="text-xs text-indigo hover:underline">.pdf</button>
-                                          </div>
-                                        )}
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
+                              <span className="inline-block mt-1.5 text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">shared</span>
                             )}
                           </div>
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-                  </div>
+
+                          {/* Card footer */}
+                          <div className="px-3 py-2 border-t border-gray-100 flex items-center justify-between gap-1">
+                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${agent.triggerType === "scheduled" ? "bg-amber-50 text-amber-600" : "bg-indigo/8 text-indigo"}`}>
+                              {agent.triggerType === "scheduled" ? "Scheduled" : "Manual"}
+                            </span>
+                            {agent._owned ? (
+                              <div className="flex items-center gap-0.5" onClick={e => e.stopPropagation()}>
+                                <button onClick={() => openEdit(agent)} title="Edit"
+                                  className="p-1.5 rounded-lg text-gray-400 hover:text-indigo hover:bg-indigo/5 transition-colors">
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                </button>
+                                <button onClick={() => handleRun(agent)} disabled={running === agent.id} title="Run"
+                                  className="p-1.5 rounded-lg text-gray-400 hover:text-green-600 hover:bg-green-50 disabled:opacity-40 transition-colors">
+                                  {running === agent.id
+                                    ? <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                                    : <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>}
+                                </button>
+                                <button onClick={() => handleExport(agent)} title="Export"
+                                  className="p-1.5 rounded-lg text-gray-400 hover:text-teal-600 hover:bg-teal-50 transition-colors">
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                </button>
+                                <button onClick={() => setConfirmDel(agent)} title="Delete"
+                                  className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-[10px] text-gray-400">@{agent.slug}</span>
+                            )}
+                          </div>
+
+                          {/* Run output (shown below card if active) */}
+                          {(running === agent.id || runOutput[agent.id] !== undefined) && (
+                            <div className="bg-gray-900 p-2.5 text-[11px] font-mono text-gray-200 whitespace-pre-wrap max-h-40 overflow-y-auto relative border-t border-gray-800">
+                              {running === agent.id && !runOutput[agent.id]
+                                ? <span className="text-gray-400">Running…</span>
+                                : runOutput[agent.id] || <span className="text-gray-400">No output</span>}
+                              <button
+                                onClick={() => setRunOutput(o => { const n = { ...o }; delete n[agent.id]; return n; })}
+                                className="absolute top-1.5 right-1.5 text-gray-500 hover:text-gray-300 text-xs leading-none">×</button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    </div>
                   )}
                 </div>
               );
