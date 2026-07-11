@@ -171,14 +171,14 @@ function ApiDocsTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">Interactive API reference. Try requests live or download the spec to import into Postman.</p>
-        <a href="/api/v1/docs/openapi.json" download="openenterprise-openapi.json" className="btn-secondary px-4 py-2 text-sm">Download OpenAPI JSON</a>
+        <p className="text-sm text-gray-500">Interactive API reference. Try requests live or import into Postman.</p>
+        <a href="/api/v1/docs/postman.json" download="openenterprise-postman.json" className="btn-primary px-4 py-2 text-sm">Download Postman Collection</a>
       </div>
       <div className="rounded-xl border border-gray-200 overflow-hidden" style={{ height: "680px" }}>
         <iframe src="/api/v1/docs" title="Open Enterprise API Documentation" className="w-full h-full border-0" />
       </div>
       <p className="text-xs text-gray-400">
-        To import into Postman: File → Import → Link → paste <code className="bg-gray-100 px-1 rounded">{window.location.origin}/api/v1/docs/openapi.json</code>
+        Import into Postman: click <strong>Download Postman Collection</strong> above → Postman → File → Import → upload the JSON. All endpoints will be grouped by category (Workspaces, Chat, Threads, Documents, Agents).
       </p>
     </div>
   );
@@ -201,43 +201,99 @@ function ApiQuickStartTab() {
     );
   }
 
-  const curlList  = `curl -H "Authorization: Bearer emb_your_key" \\\n  ${origin}/api/v1/workspaces`;
-  const curlChat  = `curl -X POST \\\n  -H "Authorization: Bearer emb_your_key" \\\n  -H "Content-Type: application/json" \\\n  -d '{"message": "What is the refund policy?"}' \\\n  ${origin}/api/v1/workspaces/YOUR_WORKSPACE_SLUG/chat`;
-  const jsExample = `const res = await fetch("${origin}/api/v1/workspaces/YOUR_SLUG/chat", {\n  method: "POST",\n  headers: {\n    "Authorization": "Bearer emb_your_key",\n    "Content-Type": "application/json"\n  },\n  body: JSON.stringify({ message: "What is the refund policy?" })\n});\nconst { response, sources } = await res.json();\nconsole.log(response);`;
-  const pyExample = `import requests\n\nheaders = {"Authorization": "Bearer emb_your_key"}\nurl = "${origin}/api/v1/workspaces/YOUR_SLUG/chat"\n\nres = requests.post(url, headers=headers, json={"message": "What is the refund policy?"})\nprint(res.json()["response"])`;
+  const slug = "YOUR_WORKSPACE_SLUG";
+  const agentSlug = "YOUR_AGENT_SLUG";
+
+  const curlRunAgent = `curl -X POST \\\n  -H "Authorization: Bearer emb_your_key" \\\n  -H "Content-Type: application/json" \\\n  -d '{"input": "Summarise all open Jira tickets assigned to me."}' \\\n  ${origin}/api/v1/workspaces/${slug}/agents/${agentSlug}/run`;
+
+  const jsRunAgent = `const res = await fetch("${origin}/api/v1/workspaces/${slug}/agents/${agentSlug}/run", {\n  method: "POST",\n  headers: {\n    "Authorization": "Bearer emb_your_key",\n    "Content-Type": "application/json"\n  },\n  body: JSON.stringify({ input: "Summarise all open Jira tickets assigned to me." })\n});\n\n// Response is a Server-Sent Events stream\nconst reader = res.body.getReader();\nconst decoder = new TextDecoder();\nwhile (true) {\n  const { done, value } = await reader.read();\n  if (done) break;\n  const lines = decoder.decode(value).split("\\n");\n  for (const line of lines) {\n    if (!line.startsWith("data: ")) continue;\n    const event = JSON.parse(line.slice(6));\n    if (event.done) console.log("Output:", event.output);\n    if (event.tool_calls) console.log("Tools called:", event.tool_calls);\n  }\n}`;
+
+  const pyRunAgent = `import requests, json\n\nheaders = {"Authorization": "Bearer emb_your_key", "Content-Type": "application/json"}\nurl = "${origin}/api/v1/workspaces/${slug}/agents/${agentSlug}/run"\n\nwith requests.post(url, headers=headers, json={"input": "Summarise all open Jira tickets."}, stream=True) as r:\n    for line in r.iter_lines():\n        if not line or not line.startswith(b"data: "):\n            continue\n        event = json.loads(line[6:])\n        if event.get("done"):\n            print("Output:", event["output"])\n        if event.get("tool_calls"):\n            print("Tools called:", event["tool_calls"])`;
+
+  const curlUpload = `curl -X POST \\\n  -H "Authorization: Bearer emb_your_key" \\\n  -F "file=@/path/to/document.pdf" \\\n  ${origin}/api/v1/workspaces/${slug}/documents/upload`;
+
+  const curlFolder = `# Repeat -F file= for each file in the folder\ncurl -X POST \\\n  -H "Authorization: Bearer emb_your_key" \\\n  -F "file=@/folder/report.pdf" \\\n  -F "file=@/folder/data.csv" \\\n  -F "file=@/folder/notes.docx" \\\n  ${origin}/api/v1/workspaces/${slug}/documents/folder`;
+
+  const curlOcr = `curl -X POST \\\n  -H "Authorization: Bearer emb_your_key" \\\n  -F "file=@/path/to/scanned-invoice.png" \\\n  ${origin}/api/v1/workspaces/${slug}/documents/ocr`;
+
+  const curlWebsite = `# Single page\ncurl -X POST \\\n  -H "Authorization: Bearer emb_your_key" \\\n  -H "Content-Type: application/json" \\\n  -d '{"url": "https://docs.example.com"}' \\\n  ${origin}/api/v1/workspaces/${slug}/documents/website\n\n# Full site crawl\ncurl -X POST \\\n  -H "Authorization: Bearer emb_your_key" \\\n  -H "Content-Type: application/json" \\\n  -d '{"url": "https://docs.example.com", "crawl": true, "maxPages": 100, "maxDepth": 3}' \\\n  ${origin}/api/v1/workspaces/${slug}/documents/website`;
+
+  const curlCloud = `# S3 pre-signed URL, Dropbox (add ?dl=1), GDrive direct download\ncurl -X POST \\\n  -H "Authorization: Bearer emb_your_key" \\\n  -H "Content-Type: application/json" \\\n  -d '{"url": "https://my-bucket.s3.amazonaws.com/report.pdf?X-Amz-Signature=..."}' \\\n  ${origin}/api/v1/workspaces/${slug}/documents/cloud`;
+
+  const curlPollStatus = `curl -H "Authorization: Bearer emb_your_key" \\\n  ${origin}/api/v1/workspaces/${slug}/documents/DOC_UID`;
 
   return (
     <div className="space-y-8">
+
+      {/* Step 1 */}
       <div>
         <h3 className="font-semibold text-gray-800 mb-1">1. Create an API Key</h3>
         <p className="text-sm text-gray-500 mb-3">Go to the <strong>API Keys</strong> tab → click <strong>+ New Key</strong> → copy the key. It is shown only once.</p>
         <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800">
-          All requests need the header: <code className="font-mono bg-amber-100 px-1 rounded">Authorization: Bearer emb_your_key</code>
+          All requests need: <code className="font-mono bg-amber-100 px-1 rounded">Authorization: Bearer emb_your_key</code>
         </div>
       </div>
+
+      {/* Step 2 — Agents */}
       <div>
-        <h3 className="font-semibold text-gray-800 mb-1">2. List Workspaces</h3>
-        <p className="text-sm text-gray-500 mb-2">Get the workspace slug you want to query.</p>
-        <CodeBlock id="curl-list" code={curlList} />
-      </div>
-      <div>
-        <h3 className="font-semibold text-gray-800 mb-1">3. Send a Message</h3>
-        <p className="text-sm text-gray-500 mb-2">Ask a question grounded in the workspace documents.</p>
+        <h3 className="font-semibold text-gray-800 mb-1">2. Run an Agent</h3>
+        <p className="text-sm text-gray-500 mb-3">Trigger an agent and stream its output via Server-Sent Events. Get the <code className="bg-gray-100 px-1 rounded text-xs">agentSlug</code> from Agent Studio → agent card.</p>
         <div className="space-y-3">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">cURL</p>
-          <CodeBlock id="curl-chat" code={curlChat} />
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mt-4">JavaScript (fetch)</p>
-          <CodeBlock id="js" code={jsExample} />
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mt-4">Python (requests)</p>
-          <CodeBlock id="py" code={pyExample} />
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">cURL</p>
+          <CodeBlock id="curl-run" code={curlRunAgent} />
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mt-4">JavaScript (fetch + SSE)</p>
+          <CodeBlock id="js-run" code={jsRunAgent} />
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mt-4">Python (requests)</p>
+          <CodeBlock id="py-run" code={pyRunAgent} />
+        </div>
+        <div className="mt-3 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-xs text-gray-600 space-y-1">
+          <p className="font-semibold text-gray-700">SSE event types</p>
+          <p><code className="bg-gray-100 px-1 rounded">{"{ \"tool_calls\": [\"conn_search\"] }"}</code> — agent called a tool</p>
+          <p><code className="bg-gray-100 px-1 rounded">{"{ \"done\": true, \"output\": \"...\", \"runId\": 42 }"}</code> — run complete</p>
+          <p><code className="bg-gray-100 px-1 rounded">{"{ \"error\": \"...\" }"}</code> — run failed</p>
         </div>
       </div>
+
+      {/* Step 3 — Documents: 5 ingestion endpoints */}
       <div>
-        <h3 className="font-semibold text-gray-800 mb-2">Response shape</h3>
-        <pre className="bg-gray-900 text-gray-100 rounded-lg px-4 py-3 text-xs leading-relaxed">{`{\n  "response": "Employees are entitled to 20 days of annual leave...",\n  "sources": [\n    { "text": "Section 4.2: Annual leave entitlement is 20 days...", "metadata": { "source": "HR Policy.pdf" } }\n  ],\n  "usage": { "inputTokens": 1240, "outputTokens": 312, "model": "gpt-4o" }\n}`}</pre>
+        <h3 className="font-semibold text-gray-800 mb-1">3. Ingest Documents</h3>
+        <p className="text-sm text-gray-500 mb-3">Five dedicated endpoints — one per ingestion type. All are async; poll <code className="bg-gray-100 px-1 rounded text-xs">GET /documents/{"{uid}"}</code> until status is <code className="bg-gray-100 px-1 rounded text-xs">ready</code>.</p>
+
+        <div className="space-y-4">
+          <div>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">1. File upload — <code className="normal-case font-normal text-gray-500">/documents/upload</code></p>
+            <CodeBlock id="curl-upload" code={curlUpload} />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">2. Folder — <code className="normal-case font-normal text-gray-500">/documents/folder</code></p>
+            <CodeBlock id="curl-folder" code={curlFolder} />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">3. OCR — <code className="normal-case font-normal text-gray-500">/documents/ocr</code></p>
+            <CodeBlock id="curl-ocr" code={curlOcr} />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">4. Website — <code className="normal-case font-normal text-gray-500">/documents/website</code></p>
+            <CodeBlock id="curl-website" code={curlWebsite} />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">5. Cloud storage — <code className="normal-case font-normal text-gray-500">/documents/cloud</code></p>
+            <CodeBlock id="curl-cloud" code={curlCloud} />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Poll status</p>
+            <CodeBlock id="curl-poll" code={curlPollStatus} />
+          </div>
+        </div>
+
+        <div className="mt-3 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-xs text-gray-600">
+          <p className="font-semibold text-gray-700 mb-1">Status progression</p>
+          <p><code className="bg-gray-100 px-1 rounded">queued</code> → <code className="bg-gray-100 px-1 rounded">ingesting</code> → <code className="bg-gray-100 px-1 rounded">ready</code> (or <code className="bg-gray-100 px-1 rounded">failed</code>)</p>
+        </div>
       </div>
+
       <div className="bg-indigo/5 border border-indigo/20 rounded-lg px-4 py-3 text-sm text-gray-700">
-        Full interactive reference with try-it-out: go to the <strong>Documentation</strong> tab.
+        Full reference with all endpoints: go to the <strong>Documentation</strong> tab.
       </div>
     </div>
   );

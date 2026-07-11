@@ -404,39 +404,87 @@ router.get("/workspaces/:workspaceSlug/documents/:uid", async (req, res) => {
   res.json({ document: doc });
 });
 
-// POST /api/v1/workspaces/:workspaceSlug/documents/upload
-router.post("/workspaces/:workspaceSlug/documents/upload", upload.single("file"), async (req, res) => {
-  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.workspaceSlug } });
-  if (!workspace) return res.status(404).json({ error: "Workspace not found" });
-  if (!req.file)   return res.status(400).json({ error: "file required (multipart/form-data)" });
-
-  const tier = await getTierFromDB(req.db);
+// ── Shared helper: check storage limit and enqueue files ──────────────────────
+async function enqueueFiles(db, workspace, files, sourceType, res) {
+  const tier = await getTierFromDB(db);
   if (isFinite(tier.ingestionSpaceGb)) {
-    const { _sum } = await req.db.document.aggregate({ _sum: { size: true } });
+    const { _sum } = await db.document.aggregate({ _sum: { size: true } });
     const usedBytes = _sum.size || 0;
-    if (usedBytes + req.file.size > tier.ingestionSpaceGb * 1024 ** 3) {
-      fs.unlink(req.file.path, () => {});
+    const totalNew  = files.reduce((s, f) => s + f.size, 0);
+    if (usedBytes + totalNew > tier.ingestionSpaceGb * 1024 ** 3) {
+      files.forEach(f => fs.unlink(f.path, () => {}));
       return res.status(400).json({ error: `Storage limit reached (${tier.ingestionSpaceGb} GB)` });
     }
   }
+  const documents = [];
+  for (const file of files) {
+    const uid = uuidv4();
+    const doc = await db.document.create({
+      data: { uid, name: file.originalname, type: file.mimetype, size: file.size, workspaceId: workspace.id, status: "queued", sourcePath: file.path },
+    });
+    ingestionQueue.enqueue(db, workspace, doc, file.path, sourceType, false, null);
+    documents.push({ uid: doc.uid, name: doc.name, status: doc.status });
+  }
+  return res.status(202).json({ documents });
+}
 
-  const uid = uuidv4();
-  const doc = await req.db.document.create({
-    data: { uid, name: req.file.originalname, type: req.file.mimetype, size: req.file.size, workspaceId: workspace.id, status: "queued", sourcePath: req.file.path },
-  });
-  ingestionQueue.enqueue(req.db, workspace, doc, req.file.path, "file", false, null);
-  res.status(202).json({ document: { uid: doc.uid, name: doc.name, status: doc.status } });
+// 1. POST /documents/upload — single file (PDF, DOCX, TXT, CSV, XLSX, JSON, MD…)
+router.post("/workspaces/:workspaceSlug/documents/upload", upload.single("file"), async (req, res) => {
+  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.workspaceSlug } });
+  if (!workspace) return res.status(404).json({ error: "Workspace not found" });
+  if (!req.file) return res.status(400).json({ error: "file required (multipart/form-data, field: file)" });
+  await enqueueFiles(req.db, workspace, [req.file], "file", res);
 });
 
-// POST /api/v1/workspaces/:workspaceSlug/documents/url
-router.post("/workspaces/:workspaceSlug/documents/url", async (req, res) => {
-  const { url } = req.body;
+// 2. POST /documents/folder — multiple files from a folder in one request
+router.post("/workspaces/:workspaceSlug/documents/folder", upload.array("file", 200), async (req, res) => {
+  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.workspaceSlug } });
+  if (!workspace) return res.status(404).json({ error: "Workspace not found" });
+  const files = req.files || [];
+  if (!files.length) return res.status(400).json({ error: "At least one file required (multipart/form-data, field: file)" });
+  await enqueueFiles(req.db, workspace, files, "file", res);
+});
+
+// 3. POST /documents/ocr — image file(s) → LLM vision → extracted text
+router.post("/workspaces/:workspaceSlug/documents/ocr", upload.array("file", 20), async (req, res) => {
+  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.workspaceSlug } });
+  if (!workspace) return res.status(404).json({ error: "Workspace not found" });
+  const files = req.files || [];
+  if (!files.length) return res.status(400).json({ error: "At least one image file required (field: file)" });
+  await enqueueFiles(req.db, workspace, files, "ocr", res);
+});
+
+// 4. POST /documents/website — ingest a website (single page or full BFS crawl)
+router.post("/workspaces/:workspaceSlug/documents/website", async (req, res) => {
+  const { url, crawl = false, maxPages = 50, maxDepth = 2 } = req.body;
   if (!url) return res.status(400).json({ error: "url required" });
   const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.workspaceSlug } });
   if (!workspace) return res.status(404).json({ error: "Workspace not found" });
   const uid = uuidv4();
+  if (crawl) {
+    const doc = await req.db.document.create({
+      data: { uid, name: url, type: "url", workspaceId: workspace.id, status: "queued" },
+    });
+    ingestionQueue.enqueue(req.db, workspace, doc, JSON.stringify({ startUrl: url, maxPages, maxDepth }), "website-crawl", false, null);
+    return res.status(202).json({ document: { uid: doc.uid, name: doc.name, status: doc.status }, crawl: { maxPages, maxDepth } });
+  }
   const doc = await req.db.document.create({
     data: { uid, name: url, type: "url", workspaceId: workspace.id, status: "queued" },
+  });
+  ingestionQueue.enqueue(req.db, workspace, doc, url, "url", false, null);
+  res.status(202).json({ document: { uid: doc.uid, name: doc.name, status: doc.status } });
+});
+
+// 5. POST /documents/cloud — S3 pre-signed URL, Google Drive, Dropbox direct download link
+router.post("/workspaces/:workspaceSlug/documents/cloud", async (req, res) => {
+  const { url } = req.body;
+  if (!url) return res.status(400).json({ error: "url required" });
+  const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.workspaceSlug } });
+  if (!workspace) return res.status(404).json({ error: "Workspace not found" });
+  const uid     = uuidv4();
+  const docName = url.split("/").pop()?.split("?")[0] || url;
+  const doc     = await req.db.document.create({
+    data: { uid, name: docName, type: "url", workspaceId: workspace.id, status: "queued" },
   });
   ingestionQueue.enqueue(req.db, workspace, doc, url, "url", false, null);
   res.status(202).json({ document: { uid: doc.uid, name: doc.name, status: doc.status } });
@@ -490,7 +538,7 @@ router.get("/workspaces/:workspaceSlug/agents/:agentSlug/runs", async (req, res)
   const agent = await req.db.agent.findFirst({ where: { slug: req.params.agentSlug, workspaceId: workspace.id } });
   if (!agent) return res.status(404).json({ error: "Agent not found" });
   const runs = await req.db.agentRun.findMany({
-    where: { agentId },
+    where: { agentId: agent.id },
     orderBy: { startedAt: "desc" },
     take: 20,
     select: {

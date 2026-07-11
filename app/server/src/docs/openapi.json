@@ -3,7 +3,7 @@
   "info": {
     "title": "Open Enterprise REST API",
     "version": "1.3.1",
-    "description": "Developer API for querying, managing, and automating Open Enterprise workspaces programmatically.\n\n## Authentication\nAll endpoints require an API key. Generate one in **Admin Panel → API Keys**.\n\nInclude it in every request as a Bearer token:\n```\nAuthorization: Bearer emb_your_api_key_here\n```\n\n## Base URL\nAll endpoints are relative to your Open Enterprise instance URL, e.g. `https://your-domain.com/api/v1`"
+    "description": "Developer API for integrating documents and agents with Open Enterprise.\n\n## Authentication\nAll endpoints require an API key. Generate one in **Admin Panel → API Keys**.\n\nInclude it in every request as a Bearer token:\n```\nAuthorization: Bearer emb_your_api_key_here\n```\n\n## Base URL\nAll endpoints are relative to your Open Enterprise instance URL, e.g. `https://your-domain.com/api/v1`"
   },
   "servers": [
     { "url": "/api/v1", "description": "This Open Enterprise instance" }
@@ -12,11 +12,8 @@
     { "ApiKeyAuth": [] }
   ],
   "tags": [
-    { "name": "Workspaces", "description": "Create and inspect workspaces" },
-    { "name": "Chat",       "description": "Send messages and receive AI-generated answers grounded in workspace documents" },
-    { "name": "Threads",    "description": "Manage conversation threads within a workspace" },
-    { "name": "Documents",  "description": "Upload, ingest, and manage documents" },
-    { "name": "Agents",     "description": "List and run AI agents" }
+    { "name": "Agents",    "description": "List and run AI agents" },
+    { "name": "Documents", "description": "Upload, ingest, and manage documents" }
   ],
   "components": {
     "securitySchemes": {
@@ -28,39 +25,19 @@
       }
     },
     "schemas": {
-      "WorkspaceSummary": {
-        "type": "object",
-        "properties": {
-          "id":        { "type": "integer",  "example": 1 },
-          "name":      { "type": "string",   "example": "HR Policy Documents" },
-          "slug":      { "type": "string",   "example": "hr-policy-documents", "description": "Use this in all other endpoint paths" },
-          "documents": { "type": "integer",  "example": 12 },
-          "chats":     { "type": "integer",  "example": 340 },
-          "createdAt": { "type": "string",   "format": "date-time" }
-        }
-      },
       "Document": {
         "type": "object",
         "properties": {
-          "uid":              { "type": "string",  "example": "abc123-def456" },
-          "name":             { "type": "string",  "example": "Employee Handbook 2024.pdf" },
-          "type":             { "type": "string",  "example": "application/pdf" },
-          "size":             { "type": "integer", "example": 204800, "description": "File size in bytes" },
-          "status":           { "type": "string",  "enum": ["queued","ingesting","ready","partial","failed"], "example": "ready" },
-          "chunkCount":       { "type": "integer", "example": 48 },
-          "chunksProcessed":  { "type": "integer", "example": 48 },
-          "totalChunks":      { "type": "integer", "example": 48 },
-          "errorMessage":     { "type": "string",  "nullable": true },
-          "createdAt":        { "type": "string",  "format": "date-time" }
-        }
-      },
-      "Thread": {
-        "type": "object",
-        "properties": {
-          "uid":       { "type": "string",  "example": "550e8400-e29b-41d4-a716-446655440000" },
-          "name":      { "type": "string",  "example": "Q3 Policy Review" },
-          "pinned":    { "type": "boolean", "example": false },
-          "createdAt": { "type": "string",  "format": "date-time" }
+          "uid":             { "type": "string",  "example": "abc123-def456" },
+          "name":            { "type": "string",  "example": "Employee Handbook 2024.pdf" },
+          "type":            { "type": "string",  "example": "application/pdf" },
+          "size":            { "type": "integer", "example": 204800, "description": "File size in bytes" },
+          "status":          { "type": "string",  "enum": ["queued","ingesting","ready","partial","failed"], "example": "ready" },
+          "chunkCount":      { "type": "integer", "example": 48 },
+          "chunksProcessed": { "type": "integer", "example": 48 },
+          "totalChunks":     { "type": "integer", "example": 48 },
+          "errorMessage":    { "type": "string",  "nullable": true },
+          "createdAt":       { "type": "string",  "format": "date-time" }
         }
       },
       "Agent": {
@@ -68,6 +45,7 @@
         "properties": {
           "id":             { "type": "integer", "example": 1 },
           "name":           { "type": "string",  "example": "Daily Report Agent" },
+          "slug":           { "type": "string",  "example": "daily-report-agent" },
           "triggerType":    { "type": "string",  "enum": ["manual","scheduled"], "example": "scheduled" },
           "cronExpression": { "type": "string",  "example": "0 9 * * *", "nullable": true },
           "enabled":        { "type": "boolean", "example": true },
@@ -87,28 +65,12 @@
           "completedAt": { "type": "string",  "format": "date-time", "nullable": true }
         }
       },
-      "Source": {
+      "DocumentQueued": {
         "type": "object",
         "properties": {
-          "text":     { "type": "string",  "example": "Employees are entitled to 20 days of annual leave per year." },
-          "metadata": { "type": "object",  "description": "Document metadata (filename, page, etc.)" }
-        }
-      },
-      "Usage": {
-        "type": "object",
-        "properties": {
-          "inputTokens":  { "type": "integer", "example": 1240 },
-          "outputTokens": { "type": "integer", "example": 312 },
-          "model":        { "type": "string",  "example": "gpt-4o" }
-        }
-      },
-      "ChatResponse": {
-        "type": "object",
-        "properties": {
-          "response": { "type": "string", "example": "Employees are entitled to 20 days of annual leave per year." },
-          "sources":  { "type": "array",  "items": { "$ref": "#/components/schemas/Source" } },
-          "usage":    { "$ref": "#/components/schemas/Usage" },
-          "threadId": { "type": "string", "nullable": true, "description": "Thread UID if the message was sent in a thread" }
+          "uid":    { "type": "string",  "example": "abc123-def456" },
+          "name":   { "type": "string",  "example": "report.pdf" },
+          "status": { "type": "string",  "example": "queued" }
         }
       },
       "Error": {
@@ -121,412 +83,13 @@
   },
   "paths": {
 
-    "/agents": {
-      "get": {
-        "summary": "List all agents",
-        "operationId": "listAllAgents",
-        "tags": ["Agents"],
-        "description": "Returns all agents across all workspaces.",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "List of all agents",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": { "agents": { "type": "array", "items": { "$ref": "#/components/schemas/Agent" } } }
-                }
-              }
-            }
-          },
-          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
-        }
-      }
-    },
-
-    "/documents": {
-      "get": {
-        "summary": "List all documents",
-        "operationId": "listAllDocuments",
-        "tags": ["Documents"],
-        "description": "Returns all documents across all workspaces.",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "List of all documents",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": { "documents": { "type": "array", "items": { "$ref": "#/components/schemas/Document" } } }
-                }
-              }
-            }
-          },
-          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
-        }
-      }
-    },
-
-    "/threads": {
-      "get": {
-        "summary": "List all threads",
-        "operationId": "listAllThreads",
-        "tags": ["Threads"],
-        "description": "Returns all threads across all workspaces.",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "List of all threads",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": { "threads": { "type": "array", "items": { "$ref": "#/components/schemas/Thread" } } }
-                }
-              }
-            }
-          },
-          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
-        }
-      }
-    },
-
-    "/chats": {
-      "get": {
-        "summary": "List all chats",
-        "operationId": "listAllChats",
-        "tags": ["Chat"],
-        "description": "Returns recent chat messages across all workspaces. Defaults to 100, max 500.",
-        "parameters": [
-          { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer", "default": 100, "maximum": 500 }, "description": "Number of messages to return" }
-        ],
-        "responses": {
-          "200": {
-            "description": "List of chat messages",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "chats": { "type": "array", "items": { "$ref": "#/components/schemas/Chat" } },
-                    "limit": { "type": "integer" }
-                  }
-                }
-              }
-            }
-          },
-          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
-        }
-      }
-    },
-
-    "/workspaces": {
-      "get": {
-        "summary": "List workspaces",
-        "operationId": "listWorkspaces",
-        "tags": ["Workspaces"],
-        "description": "Returns all workspaces with document and chat counts. Use the `slug` in subsequent requests.",
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": { "workspaces": { "type": "array", "items": { "$ref": "#/components/schemas/WorkspaceSummary" } } }
-                },
-                "example": {
-                  "workspaces": [
-                    { "id": 1, "name": "HR Policy Documents", "slug": "hr-policy-documents", "documents": 12, "chats": 340, "createdAt": "2025-01-10T08:00:00.000Z" }
-                  ]
-                }
-              }
-            }
-          },
-          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
-        }
-      },
-      "post": {
-        "summary": "Create workspace",
-        "operationId": "createWorkspace",
-        "tags": ["Workspaces"],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": ["name"],
-                "properties": {
-                  "name":         { "type": "string", "example": "Product Knowledge Base" },
-                  "systemPrompt": { "type": "string", "example": "You are a product expert. Answer only from the uploaded documents.", "nullable": true }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Workspace created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": { "workspace": { "$ref": "#/components/schemas/WorkspaceSummary" } }
-                }
-              }
-            }
-          },
-          "400": { "description": "name is required", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
-          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
-        }
-      }
-    },
-
-    "/workspaces/{workspaceSlug}": {
-      "get": {
-        "summary": "Get workspace",
-        "operationId": "getWorkspace",
-        "tags": ["Workspaces"],
-        "parameters": [
-          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug", "example": "hr-policy-documents" }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "workspace": {
-                      "allOf": [
-                        { "$ref": "#/components/schemas/WorkspaceSummary" },
-                        { "type": "object", "properties": { "documents": { "type": "array", "items": { "$ref": "#/components/schemas/Document" } } } }
-                      ]
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
-          "404": { "description": "Workspace not found",    "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
-        }
-      }
-    },
-
-    "/workspaces/{workspaceSlug}/chat": {
-      "post": {
-        "summary": "Send message (JSON)",
-        "operationId": "chatWithWorkspace",
-        "tags": ["Chat"],
-        "description": "Send a message and receive a full JSON response. Optionally pass a `threadId` to continue an existing conversation thread.",
-        "parameters": [
-          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug" }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": ["message"],
-                "properties": {
-                  "message":  { "type": "string", "example": "What is the annual leave entitlement?" },
-                  "threadId": { "type": "string", "description": "Thread UID to continue a conversation", "nullable": true }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "AI-generated answer",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ChatResponse" },
-                "example": {
-                  "response": "Employees are entitled to 20 days of annual leave per year.",
-                  "sources": [{ "text": "Employees are entitled to 20 days of annual leave.", "metadata": { "source": "Handbook.pdf" } }],
-                  "usage": { "inputTokens": 1240, "outputTokens": 312, "model": "gpt-4o" }
-                }
-              }
-            }
-          },
-          "400": { "description": "message is required", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
-          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
-          "404": { "description": "Workspace or thread not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
-          "500": { "description": "LLM provider error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
-        }
-      }
-    },
-
-    "/workspaces/{workspaceSlug}/chat/stream": {
-      "post": {
-        "summary": "Send message (SSE stream)",
-        "operationId": "streamChatWithWorkspace",
-        "tags": ["Chat"],
-        "description": "Send a message and receive the AI response as a **Server-Sent Events** stream. Each event is a JSON object on a `data:` line.\n\n**Event types:**\n- `{ \"chunk\": \"...\" }` — partial response text\n- `{ \"done\": true, \"sources\": [...], \"usage\": {...} }` — final event with sources and token usage\n- `{ \"error\": \"...\" }` — error event\n\nOptionally pass a `threadId` to continue an existing thread.",
-        "parameters": [
-          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug" }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": ["message"],
-                "properties": {
-                  "message":  { "type": "string", "example": "Summarise the leave policy." },
-                  "threadId": { "type": "string", "nullable": true }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "SSE stream of response chunks",
-            "content": {
-              "text/event-stream": {
-                "schema": { "type": "string" },
-                "example": "data: {\"chunk\":\"Employees\"}\n\ndata: {\"chunk\":\" are entitled\"}\n\ndata: {\"done\":true,\"sources\":[],\"usage\":{\"inputTokens\":100,\"outputTokens\":20,\"model\":\"gpt-4o\"}}\n\n"
-              }
-            }
-          },
-          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
-          "404": { "description": "Workspace not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
-        }
-      }
-    },
-
-    "/workspaces/{workspaceSlug}/chat/history": {
-      "get": {
-        "summary": "Get chat history",
-        "operationId": "getChatHistory",
-        "tags": ["Chat"],
-        "description": "Returns up to 100 messages for the workspace. Pass `threadId` to retrieve a specific thread's history.",
-        "parameters": [
-          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug" },
-          { "name": "threadId", "in": "query", "required": false, "schema": { "type": "string" }, "description": "Thread UID to filter history" }
-        ],
-        "responses": {
-          "200": {
-            "description": "List of messages",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "messages": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id":      { "type": "integer" },
-                          "role":    { "type": "string", "enum": ["user","assistant"] },
-                          "content": { "type": "string" },
-                          "sources": { "type": "array", "items": { "$ref": "#/components/schemas/Source" } },
-                          "createdAt": { "type": "string", "format": "date-time" }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
-          "404": { "description": "Workspace not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
-        }
-      }
-    },
-
-    "/workspaces/{workspaceSlug}/threads": {
-      "get": {
-        "summary": "List threads",
-        "operationId": "listThreads",
-        "tags": ["Threads"],
-        "parameters": [
-          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug" }
-        ],
-        "responses": {
-          "200": {
-            "description": "List of threads",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": { "threads": { "type": "array", "items": { "$ref": "#/components/schemas/Thread" } } }
-                }
-              }
-            }
-          },
-          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
-          "404": { "description": "Workspace not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
-        }
-      },
-      "post": {
-        "summary": "Create thread",
-        "operationId": "createThread",
-        "tags": ["Threads"],
-        "parameters": [
-          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug" }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": { "name": { "type": "string", "example": "Q3 Policy Review" } }
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Thread created",
-            "content": {
-              "application/json": {
-                "schema": { "type": "object", "properties": { "thread": { "$ref": "#/components/schemas/Thread" } } }
-              }
-            }
-          },
-          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
-          "404": { "description": "Workspace not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
-        }
-      }
-    },
-
-    "/workspaces/{workspaceSlug}/threads/{uid}": {
-      "delete": {
-        "summary": "Delete thread",
-        "operationId": "deleteThread",
-        "tags": ["Threads"],
-        "description": "Deletes the thread and all its messages.",
-        "parameters": [
-          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug" },
-          { "name": "uid",  "in": "path", "required": true, "schema": { "type": "string" } }
-        ],
-        "responses": {
-          "200": { "description": "Thread deleted", "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean" } } } } } },
-          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
-          "404": { "description": "Thread not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
-        }
-      }
-    },
-
     "/workspaces/{workspaceSlug}/documents": {
       "get": {
         "summary": "List documents",
         "operationId": "listDocuments",
         "tags": ["Documents"],
         "parameters": [
-          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug" }
+          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug", "example": "hr-policy-documents" }
         ],
         "responses": {
           "200": {
@@ -551,10 +114,10 @@
         "summary": "Get document status",
         "operationId": "getDocument",
         "tags": ["Documents"],
-        "description": "Useful for polling ingestion status after uploading. `status` will be `queued` → `ingesting` → `ready` (or `failed`).",
+        "description": "Poll ingestion status after uploading. `status` progresses: `queued` → `ingesting` → `ready` (or `failed`).",
         "parameters": [
-          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug" },
-          { "name": "uid",  "in": "path", "required": true, "schema": { "type": "string" } }
+          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "example": "hr-policy-documents" },
+          { "name": "uid", "in": "path", "required": true, "schema": { "type": "string" }, "example": "abc123-def456" }
         ],
         "responses": {
           "200": {
@@ -575,8 +138,8 @@
         "tags": ["Documents"],
         "description": "Deletes the document record and removes its vectors from the index.",
         "parameters": [
-          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug" },
-          { "name": "uid",  "in": "path", "required": true, "schema": { "type": "string" } }
+          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "example": "hr-policy-documents" },
+          { "name": "uid", "in": "path", "required": true, "schema": { "type": "string" }, "example": "abc123-def456" }
         ],
         "responses": {
           "200": { "description": "Document deleted", "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean" } } } } } },
@@ -588,12 +151,12 @@
 
     "/workspaces/{workspaceSlug}/documents/upload": {
       "post": {
-        "summary": "Upload file",
-        "operationId": "uploadDocument",
+        "summary": "File upload",
+        "operationId": "uploadFile",
         "tags": ["Documents"],
-        "description": "Upload a file for ingestion. Supported formats: PDF, DOCX, DOC, TXT, MD, CSV, XLSX, XLS, JSON.\n\nIngestion happens asynchronously. Poll `GET /workspaces/{workspaceSlug}/documents/{uid}` until `status` is `ready`.",
+        "description": "Upload a single document file (PDF, DOCX, DOC, TXT, MD, CSV, XLSX, XLS, JSON). Ingestion is async — poll `GET /documents/{uid}` until `status` is `ready`.",
         "parameters": [
-          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug" }
+          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "example": "hr-policy-documents" }
         ],
         "requestBody": {
           "required": true,
@@ -603,33 +166,14 @@
                 "type": "object",
                 "required": ["file"],
                 "properties": {
-                  "file": { "type": "string", "format": "binary", "description": "The file to upload" }
+                  "file": { "type": "string", "format": "binary", "description": "The document file to upload" }
                 }
               }
             }
           }
         },
         "responses": {
-          "202": {
-            "description": "File queued for ingestion",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "document": {
-                      "type": "object",
-                      "properties": {
-                        "uid":    { "type": "string" },
-                        "name":   { "type": "string" },
-                        "status": { "type": "string", "example": "queued" }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
+          "202": { "description": "File queued for ingestion", "content": { "application/json": { "schema": { "type": "object", "properties": { "documents": { "type": "array", "items": { "$ref": "#/components/schemas/DocumentQueued" } } } } } } },
           "400": { "description": "No file provided or storage limit exceeded", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
           "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
           "404": { "description": "Workspace not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
@@ -637,14 +181,78 @@
       }
     },
 
-    "/workspaces/{workspaceSlug}/documents/url": {
+    "/workspaces/{workspaceSlug}/documents/folder": {
       "post": {
-        "summary": "Ingest URL",
-        "operationId": "ingestUrl",
+        "summary": "Folder upload",
+        "operationId": "uploadFolder",
         "tags": ["Documents"],
-        "description": "Fetch and ingest a public URL. Ingestion is asynchronous — poll the document status to track progress.",
+        "description": "Upload multiple files from a folder in a single request. Send each file as a separate `file` field. All files are queued for ingestion in parallel.",
         "parameters": [
-          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug" }
+          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "example": "hr-policy-documents" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": { "type": "array", "items": { "type": "string", "format": "binary" }, "description": "One or more files. Repeat the `file` field for each file in the folder." }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": { "description": "Files queued for ingestion", "content": { "application/json": { "schema": { "type": "object", "properties": { "documents": { "type": "array", "items": { "$ref": "#/components/schemas/DocumentQueued" } } } } } } },
+          "400": { "description": "No files provided or storage limit exceeded", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Workspace not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+
+    "/workspaces/{workspaceSlug}/documents/ocr": {
+      "post": {
+        "summary": "OCR (image files)",
+        "operationId": "uploadOcr",
+        "tags": ["Documents"],
+        "description": "Upload image file(s) for OCR ingestion. Uses LLM vision to extract text from the image. Supported: JPG, JPEG, PNG, GIF, WEBP, TIFF, BMP.",
+        "parameters": [
+          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "example": "hr-policy-documents" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": { "type": "array", "items": { "type": "string", "format": "binary" }, "description": "One or more image files to process via OCR" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": { "description": "Images queued for OCR ingestion", "content": { "application/json": { "schema": { "type": "object", "properties": { "documents": { "type": "array", "items": { "$ref": "#/components/schemas/DocumentQueued" } } } } } } },
+          "400": { "description": "No files provided", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Workspace not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+
+    "/workspaces/{workspaceSlug}/documents/website": {
+      "post": {
+        "summary": "Website ingestion",
+        "operationId": "ingestWebsite",
+        "tags": ["Documents"],
+        "description": "Ingest a web page or crawl an entire website. Set `crawl: true` to BFS-crawl all pages on the same domain.",
+        "parameters": [
+          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "example": "hr-policy-documents" }
         ],
         "requestBody": {
           "required": true,
@@ -654,7 +262,10 @@
                 "type": "object",
                 "required": ["url"],
                 "properties": {
-                  "url": { "type": "string", "example": "https://example.com/policy.pdf" }
+                  "url":      { "type": "string",  "example": "https://docs.example.com" },
+                  "crawl":    { "type": "boolean", "default": false, "description": "Set true to crawl all pages on the same domain (BFS)" },
+                  "maxPages": { "type": "integer", "default": 50,    "description": "Max pages to crawl (crawl mode only)" },
+                  "maxDepth": { "type": "integer", "default": 2,     "description": "Max link depth from start URL (crawl mode only)" }
                 }
               }
             }
@@ -662,25 +273,51 @@
         },
         "responses": {
           "202": {
-            "description": "URL queued for ingestion",
+            "description": "Website queued for ingestion",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "document": {
-                      "type": "object",
-                      "properties": {
-                        "uid":    { "type": "string" },
-                        "name":   { "type": "string" },
-                        "status": { "type": "string", "example": "queued" }
-                      }
-                    }
+                    "document": { "$ref": "#/components/schemas/DocumentQueued" },
+                    "crawl":    { "type": "object", "description": "Present only when crawl: true", "properties": { "maxPages": { "type": "integer" }, "maxDepth": { "type": "integer" } } }
                   }
                 }
               }
             }
           },
+          "400": { "description": "url is required", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Workspace not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+
+    "/workspaces/{workspaceSlug}/documents/cloud": {
+      "post": {
+        "summary": "Cloud storage",
+        "operationId": "ingestCloud",
+        "tags": ["Documents"],
+        "description": "Download and ingest a file from cloud storage via a direct URL. Works with:\n- **AWS S3** pre-signed URLs\n- **Google Drive** direct download links (`/uc?export=download&id=...`)\n- **Dropbox** direct links (add `?dl=1` to sharing URL)\n- Any publicly accessible file URL",
+        "parameters": [
+          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "example": "hr-policy-documents" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["url"],
+                "properties": {
+                  "url": { "type": "string", "example": "https://my-bucket.s3.amazonaws.com/report.pdf?X-Amz-Signature=...", "description": "Direct download URL to the file in cloud storage" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": { "description": "File queued for ingestion", "content": { "application/json": { "schema": { "type": "object", "properties": { "document": { "$ref": "#/components/schemas/DocumentQueued" } } } } } },
           "400": { "description": "url is required", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
           "401": { "description": "Invalid or missing API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
           "404": { "description": "Workspace not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
@@ -694,7 +331,7 @@
         "operationId": "listAgents",
         "tags": ["Agents"],
         "parameters": [
-          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug" }
+          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "example": "hr-policy-documents" }
         ],
         "responses": {
           "200": {
@@ -720,8 +357,8 @@
         "operationId": "getAgentRuns",
         "tags": ["Agents"],
         "parameters": [
-          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug" },
-          { "name": "agentSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Agent slug" }
+          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "example": "hr-policy-documents" },
+          { "name": "agentSlug", "in": "path", "required": true, "schema": { "type": "string" }, "example": "daily-report-agent" }
         ],
         "responses": {
           "200": {
@@ -743,13 +380,13 @@
 
     "/workspaces/{workspaceSlug}/agents/{agentSlug}/run": {
       "post": {
-        "summary": "Run agent (SSE stream)",
+        "summary": "Run agent",
         "operationId": "runAgent",
         "tags": ["Agents"],
         "description": "Triggers an agent run and streams output as **Server-Sent Events**.\n\n**Event types:**\n- `{ \"tool_calls\": [\"conn_1_search_issues\"] }` — agent is calling a tool\n- `{ \"done\": true, \"output\": \"...\", \"runId\": 42 }` — run completed\n- `{ \"error\": \"...\" }` — run failed",
         "parameters": [
-          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Workspace slug" },
-          { "name": "agentSlug", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Agent slug" }
+          { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "example": "hr-policy-documents" },
+          { "name": "agentSlug", "in": "path", "required": true, "schema": { "type": "string" }, "example": "daily-report-agent" }
         ],
         "requestBody": {
           "content": {
