@@ -564,7 +564,7 @@ const OAUTH_TYPES = new Set(["gmail", "gdrive", "onedrive", "dropbox", "box"]);
 const CLOUD_STORAGE_TYPES = new Set(["gdrive", "onedrive", "dropbox", "box"]);
 const INTEGRATION_CONNECTOR_TYPES = new Set(["gmail", "gdrive", "onedrive", "dropbox", "box", "slack", "github", "jira", "confluence", "notion", "hubspot", "freshdesk", "zendesk", "rest-api", "zoho-mail", "ssh"]);
 
-export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngestionStarted, onInsertMention, section, focusType, focusEditConnector }) {
+export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngestionStarted, onInsertMention, section, focusType, focusEditConnector, onConnected }) {
   const [subTab, setSubTab]                 = useState("integrations");
   const [connectors, setConnectors]         = useState([]);
   const [totalConnectors, setTotalConnectors] = useState(0);
@@ -759,6 +759,7 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
       });
       setConnectors(cs => cs.map(x => x.id === editingDbId ? { ...x, ...data.connector } : x));
       setEditingDbId(null);
+      onConnected?.();
     } catch (e) {
       setError(e.response?.data?.error || "Failed to save.");
     } finally { setEditDbSaving(false); }
@@ -812,6 +813,7 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
       await api.put(`/admin/workspaces/${workspaceId}/connectors/${editIntgConnId}`, payload);
       await loadConnectors();
       setEditIntgConnId(null); setEditIntgType(null); setEditIntgFields({});
+      onConnected?.();
     } catch (e) {
       setEditIntgError(e.response?.data?.error || "Failed to save.");
     } finally { setEditIntgSaving(false); }
@@ -920,6 +922,7 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
       setShowForm(false);
       setForm({ name: "", slug: "", type: "postgresql", config: {}, auth: {}, allowedOps: ["SELECT"] });
       setCreateSlugStatus(null);
+      onConnected?.();
     } catch (e) {
       setError(e.response?.data?.error || "Failed to add connector");
     } finally { setSaving(false); }
@@ -1011,7 +1014,7 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
             const isEditing = editingDbId === c.id;
             return (
               <div key={c.id} className="border border-gray-200 rounded-xl overflow-hidden">
-                <div className="flex items-center gap-3 px-3 py-2.5 bg-gray-50">
+                {!isFocused && <div className="flex items-center gap-3 px-3 py-2.5 bg-gray-50">
                   <div className={`w-7 h-7 rounded-lg ${ct?.color || "bg-gray-500"} flex items-center justify-center shrink-0`}>
                     <span className="text-white text-[9px] font-bold">{c.type.slice(0, 2).toUpperCase()}</span>
                   </div>
@@ -1055,7 +1058,7 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
                     className="p-1 rounded hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors">
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                   </button>
-                </div>
+                </div>}
                 {sharePickerConnId === c.id && (
                   <div className="border-t border-gray-100 px-3 py-3 bg-white space-y-2">
                     <p className="text-xs font-semibold text-gray-700">Share with workspace</p>
@@ -1570,6 +1573,7 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
                             setConnectors(c => [...c, data.connector]);
                             setTotalConnectors(n => n + 1);
                             setApiKeySetup(null); setApiKeyFields({}); setApiKeyError(""); setApiKeySlugStatus(null);
+                            onConnected?.();
                           }
                         } catch (e) { setApiKeyError(e.response?.data?.error || "Failed to connect."); }
                         finally { setSavingApiKey(false); }
@@ -1581,9 +1585,9 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
                 )}
 
                 {/* Connected state */}
-                {!isFocused && connected.map(c => (
+                {connected.map(c => (
                   <div key={c.id}>
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border-t border-green-100">
+                    {!isFocused && <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border-t border-green-100">
                       <span className="text-green-500 text-[10px] shrink-0">✓</span>
                       <span className="text-[10px] text-green-700 font-medium flex-1 flex items-center gap-1.5">
                         {c.name}
@@ -1614,8 +1618,8 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
                         className="p-1 rounded hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors shrink-0">
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                       </button>
-                    </div>
-                    {sharePickerConnId === c.id && (
+                    </div>}
+                    {!isFocused && sharePickerConnId === c.id && (
                       <div className="border-t border-gray-100 px-3 py-3 bg-white space-y-2">
                         <p className="text-xs font-semibold text-gray-700">Share with workspace</p>
                         {(sharesMap[c.id] || []).length > 0 && (

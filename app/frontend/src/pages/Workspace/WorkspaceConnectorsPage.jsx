@@ -345,6 +345,7 @@ export default function WorkspaceConnectorsPage() {
                 section="both"
                 focusType={panelType}
                 focusEditConnector={panelEditConnector}
+                onConnected={() => { setShowPanel(false); setPanelType(null); setPanelEditConnector(null); loadConnectors(); }}
               />
             </div>
           </div>
