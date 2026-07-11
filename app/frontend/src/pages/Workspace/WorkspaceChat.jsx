@@ -824,7 +824,7 @@ export default function WorkspaceChat() {
   const hasMic = typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition || navigator.mediaDevices);
 
   return (
-    <div className="flex h-full bg-white overflow-hidden">
+    <div className="flex h-screen bg-white overflow-hidden">
 
       {/* ── Left sidebar ──────────────────────────────────────────────────── */}
       <div className="w-64 bg-[#f9f9f9] border-r border-gray-200 flex flex-col flex-shrink-0 overflow-hidden">
