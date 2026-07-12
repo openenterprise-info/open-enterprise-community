@@ -383,7 +383,7 @@
         "summary": "Run agent",
         "operationId": "runAgent",
         "tags": ["Agents"],
-        "description": "Triggers an agent run and streams output as **Server-Sent Events**.\n\n**Event types:**\n- `{ \"tool_calls\": [\"conn_1_search_issues\"] }` — agent is calling a tool\n- `{ \"done\": true, \"output\": \"...\", \"runId\": 42 }` — run completed\n- `{ \"error\": \"...\" }` — run failed",
+        "description": "Triggers an agent run and streams output as **Server-Sent Events**.\n\n**Event types:**\n- `{ \"tool_calls\": [\"conn_1_search_issues\"] }` — agent is calling a tool\n- `{ \"done\": true, \"output\": \"...\", \"runId\": 42, \"pendingApprovals\": 0 }` — run completed (pendingApprovals > 0 means a chain is waiting for human approval in the UI)\n- `{ \"error\": \"...\" }` — run failed",
         "parameters": [
           { "name": "workspaceSlug", "in": "path", "required": true, "schema": { "type": "string" }, "example": "hr-policy-documents" },
           { "name": "agentSlug", "in": "path", "required": true, "schema": { "type": "string" }, "example": "daily-report-agent" }
@@ -394,7 +394,7 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "input": { "type": "string", "description": "Optional instruction to the agent", "example": "Summarise all open Jira tickets assigned to me." }
+                  "input": { "type": "string", "description": "Optional instruction to the agent", "example": "Run" }
                 }
               }
             }

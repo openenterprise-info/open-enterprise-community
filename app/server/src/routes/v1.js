@@ -9,6 +9,8 @@ const { similaritySearch, deleteDocumentChunks }      = require("../utils/vector
 const { getLLMClient, getSetting }                    = require("../providers/llm");
 const { getAnthropicToolDefinitions, getToolDefinitions, executeTool } = require("../utils/tools/registry");
 const { canRunAgent, incrementAgentRun, getTierFromDB } = require("../utils/tier");
+const { buildSystemPrompt }                           = require("../utils/workflowEngine");
+const { maybeChain }                                  = require("../utils/agentChain");
 const ingestionQueue                                  = require("../utils/ingestionQueue");
 
 router.use(authenticateApiKey);
@@ -566,7 +568,7 @@ router.post("/workspaces/:workspaceSlug/agents/:agentSlug/run", async (req, res)
   await incrementAgentRun(req.db);
 
   const run = await req.db.agentRun.create({
-    data: { agentId: agent.id, status: "running", triggerType: "manual", input: req.body.input || null },
+    data: { agentId: agent.id, status: "running", triggerType: "api", input: req.body.input || null },
   });
 
   res.setHeader("Content-Type", "text/event-stream");
@@ -579,7 +581,7 @@ router.post("/workspaces/:workspaceSlug/agents/:agentSlug/run", async (req, res)
       ? await req.db.connector.findMany({ where: { id: { in: connectorIds }, status: "active" } })
       : [];
 
-    const systemPrompt = agent.systemPrompt || "You are a helpful AI agent. Complete the task using the available tools.";
+    const systemPrompt = buildSystemPrompt(agent) || "You are a helpful AI agent. Complete the task using the available tools.";
     const userMessage  = req.body.input?.trim() || "Execute the agent task now using the available tools. Do not ask for clarification.";
 
     const { provider, client } = await getLLMClient();
@@ -635,7 +637,8 @@ router.post("/workspaces/:workspaceSlug/agents/:agentSlug/run", async (req, res)
     }
 
     await req.db.agentRun.update({ where: { id: run.id }, data: { status: "success", output: fullOutput, completedAt: new Date() } });
-    res.write(`data: ${JSON.stringify({ done: true, output: fullOutput, runId: run.id })}\n\n`);
+    const chainResult = await maybeChain(agent, fullOutput, req.db, 0, { workspaceId: workspace.id, runId: run.id });
+    res.write(`data: ${JSON.stringify({ done: true, output: fullOutput, runId: run.id, pendingApprovals: chainResult.pendingApprovals })}\n\n`);
     res.end();
   } catch (err) {
     await req.db.agentRun.update({ where: { id: run.id }, data: { status: "error", error: err.message, completedAt: new Date() } });

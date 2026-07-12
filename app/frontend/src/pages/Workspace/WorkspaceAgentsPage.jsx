@@ -29,7 +29,170 @@ function yamlToAgentJson(y) {
 
 // ── Agent card ────────────────────────────────────────────────────────────────
 
-function AgentCard({ agent, running, onOpen, onRun, onStop, onDownload, onDelete }) {
+function ApiModal({ agent, workspaceSlug: wsSlugProp, onClose, navigate }) {
+  const [tab, setTab]       = useState("curl");
+  const [copied, setCopied] = useState(false);
+  const baseUrl    = window.location.origin;
+  const wsSlug     = wsSlugProp || window.location.pathname.match(/\/workspace\/([^/]+)/)?.[1] || "";
+  const endpoint   = `/api/v1/workspaces/${wsSlug}/agents/${agent.slug}/run`;
+  const fullUrl    = `${baseUrl}${endpoint}`;
+
+  const snippets = {
+    curl: `curl -X POST '${fullUrl}' \\
+  -H 'Authorization: Bearer emb_your_api_key_here' \\
+  -H 'Content-Type: application/json' \\
+  -d '{"input": "Run"}'`,
+
+    js: `const res = await fetch('${fullUrl}', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer emb_your_api_key_here',
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({ input: 'Run' }),
+});
+
+// Response is a Server-Sent Events stream
+const reader = res.body.getReader();
+const decoder = new TextDecoder();
+let output = '';
+
+while (true) {
+  const { done, value } = await reader.read();
+  if (done) break;
+  for (const line of decoder.decode(value).split('\\n')) {
+    if (!line.startsWith('data: ')) continue;
+    const evt = JSON.parse(line.slice(6));
+    if (evt.done)        output = evt.output;
+    if (evt.tool_calls)  console.log('Tools used:', evt.tool_calls);
+    if (evt.error)       console.error('Error:', evt.error);
+  }
+}
+console.log('Output:', output);`,
+
+    python: `import requests, json
+
+url = '${fullUrl}'
+headers = {
+    'Authorization': 'Bearer emb_your_api_key_here',
+    'Content-Type': 'application/json',
+}
+
+with requests.post(url, headers=headers,
+                   json={'input': 'Run'},
+                   stream=True) as r:
+    output = ''
+    for line in r.iter_lines():
+        if not line.startswith(b'data: '):
+            continue
+        evt = json.loads(line[6:])
+        if evt.get('done'):
+            output = evt.get('output', '')
+        elif evt.get('tool_calls'):
+            print('Tools used:', evt['tool_calls'])
+        elif evt.get('error'):
+            print('Error:', evt['error'])
+    print('Output:', output)`,
+
+    response: `// Tool-use progress event (0 or more)
+data: {"tool_calls": ["web_search", "read_file"]}
+
+// Completion event
+data: {"done": true, "output": "Agent final output text here...", "runId": 42, "pendingApprovals": 0}
+
+// pendingApprovals > 0 means a chained agent is waiting for
+// human approval in the workspace Approvals screen before it runs.
+
+// Error event (if something went wrong)
+data: {"error": "Descriptive error message"}`,
+  };
+
+  const TABS = [
+    { id: "curl",     label: "cURL"       },
+    { id: "js",       label: "JavaScript" },
+    { id: "python",   label: "Python"     },
+    { id: "response", label: "Response"   },
+  ];
+
+  function copy() {
+    navigator.clipboard.writeText(snippets[tab]);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 flex flex-col max-h-[88vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+          <div>
+            <h3 className="text-base font-semibold text-gray-900">API — {agent.name}</h3>
+            <p className="text-xs text-gray-400 mt-0.5">Run this agent programmatically using your API key</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        <div className="p-6 overflow-auto space-y-4">
+
+          {/* Endpoint pill */}
+          <div>
+            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Endpoint</p>
+            <div className="flex items-center gap-2.5 bg-gray-950 rounded-lg px-4 py-2.5 overflow-x-auto">
+              <span className="text-[11px] font-bold text-green-400 shrink-0 tracking-wide">POST</span>
+              <span className="text-xs font-mono text-gray-300 whitespace-nowrap">{endpoint}</span>
+            </div>
+          </div>
+
+          {/* Auth note */}
+          <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+            <svg className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
+            <p className="text-xs text-amber-700 leading-relaxed">
+              Generate an API key in{" "}
+              <button
+                onClick={() => { onClose(); navigate("/developer"); }}
+                className="font-semibold underline underline-offset-2 decoration-amber-600 hover:text-amber-900 transition-colors"
+              >
+                Developer → APIs → API Keys
+              </button>
+              , then replace{" "}
+              <code className="bg-amber-100 px-1 py-0.5 rounded text-amber-800 font-mono">emb_your_api_key_here</code>{" "}
+              in the examples below.
+            </p>
+          </div>
+
+          {/* Code tabs */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+                {TABS.map(t => (
+                  <button key={t.id} onClick={() => setTab(t.id)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${tab === t.id ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <button onClick={copy}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                {copied ? (
+                  <><svg className="w-3.5 h-3.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg> Copied</>
+                ) : (
+                  <><svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg> Copy</>
+                )}
+              </button>
+            </div>
+            <pre className="bg-gray-950 text-green-400 rounded-xl p-5 text-xs font-mono leading-relaxed whitespace-pre overflow-x-auto">{snippets[tab]}</pre>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AgentCard({ agent, running, onOpen, onRun, onStop, onApi, onDownload, onDelete }) {
   const lastRun   = agent.runs?.[0];
   const isRunning = !!running[agent.id];
   const dotColor  = isRunning                        ? "bg-amber-400 animate-pulse"
@@ -76,6 +239,10 @@ function AgentCard({ agent, running, onOpen, onRun, onStop, onDownload, onDelete
             ) : (
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             )}
+          </button>
+          <button onClick={() => onApi(agent)} title="API / Embed"
+            className="p-1.5 rounded-lg text-gray-400 hover:text-indigo hover:bg-indigo/10 transition-colors">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
           </button>
           <button onClick={() => onDownload(agent)} title="Export YAML"
             className="p-1.5 rounded-lg text-gray-400 hover:text-teal-600 hover:bg-teal-50 transition-colors">
@@ -141,6 +308,7 @@ export default function WorkspaceAgentsPage() {
   const [deleting, setDeleting]         = useState(null);
   const [yamlAgent, setYamlAgent]       = useState(null);
   const [yaml, setYaml]                 = useState("");
+  const [apiAgent, setApiAgent]         = useState(null);
   const [studioAgent, setStudioAgent]   = useState(null);
   const [saving, setSaving]             = useState(false);
   const [importing, setImporting]       = useState(false);
@@ -546,6 +714,7 @@ export default function WorkspaceAgentsPage() {
                   onOpen={() => openStudio(a)}
                   onRun={handleRun}
                   onStop={handleStop}
+                  onApi={setApiAgent}
                   onDownload={downloadYaml}
                   onDelete={setConfirmDelete}
                 />
@@ -567,6 +736,7 @@ export default function WorkspaceAgentsPage() {
         />
       )}
       {yamlAgent && <YamlModal agent={yamlAgent} yaml={yaml} onClose={() => setYamlAgent(null)} />}
+      {apiAgent  && <ApiModal  agent={apiAgent}  workspaceSlug={slug} onClose={() => setApiAgent(null)} navigate={navigate} />}
       {confirmDelete && (
         <ConfirmDialog
           title="Delete Agent" message="Delete agent" detail={confirmDelete.name}

@@ -184,7 +184,7 @@ async function runChainedAgent(agent, db, inputContext, depth, chatContext) {
 async function maybeChain(agent, output, db, depth = 0, chatContext) {
   const workspace = await db.workspace.findUnique({ where: { id: agent.workspaceId } });
   const maxDepth  = workspace?.maxChainDepth || 5;
-  if (depth >= maxDepth) { console.warn(`[chain] Max depth (${maxDepth}) reached at agent "${agent.name}"`); return; }
+  if (depth >= maxDepth) { console.warn(`[chain] Max depth (${maxDepth}) reached at agent "${agent.name}"`); return { pendingApprovals: 0 }; }
 
   const chains = agent.chains
     ? JSON.parse(agent.chains)
@@ -192,7 +192,9 @@ async function maybeChain(agent, output, db, depth = 0, chatContext) {
       ? [{ condition: agent.nextAgentCondition || "always", nextAgent: agent.nextAgent }]
       : [];
 
-  if (!chains.length) return;
+  if (!chains.length) return { pendingApprovals: 0 };
+
+  let pendingApprovals = 0;
 
   for (const chain of chains) {
     if (!chain.nextAgent) continue;
@@ -218,6 +220,7 @@ async function maybeChain(agent, output, db, depth = 0, chatContext) {
           timeoutAt,
         }
       });
+      pendingApprovals++;
       console.log(`[chain] "${agent.name}" → "${chain.nextAgent}" queued for manual approval`);
       continue;
     }
@@ -225,6 +228,8 @@ async function maybeChain(agent, output, db, depth = 0, chatContext) {
     console.log(`[chain] "${agent.name}" → "${nextAgent.name}" (condition: ${chain.condition}, depth: ${depth + 1})`);
     await runChainedAgent(nextAgent, db, output, depth + 1, chatContext);
   }
+
+  return { pendingApprovals };
 }
 
 module.exports = { maybeChain, runChainedAgent };
