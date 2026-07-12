@@ -60,7 +60,7 @@ function ApprovalCard({ approval, onDecide }) {
             </pre>
           )}
           {approval.status === "pending" && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-1/2">
               <button
                 onClick={() => handleDecide("approved")}
                 disabled={deciding}
