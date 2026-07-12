@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { load as yamlLoad } from "js-yaml";
 
 class StepErrorBoundary extends React.Component {
@@ -127,6 +128,19 @@ function safeJson(str, fallback) {
 function safeArray(str) {
   const v = safeJson(str, []);
   return Array.isArray(v) ? v : [];
+}
+function SettingsLink() {
+  const { slug } = useParams();
+  const navigate = useNavigate();
+  return (
+    <button
+      type="button"
+      onClick={() => navigate(`/workspace/${slug}/settings`)}
+      className="underline text-indigo hover:text-indigo/70 transition-colors"
+    >
+      Workspace → Agents → Settings
+    </button>
+  );
 }
 
 export default function AgentStudio({ initialAgent, connectors = [], agents = [], onSave, onClose, saving, maxRounds = 25, maxChainDepth = 5 }) {
@@ -442,7 +456,7 @@ function ChainStep({ form, set, agents, currentSlug }) {
             <p className="text-xs text-gray-600">
               {[form.name || "This agent", ...filled.map(c => `@${c.nextAgent}`)].join(" → ")}
             </p>
-            <p className="text-[10px] text-gray-400 pt-1">Max chain depth set in Workspace Settings → Agents.</p>
+            <p className="text-[10px] text-gray-400 pt-1">Max chain depth set in <SettingsLink />.</p>
           </div>
         )}
       </div>
@@ -617,7 +631,8 @@ function FlowChart({ form, connectors, standalone, maxRounds = 25, maxChainDepth
               <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
             </div>
             <p className="text-[10px] text-gray-400 mt-1.5 leading-tight">
-              Each tool call (read, write, API) = 1 round. Max set in Workspace → Agents.
+              Each tool call (read, write, API) = 1 round. Max set in{" "}
+              <SettingsLink />.
             </p>
           </div>
         );
@@ -641,7 +656,8 @@ function FlowChart({ form, connectors, standalone, maxRounds = 25, maxChainDepth
               <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
             </div>
             <p className="text-[10px] text-gray-400 mt-1.5 leading-tight">
-              Each agent hand-off = 1 depth level. Max set in Workspace → Agents.
+              Each agent hand-off = 1 depth level. Max set in{" "}
+              <SettingsLink />.
             </p>
           </div>
         );
