@@ -243,6 +243,7 @@ export default function WorkspaceAgentsPage() {
     setRunning(a.id);
     try {
       await api.post(`/workspaces/${slug}/agents/${a.id}/run`, { input: "" });
+      navigate(`/workspace/${slug}/run-logs`);
     } catch {}
     setRunning(null);
   }
