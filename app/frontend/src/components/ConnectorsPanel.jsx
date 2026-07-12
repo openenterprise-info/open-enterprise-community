@@ -501,6 +501,7 @@ const INTEGRATION_TYPES = [
   { id: "outlook",      label: "Outlook",         color: "bg-blue-600",   initial: "OL",  live: false, desc: "Send emails and search Outlook inbox" },
   { id: "sharepoint",   label: "SharePoint",      color: "bg-blue-700",   initial: "SP",  live: false, desc: "Read and search SharePoint sites and libraries" },
   { id: "salesforce",   label: "Salesforce",      color: "bg-sky-500",    initial: "SF",  live: false, desc: "Query and update CRM records and opportunities" },
+  { id: "zoho-crm",     label: "Zoho CRM",        color: "bg-red-600",    initial: "ZC",  live: false, desc: "Search leads, accounts, contacts, and activities in Zoho CRM" },
   { id: "bullhorn",     label: "Bullhorn",         color: "bg-orange-500", initial: "BH",  live: false, desc: "Search candidates, jobs, and placements in Bullhorn ATS" },
   { id: "recruit-crm",  label: "Recruit CRM",      color: "bg-blue-600",   initial: "RC",  live: false, desc: "Manage candidates, contacts, and job pipelines in Recruit CRM" },
   { id: "vincere",      label: "Vincere",          color: "bg-indigo-600", initial: "VN",  live: false, desc: "Search candidates and jobs in Vincere recruitment platform" },
@@ -676,7 +677,7 @@ const CLOUD_STORAGE_TYPES = new Set(["gdrive", "onedrive", "dropbox", "box"]);
 const INTEGRATION_CONNECTOR_TYPES = new Set([
   "gmail", "gdrive", "onedrive", "dropbox", "box", "slack", "github", "jira", "confluence", "notion",
   "hubspot", "freshdesk", "zendesk", "rest-api", "zoho-mail", "ssh",
-  "teams", "outlook", "sharepoint", "salesforce", "bullhorn", "recruit-crm", "vincere", "manatal", "zoho-recruit",
+  "teams", "outlook", "sharepoint", "salesforce", "zoho-crm", "bullhorn", "recruit-crm", "vincere", "manatal", "zoho-recruit",
   // Databases (new — no form yet, treated as integrations)
   "dynamodb", "cassandra", "mariadb", "neo4j", "influxdb", "clickhouse", "couchdb", "firestore", "arangodb",
   "db2", "teradata", "duckdb", "supabase", "neon", "planetscale",

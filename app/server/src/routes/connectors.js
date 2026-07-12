@@ -3,7 +3,13 @@ const { authenticate, requireAdmin, requireManagerOrAdmin } = require("../middle
 const { canAddConnector, getTierFromDB } = require("../utils/tier");
 const { logActivity }                = require("../utils/activityLog");
 
-const SUPPORTED_TYPES = ["postgresql", "mysql", "mssql", "oracle", "mongodb", "rest-api", "gmail", "slack", "jira", "confluence", "notion", "hubspot", "freshdesk", "zendesk", "github", "zoho-mail", "gdrive", "ssh"];
+const SUPPORTED_TYPES = [
+  "postgresql", "mysql", "mssql", "oracle", "mongodb",
+  "redis", "sqlite", "snowflake", "bigquery", "cockroachdb", "elasticsearch",
+  "rest-api", "gmail", "slack", "jira", "confluence", "notion", "hubspot",
+  "freshdesk", "zendesk", "github", "zoho-mail", "gdrive", "ssh",
+  "onedrive", "dropbox", "box",
+];
 
 function generateSlug(name) {
   return (name || "").toLowerCase().replace(/[^a-z0-9]/g, "") || "connector";
@@ -267,6 +273,86 @@ router.post("/workspaces/:workspaceId/connectors/:id/test", async (req, res) => 
         conn.connect(cfg2);
       });
       success = true; message = `Connected to ${auth.host || cfg.host} as ${auth.username || cfg.username}`;
+    } else if (connector.type === "redis") {
+      const Redis = require("ioredis");
+      const client = new Redis({
+        host: cfg.host || "localhost",
+        port: parseInt(cfg.port || "6379"),
+        password: auth.password || undefined,
+        db: parseInt(cfg.db || "0"),
+        tls: cfg.tls ? {} : undefined,
+        connectTimeout: 8000,
+        lazyConnect: true,
+      });
+      await client.connect();
+      await client.ping();
+      await client.quit();
+      success = true; message = "Connected successfully.";
+    } else if (connector.type === "sqlite") {
+      const Database = require("better-sqlite3");
+      const db = new Database(cfg.filename || ":memory:", { timeout: 8000 });
+      db.prepare("SELECT 1").get();
+      db.close();
+      success = true; message = `Connected to ${cfg.filename || ":memory:"}`;
+    } else if (connector.type === "cockroachdb") {
+      const { Pool } = require("pg");
+      const pool = new Pool({
+        host:     cfg.host     || "localhost",
+        port:     parseInt(cfg.port || "26257"),
+        database: cfg.database || "defaultdb",
+        user:     auth.username || undefined,
+        password: auth.password || undefined,
+        ssl:      cfg.ssl ? { rejectUnauthorized: false } : false,
+        connectionTimeoutMillis: 8000,
+      });
+      await pool.query("SELECT 1");
+      await pool.end();
+      success = true; message = "Connected successfully.";
+    } else if (connector.type === "snowflake") {
+      const snowflake = require("snowflake-sdk");
+      await new Promise((resolve, reject) => {
+        const c = snowflake.createConnection({
+          account:   cfg.account,
+          username:  auth.username,
+          password:  auth.password,
+          database:  cfg.database,
+          schema:    cfg.schema   || "PUBLIC",
+          warehouse: cfg.warehouse,
+          role:      cfg.role     || undefined,
+        });
+        c.connect(err => {
+          if (err) { reject(err); return; }
+          c.execute({ sqlText: "SELECT 1", complete: (err2) => { c.destroy(() => {}); err2 ? reject(err2) : resolve(); } });
+        });
+      });
+      success = true; message = "Connected successfully.";
+    } else if (connector.type === "bigquery") {
+      const { BigQuery } = require("@google-cloud/bigquery");
+      const credentials = auth.keyFileJson ? JSON.parse(auth.keyFileJson) : undefined;
+      const bq = new BigQuery({ projectId: cfg.projectId, credentials });
+      await bq.query({ query: "SELECT 1", timeoutMs: 8000 });
+      success = true; message = `Connected to project ${cfg.projectId}`;
+    } else if (connector.type === "elasticsearch") {
+      const { Client } = require("@elastic/elasticsearch");
+      const esAuth = auth.apiKey
+        ? { auth: { apiKey: auth.apiKey } }
+        : (auth.username ? { auth: { username: auth.username, password: auth.password || "" } } : {});
+      const esClient = new Client({ node: cfg.node || "http://localhost:9200", ...esAuth, requestTimeout: 8000 });
+      const info = await esClient.info();
+      await esClient.close();
+      success = true; message = `Connected — Elasticsearch ${info.version?.number || ""}`;
+    } else if (connector.type === "onedrive") {
+      if (!auth.refreshToken && !auth.accessToken) throw new Error("Not connected — complete OAuth flow first.");
+      const { data } = await require("axios").get("https://graph.microsoft.com/v1.0/me/drive", { headers: { Authorization: `Bearer ${auth.accessToken}` }, timeout: 8000 });
+      success = true; message = `Connected to OneDrive (${data.owner?.user?.displayName || data.driveType || "personal"})`;
+    } else if (connector.type === "dropbox") {
+      if (!auth.accessToken) throw new Error("Not connected — complete OAuth flow first.");
+      const { data } = await require("axios").post("https://api.dropboxapi.com/2/users/get_current_account", null, { headers: { Authorization: `Bearer ${auth.accessToken}` }, timeout: 8000 });
+      success = true; message = `Connected as ${data.email || data.name?.display_name || "Dropbox user"}`;
+    } else if (connector.type === "box") {
+      if (!auth.accessToken) throw new Error("Not connected — complete OAuth flow first.");
+      const { data } = await require("axios").get("https://api.box.com/2.0/users/me", { headers: { Authorization: `Bearer ${auth.accessToken}` }, timeout: 8000 });
+      success = true; message = `Connected as ${data.login || data.name || "Box user"}`;
     } else if (connector.type === "rest-api") {
       const axios = require("axios");
       const baseUrl = (cfg.baseUrl || "").replace(/\/$/, "");

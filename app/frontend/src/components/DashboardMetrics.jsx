@@ -277,8 +277,6 @@ function AdminMetrics({ stats }) {
         <StatCard label="Failed Runs"     value={fmt(stats.agentRunErrors   || 0)} sub="errors"       />
       </div>
 
-      <InstanceUsageSection usage={stats.usage} />
-
       <SectionTitle>Usage &amp; Cost</SectionTitle>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
