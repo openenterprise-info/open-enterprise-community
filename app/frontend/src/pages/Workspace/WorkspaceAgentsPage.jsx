@@ -1,11 +1,31 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { load as yamlLoad } from "js-yaml";
 import api from "../../utils/api";
 import { agentToYaml } from "../../utils/agentToYaml";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import AgentStudio from "../../components/AgentStudio";
 import { Spinner, EmptyState } from "../../components/ui";
 import { useAuth } from "../../context/AuthContext";
+
+function yamlToAgentJson(y) {
+  return {
+    name:               y.name,
+    slug:               y.slug || "",
+    description:        y.description || "",
+    group:              y.group || "",
+    nextAgent:          y.next_agent || "",
+    nextAgentCondition: y.next_agent_condition || "on_critical",
+    chains:             (y.chains || []).map(c => ({ condition: c.condition || "always", nextAgent: c.next_agent || "", triggerType: c.trigger_type || "automatic" })),
+    systemPrompt:       y.instructions || "",
+    steps:              y.steps || [],
+    triggerType:        y.trigger?.type || "manual",
+    cronExpression:     y.trigger?.cron || "",
+    enabled:            y.enabled !== false,
+    connectors:         (y.connectors || []).map(c => ({ name: c.name, type: c.type, connection_id: c.connection_id || "" })),
+    params:             (y.params || []).map(p => ({ name: p.name, label: p.label || "", default: p.default || "" })),
+  };
+}
 
 // ── Agent card ────────────────────────────────────────────────────────────────
 
@@ -101,6 +121,8 @@ export default function WorkspaceAgentsPage() {
   const [yaml, setYaml]                 = useState("");
   const [studioAgent, setStudioAgent]   = useState(null);
   const [saving, setSaving]             = useState(false);
+  const [importing, setImporting]       = useState(false);
+  const [importWarning, setImportWarning] = useState("");
   const uploadRef                       = useRef(null);
 
   useEffect(() => {
@@ -159,33 +181,30 @@ export default function WorkspaceAgentsPage() {
     });
   }
 
-  function handleUploadFile(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const text = ev.target.result;
-      const get = (key) => {
-        const m = text.match(new RegExp(`^${key}:\\s*(.+)$`, 'm'));
-        return m ? m[1].trim().replace(/^["']|["']$/g, '') : '';
-      };
-      setStudioAgent({
-        isNew: true,
-        name:           get('name') || file.name.replace(/\.(yaml|yml)$/i, ''),
-        description:    get('description') || '',
-        triggerType:    get('triggerType') || get('trigger_type') || 'manual',
-        cronExpression: get('cronExpression') || get('cron') || null,
-        enabled:        get('enabled') !== 'false',
-        connectorIds: "[]",
-        workflow: "[]",
-        params: "[]",
-        chains: "[]",
-        visualize: false,
-        workspace: { id: workspace?.id, name: workspace?.name, slug },
-      });
-    };
-    reader.readAsText(file);
-    e.target.value = '';
+  async function handleUploadFile(e) {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setImporting(true);
+    setImportWarning("");
+    const warnings = [];
+    let successCount = 0;
+    for (const file of files) {
+      try {
+        const text = await file.text();
+        const isYaml = file.name.endsWith(".yaml") || file.name.endsWith(".yml");
+        const agentJson = isYaml ? yamlToAgentJson(yamlLoad(text)) : JSON.parse(text);
+        const { data } = await api.post(`/workspaces/${slug}/agents/import`, { agentJson });
+        setAgents(prev => [{ ...data.agent, _owned: true }, ...prev]);
+        successCount++;
+        if (data.unmatchedTypes?.length) warnings.push(`"${file.name}": ${data.unmatchedTypes.join(", ")} connector(s) not found`);
+        if (data.slugRenamed) warnings.push(`"${file.name}": imported as "${data.slugRenamed}" (slug conflict)`);
+      } catch (err) {
+        warnings.push(`"${file.name}": ${err.response?.data?.error || "Invalid agent file"}`);
+      }
+    }
+    setImporting(false);
+    if (uploadRef.current) uploadRef.current.value = "";
+    if (warnings.length) setImportWarning(`Imported ${successCount}/${files.length} — ${warnings.join("; ")}.`);
   }
 
   async function handleStudioSave(form) {
@@ -349,13 +368,14 @@ export default function WorkspaceAgentsPage() {
                 </svg>
                 New Agent
               </button>
-              <input ref={uploadRef} type="file" accept=".yaml,.yml" className="hidden" onChange={handleUploadFile} />
-              <button onClick={() => uploadRef.current?.click()}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                </svg>
-                Upload
+              <input ref={uploadRef} type="file" accept=".yaml,.yml" className="hidden" multiple onChange={handleUploadFile} />
+              <button onClick={() => uploadRef.current?.click()} disabled={importing}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50">
+                {importing
+                  ? <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                  : <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                }
+                Import
               </button>
               <button onClick={() => navigate(`/workspace/${slug}/approvals`)}
                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
@@ -390,6 +410,14 @@ export default function WorkspaceAgentsPage() {
                 placeholder="Search agents…"
                 className="input pl-8 py-2 text-sm w-full"
               />
+            </div>
+          )}
+
+          {importWarning && (
+            <div className="flex items-start gap-2 px-4 py-3 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-700">
+              <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
+              <span>{importWarning}</span>
+              <button onClick={() => setImportWarning("")} className="ml-auto shrink-0 text-amber-500 hover:text-amber-700">✕</button>
             </div>
           )}
 
