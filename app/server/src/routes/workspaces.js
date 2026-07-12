@@ -947,6 +947,18 @@ router.patch("/:slug/chain-approvals/:id", authenticate, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// Clear all non-pending approvals for this workspace
+router.delete("/:slug/chain-approvals", authenticate, requireManagerOrAdmin, async (req, res) => {
+  try {
+    const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.slug } });
+    if (!workspace) return res.status(404).json({ error: "Workspace not found" });
+    await req.db.chainApproval.deleteMany({
+      where: { workspaceId: workspace.id, status: { not: "pending" } },
+    });
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // ── Knowledge Base Sharing ────────────────────────────────────────────────────
 
 router.get("/:slug/kb-shares", authenticate, async (req, res) => {

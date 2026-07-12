@@ -91,6 +91,7 @@ export default function WorkspaceApprovalsPage() {
   const [approvals, setApprovals]   = useState([]);
   const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [clearing, setClearing]     = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -116,6 +117,15 @@ export default function WorkspaceApprovalsPage() {
   async function decideApproval(id, decision) {
     await api.patch(`/workspaces/${slug}/chain-approvals/${id}`, { decision });
     setApprovals(a => a.map(x => x.id === id ? { ...x, status: decision } : x));
+  }
+
+  async function clearApprovals() {
+    setClearing(true);
+    try {
+      await api.delete(`/workspaces/${slug}/chain-approvals`);
+      setApprovals(a => a.filter(x => x.status === "pending"));
+    } catch { /* ignore */ }
+    finally { setClearing(false); }
   }
 
   const pendingCount = approvals.filter(a => a.status === "pending").length;
@@ -188,17 +198,32 @@ export default function WorkspaceApprovalsPage() {
                 <p className="text-sm text-gray-400 mt-0.5">Review and approve pending agent chain actions</p>
               </div>
             </div>
-            <button
-              onClick={() => loadApprovals(true)}
-              disabled={refreshing}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-700 transition-colors disabled:opacity-50"
-            >
-              {refreshing
-                ? <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
-                : <span>↻</span>
-              }
-              Refresh
-            </button>
+            <div className="flex items-center gap-2">
+              {approvals.some(a => a.status !== "pending") && (
+                <button
+                  onClick={clearApprovals}
+                  disabled={clearing}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-500 border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
+                >
+                  {clearing
+                    ? <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                    : <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  }
+                  Clear
+                </button>
+              )}
+              <button
+                onClick={() => loadApprovals(true)}
+                disabled={refreshing}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-700 transition-colors disabled:opacity-50"
+              >
+                {refreshing
+                  ? <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                  : <span>↻</span>
+                }
+                Refresh
+              </button>
+            </div>
           </div>
 
           {/* Pending alert banner */}
