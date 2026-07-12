@@ -33,6 +33,7 @@ export default function WorkspaceRunLogsPage() {
   const [loading, setLoading]     = useState(true);
   const [expanded, setExpanded]   = useState(null);
   const [period, setPeriod]       = useState("all");
+  const [clearing, setClearing]   = useState(false);
 
   function fetchRuns(p) {
     setLoading(true);
@@ -50,6 +51,16 @@ export default function WorkspaceRunLogsPage() {
   }, [slug]);
 
   useEffect(() => { if (slug) fetchRuns(period); }, [period]);
+
+  async function clearRuns() {
+    setClearing(true);
+    try {
+      await api.delete(`/workspaces/${slug}/agent-runs`);
+      setRuns([]);
+      setExpanded(null);
+    } catch { /* ignore */ }
+    finally { setClearing(false); }
+  }
 
   const fmt = (dt) => dt ? new Date(dt).toLocaleString() : "—";
   const duration = (r) => {
@@ -116,6 +127,16 @@ export default function WorkspaceRunLogsPage() {
                 ))}
               </div>
               <button onClick={() => fetchRuns(period)} className="text-xs text-indigo hover:text-indigo/80 font-medium px-2">↻</button>
+              {runs.length > 0 && (
+                <button onClick={clearRuns} disabled={clearing}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-500 border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50">
+                  {clearing
+                    ? <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                    : <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  }
+                  Clear
+                </button>
+              )}
               {runs.length > 0 && (
                 <div className="flex gap-1 border border-gray-200 rounded-lg overflow-hidden">
                   <button onClick={() => {
