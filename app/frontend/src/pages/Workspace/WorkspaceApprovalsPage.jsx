@@ -92,10 +92,23 @@ export default function WorkspaceApprovalsPage() {
   const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [clearing, setClearing]     = useState(false);
+  const [runningAgentCount, setRunningAgentCount] = useState(0);
 
   useEffect(() => {
     if (!slug) return;
     api.get(`/workspaces/${slug}`).then(r => setWorkspace(r.data.workspace)).catch(() => {});
+  }, [slug]);
+
+  useEffect(() => {
+    if (!slug) return;
+    const check = () => {
+      api.get(`/workspaces/${slug}/agent-runs?period=7d`)
+        .then(r => setRunningAgentCount((r.data.runs || []).filter(x => x.status === "running").length))
+        .catch(() => {});
+    };
+    check();
+    const id = setInterval(check, 8000);
+    return () => clearInterval(id);
   }, [slug]);
 
   async function loadApprovals(showRefreshing = false) {
@@ -117,6 +130,7 @@ export default function WorkspaceApprovalsPage() {
   async function decideApproval(id, decision) {
     await api.patch(`/workspaces/${slug}/chain-approvals/${id}`, { decision });
     setApprovals(a => a.map(x => x.id === id ? { ...x, status: decision } : x));
+    navigate(`/workspace/${slug}/agents`);
   }
 
   async function clearApprovals() {
@@ -168,7 +182,13 @@ export default function WorkspaceApprovalsPage() {
           </button>
           <button onClick={() => navigate(`/workspace/${slug}/agents`)} className="flex items-center gap-2.5 w-full px-2 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors">
             <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-            Agents
+            <span className="flex-1 text-left">Agents</span>
+            {runningAgentCount > 0 && (
+              <span className="relative flex h-2 w-2 mr-1">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+              </span>
+            )}
           </button>
         </div>
       </div>

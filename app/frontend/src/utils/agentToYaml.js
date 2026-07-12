@@ -38,7 +38,11 @@ export function agentToYaml(a) {
   const conns = a.connectors || [];
   if (conns.length) {
     lines.push(`connectors:`);
-    conns.forEach(c => lines.push(`  - name: "${c.name}"\n    type: ${c.type}`));
+    conns.forEach(c => {
+      lines.push(`  - name: "${c.name}"`);
+      lines.push(`    type: ${c.type}`);
+      if (c.connection_id) lines.push(`    connection_id: "${c.connection_id}"`);
+    });
   }
   const params = a.params || [];
   if (params.length) {

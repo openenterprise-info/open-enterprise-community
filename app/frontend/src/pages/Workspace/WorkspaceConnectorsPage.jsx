@@ -172,6 +172,7 @@ export default function WorkspaceConnectorsPage() {
   const [testResult,  setTestResult]  = useState({});
   const [confirmDel,  setConfirmDel]  = useState(null);
   const [deleting,    setDeleting]    = useState(null);
+  const [runningAgentCount, setRunningAgentCount] = useState(0);
 
   useEffect(() => {
     if (!slug) return;
@@ -179,6 +180,18 @@ export default function WorkspaceConnectorsPage() {
       .then(r => setWorkspace(r.data.workspace))
       .catch(() => setError("Workspace not found"))
       .finally(() => setLoading(false));
+  }, [slug]);
+
+  useEffect(() => {
+    if (!slug) return;
+    const check = () => {
+      api.get(`/workspaces/${slug}/agent-runs?period=7d`)
+        .then(r => setRunningAgentCount((r.data.runs || []).filter(x => x.status === "running").length))
+        .catch(() => {});
+    };
+    check();
+    const id = setInterval(check, 8000);
+    return () => clearInterval(id);
   }, [slug]);
 
   const loadConnectors = useCallback(() => {
@@ -273,7 +286,13 @@ export default function WorkspaceConnectorsPage() {
             <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
-            Agents
+            <span className="flex-1 text-left">Agents</span>
+            {runningAgentCount > 0 && (
+              <span className="relative flex h-2 w-2 mr-1">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -372,35 +391,51 @@ export default function WorkspaceConnectorsPage() {
             />
           </div>
 
-          {/* Row 4: All Connector Type Cards */}
-          <div className="grid grid-cols-6 gap-2">
-            {filtered.map(t => {
-              const connected = connectors.filter(c => c.type === t.id);
-              const isConnected = connected.length > 0;
-              return (
-                <div key={t.id}
-                  className={`border rounded-xl bg-white overflow-hidden flex flex-col h-28 transition-all duration-150 ${isConnected ? "border-green-200 hover:shadow-sm" : "border-gray-200 hover:border-indigo/30 hover:shadow-sm"}`}>
-                  <div className="px-3 pt-3 pb-2 flex items-start gap-2.5 flex-1">
-                    <div className={`w-7 h-7 rounded-lg ${t.color} flex items-center justify-center shrink-0`}>
-                      <span className="text-white text-[9px] font-bold">{t.initial}</span>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-gray-900 leading-snug">{t.label}</p>
-                    </div>
-                    {isConnected && <div className="w-2 h-2 rounded-full bg-green-400 shrink-0 mt-1" />}
-                  </div>
-                  <div className="px-3 pb-3 flex justify-start">
-                    {canManage && (
-                      <button onClick={() => { setPanelEditConnector(null); setPanelType(t.id); setShowPanel(true); }}
-                        className="w-1/2 py-1.5 text-xs font-semibold text-white bg-indigo rounded-lg hover:bg-indigo/90 transition-colors">
-                        Connect
-                      </button>
-                    )}
-                  </div>
+          {/* Row 4: All Connector Types — grouped by category */}
+          {[
+            { key: "Database",    label: "Databases"     },
+            { key: "Integration", label: "Integrations"  },
+          ].map(cat => {
+            const items = filtered.filter(t => t.cat === cat.key);
+            if (!items.length) return null;
+            return (
+              <div key={cat.key}>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-widest">{cat.label}</span>
+                  <span className="text-xs bg-red-500 text-white font-semibold px-1.5 py-0.5 rounded-full">{items.length}</span>
+                  <div className="flex-1 h-px bg-gray-100" />
                 </div>
-              );
-            })}
-          </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {items.map(t => {
+                    const isConnected = connectors.some(c => c.type === t.id);
+                    return (
+                      <div key={t.id}
+                        className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all duration-150 ${
+                          isConnected
+                            ? "border-green-200 bg-green-50/50"
+                            : "border-gray-100 bg-gray-50/50 hover:border-indigo/25 hover:bg-white hover:shadow-sm"
+                        }`}>
+                        <div className={`w-7 h-7 rounded-lg ${t.color} flex items-center justify-center shrink-0`}>
+                          <span className="text-white text-[9px] font-bold leading-none">{t.initial}</span>
+                        </div>
+                        <span className="flex-1 text-sm font-medium text-gray-700 truncate min-w-0">{t.label}</span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {isConnected && <span className="w-2 h-2 rounded-full bg-green-400" />}
+                          {canManage && (
+                            <button
+                              onClick={() => { setPanelEditConnector(null); setPanelType(t.id); setShowPanel(true); }}
+                              className="text-[11px] font-semibold text-indigo opacity-0 group-hover:opacity-100 hover:text-indigo/70 whitespace-nowrap transition-all">
+                              Connect →
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
 
         </div>
       </div>

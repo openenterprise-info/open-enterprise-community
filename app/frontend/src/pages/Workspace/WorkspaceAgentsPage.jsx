@@ -29,14 +29,22 @@ function yamlToAgentJson(y) {
 
 // ── Agent card ────────────────────────────────────────────────────────────────
 
-function AgentCard({ agent, running, onOpen, onRun, onDownload, onDelete }) {
-  const lastRun = agent.runs?.[0];
+function AgentCard({ agent, running, onOpen, onRun, onStop, onDownload, onDelete }) {
+  const lastRun   = agent.runs?.[0];
+  const isRunning = !!running[agent.id];
+  const dotColor  = isRunning                        ? "bg-amber-400 animate-pulse"
+                  : lastRun?.status === "success"    ? "bg-green-400"
+                  : lastRun?.status === "error"      ? "bg-red-400"
+                  : lastRun?.status === "cancelled"  ? "bg-gray-400"
+                  : lastRun?.status === "rejected"   ? "bg-orange-400"
+                  : "bg-gray-300";
+
   return (
     <div onClick={onOpen} className="bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col hover:shadow-sm hover:border-indigo/30 transition-all duration-150 cursor-pointer">
       <div className="px-4 pt-4 pb-3 flex-1">
         <div className="flex items-start justify-between gap-2 mb-1.5">
           <p className="text-sm font-bold text-gray-900 leading-snug">{agent.name}</p>
-          <div className={`w-2 h-2 rounded-full shrink-0 mt-1 ${lastRun?.status === "success" ? "bg-green-400" : lastRun?.status === "error" ? "bg-red-400" : "bg-gray-300"}`} />
+          <div className={`w-2 h-2 rounded-full shrink-0 mt-1 ${dotColor}`} />
         </div>
         {agent.slug && <p className="text-xs font-mono text-indigo mb-1.5">@{agent.slug}</p>}
         {agent.description
@@ -44,16 +52,30 @@ function AgentCard({ agent, running, onOpen, onRun, onDownload, onDelete }) {
           : <p className="text-xs text-gray-300 italic">No description</p>
         }
       </div>
+
       <div className="px-3 py-2 border-t border-gray-100 flex items-center justify-between gap-1">
         <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${agent.triggerType === "scheduled" ? "bg-amber-50 text-amber-600" : "bg-indigo/8 text-indigo"}`}>
           {agent.triggerType === "scheduled" ? "Scheduled" : "Manual"}
         </span>
         <div className="flex items-center gap-0.5" onClick={e => e.stopPropagation()}>
-          <button onClick={() => onRun(agent)} disabled={running === agent.id} title="Run"
-            className="p-1.5 rounded-lg text-gray-400 hover:text-green-600 hover:bg-green-50 disabled:opacity-40 transition-colors">
-            {running === agent.id
-              ? <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
-              : <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>}
+          <button
+            onClick={() => isRunning ? onStop(agent.id) : onRun(agent)}
+            title={isRunning ? "Stop" : "Run"}
+            className={`p-2 rounded-lg text-white transition-colors ${isRunning ? "bg-red-500 hover:bg-red-600" : "bg-green-600 hover:bg-green-700"}`}
+          >
+            {isRunning ? (
+              <div className="relative w-4 h-4">
+                <svg className="absolute inset-0 w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"/>
+                  <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                </svg>
+                <svg className="absolute inset-0 w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <rect x="8" y="8" width="8" height="8" rx="1"/>
+                </svg>
+              </div>
+            ) : (
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            )}
           </button>
           <button onClick={() => onDownload(agent)} title="Export YAML"
             className="p-1.5 rounded-lg text-gray-400 hover:text-teal-600 hover:bg-teal-50 transition-colors">
@@ -114,7 +136,7 @@ export default function WorkspaceAgentsPage() {
   const [loading, setLoading]           = useState(true);
   const [error, setError]               = useState("");
   const [search, setSearch]             = useState("");
-  const [running, setRunning]           = useState(null);
+  const [running, setRunning]           = useState({}); // { [agentId]: runId }
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [deleting, setDeleting]         = useState(null);
   const [yamlAgent, setYamlAgent]       = useState(null);
@@ -123,7 +145,19 @@ export default function WorkspaceAgentsPage() {
   const [saving, setSaving]             = useState(false);
   const [importing, setImporting]       = useState(false);
   const [importWarning, setImportWarning] = useState("");
+  const [pendingApprovals, setPendingApprovals] = useState(0);
   const uploadRef                       = useRef(null);
+
+  useEffect(() => {
+    if (!slug) return;
+    const fetchPending = () =>
+      api.get(`/workspaces/${slug}/chain-approvals`)
+        .then(r => setPendingApprovals((r.data.approvals || []).filter(a => a.status === "pending").length))
+        .catch(() => {});
+    fetchPending();
+    const id = setInterval(fetchPending, 5000);
+    return () => clearInterval(id);
+  }, [slug]);
 
   useEffect(() => {
     if (!slug) return;
@@ -132,11 +166,37 @@ export default function WorkspaceAgentsPage() {
       api.get(`/workspaces/${slug}/agents`),
       api.get(`/workspaces/${slug}/connectors`).catch(() => ({ data: { connectors: [] } })),
     ]).then(([wsRes, agentsRes, connRes]) => {
+      const agentsList = agentsRes.data.agents || [];
       setWorkspace(wsRes.data.workspace);
-      setAgents(agentsRes.data.agents || []);
+      setAgents(agentsList);
       setConnectors(connRes.data.connectors || []);
+      const restoredRunning = {};
+      agentsList.forEach(a => { if (a.runs?.[0]?.status === "running") restoredRunning[a.id] = a.runs[0].id; });
+      if (Object.keys(restoredRunning).length) setRunning(restoredRunning);
     }).catch(() => setError("Workspace not found"))
       .finally(() => setLoading(false));
+  }, [slug]);
+
+  useEffect(() => {
+    if (!slug) return;
+    const poll = () =>
+      api.get(`/workspaces/${slug}/agents`)
+        .then(r => {
+          const agentsList = r.data.agents || [];
+          setAgents(agentsList);
+          setRunning(prev => {
+            const next = { ...prev };
+            agentsList.forEach(a => {
+              const latest = a.runs?.[0];
+              if (next[a.id] && latest?.status !== "running") delete next[a.id];
+              if (!next[a.id] && latest?.status === "running") next[a.id] = latest.id;
+            });
+            return next;
+          });
+        })
+        .catch(() => {});
+    const id = setInterval(poll, 8000);
+    return () => clearInterval(id);
   }, [slug]);
 
   const filtered = useMemo(() => {
@@ -259,12 +319,48 @@ export default function WorkspaceAgentsPage() {
   }
 
   async function handleRun(a) {
-    setRunning(a.id);
+    setRunning(r => ({ ...r, [a.id]: null }));
     try {
-      await api.post(`/workspaces/${slug}/agents/${a.id}/run`, { input: "" });
-      navigate(`/workspace/${slug}/run-logs`);
-    } catch {}
-    setRunning(null);
+      const token = localStorage.getItem("oe_token");
+      const resp = await fetch(`/api/workspaces/${slug}/agents/${a.id}/run`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ input: "" }),
+      });
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop();
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const evt = JSON.parse(line.slice(6));
+            if (evt.runId) setRunning(r => ({ ...r, [a.id]: evt.runId }));
+            if (evt.done || evt.error) {
+              setRunning(r => { const n = { ...r }; delete n[a.id]; return n; });
+              navigate(`/workspace/${slug}/run-logs`);
+              return;
+            }
+          } catch { /* ignore malformed */ }
+        }
+      }
+    } catch { /* ignore */ }
+    setRunning(r => { const n = { ...r }; delete n[a.id]; return n; });
+    navigate(`/workspace/${slug}/run-logs`);
+  }
+
+  async function handleStop(agentId) {
+    const runId = running[agentId];
+    if (runId) {
+      try { await api.post(`/workspaces/${slug}/agents/${agentId}/runs/${runId}/cancel`); } catch { /* ignore */ }
+    }
+    setRunning(r => { const n = { ...r }; delete n[agentId]; return n; });
+    navigate(`/workspace/${slug}/run-logs`);
   }
 
   async function handleDelete() {
@@ -378,11 +474,16 @@ export default function WorkspaceAgentsPage() {
                 Import
               </button>
               <button onClick={() => navigate(`/workspace/${slug}/approvals`)}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                className="relative flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 Approvals
+                {pendingApprovals > 0 && (
+                  <span className="ml-0.5 w-4 h-4 bg-red-500 rounded-full text-white text-[10px] font-bold flex items-center justify-center">
+                    {pendingApprovals}
+                  </span>
+                )}
               </button>
               <button onClick={() => navigate(`/workspace/${slug}/run-logs`)}
                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
@@ -444,6 +545,7 @@ export default function WorkspaceAgentsPage() {
                   running={running}
                   onOpen={() => openStudio(a)}
                   onRun={handleRun}
+                  onStop={handleStop}
                   onDownload={downloadYaml}
                   onDelete={setConfirmDelete}
                 />

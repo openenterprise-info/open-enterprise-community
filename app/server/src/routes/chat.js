@@ -264,6 +264,7 @@ router.post("/:slug", authenticate, async (req, res) => {
         const model = (await getSetting("llm_model")) || process.env.OPENAI_MODEL || "gpt-4o";
         const MAX_ROUNDS = workspace.defaultAgentMaxRounds || 25;
         let fullOutput = "";
+        let wasCancelled = false;
         const agentToolCallNames = [];
         const allRawResults = [];
         const hasWorkflow = (JSON.parse(agent.workflow || "[]")).length > 0;
@@ -273,6 +274,8 @@ router.post("/:slug", authenticate, async (req, res) => {
           const msgs  = [{ role: "user", content: userMessage }];
           let madeToolCall = false;
           for (let round = 0; round < MAX_ROUNDS; round++) {
+            const [crPre] = await req.db.$queryRaw`SELECT cancelRequested FROM AgentRun WHERE id = ${run.id}`;
+            if (crPre?.cancelRequested) { wasCancelled = true; fullOutput = "⛔ Run stopped by user."; break; }
             const resp = await client.messages.create({ model: model || "claude-sonnet-4-6", max_tokens: 4096, system: systemPrompt, messages: msgs, tools: tools.length ? tools : undefined, temperature: 0.3 });
             if (resp.stop_reason !== "tool_use" || !tools.length) {
               if (hasWorkflow && tools.length && !madeToolCall && round === 0) {
@@ -292,7 +295,7 @@ router.post("/:slug", authenticate, async (req, res) => {
             for (const tb of toolUseBlocks) { const result = await executeTool(tb.name, tb.input, connectors, req.db); allRawResults.push(String(result)); toolResults.push({ type: "tool_result", tool_use_id: tb.id, content: String(result) }); }
             msgs.push({ role: "user", content: toolResults });
             const [cr0] = await req.db.$queryRaw`SELECT cancelRequested FROM AgentRun WHERE id = ${run.id}`;
-            if (cr0?.cancelRequested) { fullOutput = "[Run cancelled by user]"; break; }
+            if (cr0?.cancelRequested) { wasCancelled = true; fullOutput = "⛔ Run stopped by user."; break; }
             if (round === MAX_ROUNDS - 1) { const fr = await client.messages.create({ model: model || "claude-sonnet-4-6", max_tokens: 4096, system: systemPrompt, messages: msgs, temperature: 0.3 }); fullOutput = fr.content?.find(b => b.type === "text")?.text || ""; }
           }
         } else {
@@ -300,6 +303,8 @@ router.post("/:slug", authenticate, async (req, res) => {
           const messages = [{ role: "system", content: systemPrompt }, { role: "user", content: userMessage }];
           let madeToolCall = false;
           for (let round = 0; round < MAX_ROUNDS; round++) {
+            const [crPre] = await req.db.$queryRaw`SELECT cancelRequested FROM AgentRun WHERE id = ${run.id}`;
+            if (crPre?.cancelRequested) { wasCancelled = true; fullOutput = "⛔ Run stopped by user."; break; }
             const reqBody = { model, messages, temperature: 0.3, max_tokens: 4096 };
             if (tools.length) { reqBody.tools = tools; reqBody.tool_choice = "auto"; }
             const resp   = await client.chat.completions.create(reqBody);
@@ -324,9 +329,22 @@ router.post("/:slug", authenticate, async (req, res) => {
               messages.push({ role: "tool", tool_call_id: tc.id, content: String(result) });
             }
             const [cr1] = await req.db.$queryRaw`SELECT cancelRequested FROM AgentRun WHERE id = ${run.id}`;
-            if (cr1?.cancelRequested) { fullOutput = "[Run cancelled by user]"; break; }
+            if (cr1?.cancelRequested) { wasCancelled = true; fullOutput = "⛔ Run stopped by user."; break; }
             if (round === MAX_ROUNDS - 1) { const fr = await client.chat.completions.create({ model, messages, temperature: 0.3, max_tokens: 4096 }); fullOutput = fr.choices[0].message.content || ""; }
           }
+        }
+
+        // Final race-condition check — catches cancel set while last LLM call was in-flight
+        if (!wasCancelled) {
+          const [crFinal] = await req.db.$queryRaw`SELECT cancelRequested FROM AgentRun WHERE id = ${run.id}`;
+          if (crFinal?.cancelRequested) { wasCancelled = true; fullOutput = "⛔ Run stopped by user."; }
+        }
+
+        if (wasCancelled) {
+          await req.db.agentRun.update({ where: { id: run.id }, data: { status: "cancelled", output: fullOutput, completedAt: new Date() } });
+          agentSafeWrite(`data: ${JSON.stringify({ done: true, content: `**@${agentSlug}** — Run stopped by user.`, agentRun: true })}\n\n`);
+          if (!agentClientGone) res.end();
+          return;
         }
 
         await req.db.agentRun.update({ where: { id: run.id }, data: { status: "success", output: fullOutput, completedAt: new Date() } });

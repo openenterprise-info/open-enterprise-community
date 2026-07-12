@@ -6,7 +6,6 @@ import { useAuth } from "../../context/AuthContext";
 import api from "../../utils/api";
 import WorkspaceDrawer from "../../components/WorkspaceDrawer";
 import ConfirmDialog from "../../components/ConfirmDialog";
-import AgentsChatPanel from "../../components/AgentsChatPanel";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -451,6 +450,7 @@ export default function WorkspaceChat() {
   const [activeToolCalls, setActiveToolCalls] = useState([]);
   const [activeRunId, setActiveRunId]     = useState(null);
   const activeRunIdRef                    = useRef(null);
+  const abortControllerRef                = useRef(null);
   const [showExport, setShowExport]     = useState(false);
 
   // Threads
@@ -474,11 +474,10 @@ export default function WorkspaceChat() {
   const [showHistory, setShowHistory] = useState(false);
   const messageRefs = useRef(new Map());
 
-  // Agents panel
-  const [showAgentsPanel, setShowAgentsPanel] = useState(true);
   const [agents, setAgents]                   = useState([]);
   const [connectors, setConnectors]           = useState([]);
   const [mentionSearch, setMentionSearch]     = useState(null); // null = closed, string = filtering
+  const [runningAgentCount, setRunningAgentCount] = useState(0);
 
   // Drawer
   const [drawerWorkspaceId, setDrawerWorkspaceId] = useState(null);
@@ -543,6 +542,18 @@ export default function WorkspaceChat() {
       .catch(() => {});
     window.addEventListener("agents-changed", refresh);
     return () => window.removeEventListener("agents-changed", refresh);
+  }, [slug]);
+
+  useEffect(() => {
+    if (!slug) return;
+    const check = () => {
+      api.get(`/workspaces/${slug}/agent-runs?period=7d`)
+        .then(r => setRunningAgentCount((r.data.runs || []).filter(x => x.status === "running").length))
+        .catch(() => {});
+    };
+    check();
+    const id = setInterval(check, 8000);
+    return () => clearInterval(id);
   }, [slug]);
 
   const reloadMessages = () => {
@@ -746,11 +757,14 @@ export default function WorkspaceChat() {
     setActiveSources(null);
 
     try {
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
       const token = localStorage.getItem("oe_token");
       const res = await fetch(`/api/chat/${slug}`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ message: text, threadId: activeThreadId || undefined, bypassDlp })
+        body: JSON.stringify({ message: text, threadId: activeThreadId || undefined, bypassDlp }),
+        signal: controller.signal,
       });
       if (!res.ok) throw new Error("Chat failed");
 
@@ -807,9 +821,12 @@ export default function WorkspaceChat() {
       setActiveToolCalls([]);
       setActiveRunId(null);
       activeRunIdRef.current = null;
-    } catch {
-      setMessages(m => [...m, { id: Date.now() + 1, role: "assistant", content: "Sorry, I encountered an error. Please try again." }]);
+    } catch (err) {
+      if (err?.name !== "AbortError") {
+        setMessages(m => [...m, { id: Date.now() + 1, role: "assistant", content: "Sorry, I encountered an error. Please try again." }]);
+      }
     } finally {
+      abortControllerRef.current = null;
       setStreaming(false);
       setActiveToolCalls([]);
       setActiveRunId(null);
@@ -928,7 +945,13 @@ export default function WorkspaceChat() {
             <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
-            Agents
+            <span className="flex-1 text-left">Agents</span>
+            {runningAgentCount > 0 && (
+              <span className="relative flex h-2 w-2 mr-1">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -948,16 +971,6 @@ export default function WorkspaceChat() {
 
           {/* Right actions */}
           <div className="flex items-center gap-1 flex-shrink-0">
-            {/* Agents panel toggle */}
-            <button
-              onClick={() => setShowAgentsPanel(v => !v)}
-              title="Agents"
-              className={`p-1.5 rounded-lg transition-colors ${showAgentsPanel ? "bg-indigo/10 text-indigo" : "text-gray-400 hover:text-gray-700 hover:bg-gray-100"}`}
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H4a2 2 0 01-2-2V5a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-1" />
-              </svg>
-            </button>
             {/* History breadcrumbs button */}
             {messages.filter(m => m.role === "user").length > 0 && (
               <button
@@ -1134,9 +1147,21 @@ export default function WorkspaceChat() {
                       {activeRunId && (
                         <button onClick={async () => {
                             const runId = activeRunIdRef.current;
-                            if (!runId) return;
-                            try { await api.post(`/workspaces/${slug}/agents/0/runs/${runId}/cancel`); }
-                            catch (err) { console.error("Stop failed:", err?.response?.data || err.message); }
+                            // Abort SSE stream immediately — stops tool calls appearing in UI
+                            abortControllerRef.current?.abort();
+                            // Clear UI state right away
+                            setActiveToolCalls([]);
+                            setStreamingText("");
+                            setStreaming(false);
+                            setActiveRunId(null);
+                            activeRunIdRef.current = null;
+                            // Show stopped confirmation in chat
+                            setMessages(m => [...m, { id: Date.now() + 1, role: "assistant", content: "⛔ Run stopped by user." }]);
+                            // Tell server to mark run as cancelled
+                            if (runId) {
+                              try { await api.post(`/workspaces/${slug}/agents/0/runs/${runId}/cancel`); }
+                              catch { /* ignore */ }
+                            }
                           }}
                           className="mt-1 self-start flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded-full hover:bg-red-100 transition-colors">
                           ⏹ Stop
@@ -1320,15 +1345,6 @@ export default function WorkspaceChat() {
         </div>
       </div>
 
-      {/* ── Agents right panel ─────────────────────────────────────────────── */}
-      {showAgentsPanel && (
-        <AgentsChatPanel
-          slug={slug}
-          isManager={canManageDocs}
-          onClose={() => setShowAgentsPanel(false)}
-          onApprovalDecided={reloadMessages}
-        />
-      )}
 
       {/* ── Sources panel (right) ──────────────────────────────────────────── */}
       {activeSources && (

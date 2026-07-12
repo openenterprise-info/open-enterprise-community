@@ -406,7 +406,7 @@ router.get("/:slug/agents", authenticate, async (req, res) => {
 
     const include = {
       createdBy: { select: { id: true, name: true, email: true } },
-      runs: { orderBy: { startedAt: "desc" }, take: 1, select: { status: true, startedAt: true } }
+      runs: { orderBy: { startedAt: "desc" }, take: 1, select: { id: true, status: true, startedAt: true } }
     };
 
     const ownedWhere = { workspaceId: workspace.id };
@@ -541,6 +541,10 @@ router.post("/:slug/agents/:agentId/runs/:runId/cancel", authenticate, async (re
   try {
     const runId = parseInt(req.params.runId);
     await req.db.$executeRaw`UPDATE AgentRun SET cancelRequested = 1 WHERE id = ${runId}`;
+    await req.db.agentRun.update({
+      where: { id: runId },
+      data: { status: "cancelled", output: "⛔ Run stopped by user.", completedAt: new Date() },
+    });
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -634,6 +638,7 @@ router.post("/:slug/agents/:id/run", authenticate, async (req, res) => {
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
+  res.write(`data: ${JSON.stringify({ runId: run.id })}\n\n`);
 
   try {
     const allowed = await canRunAgent(req.db);
@@ -666,11 +671,14 @@ router.post("/:slug/agents/:id/run", authenticate, async (req, res) => {
     const runToolCallNames = [];
     const hasWorkflow = (JSON.parse(agent.workflow || "[]")).length > 0;
 
+    let wasCancelled = false;
     if (provider === "anthropic") {
       const tools = [...getAnthropicToolDefinitions(connectors)];
       const msgs  = [{ role: "user", content: userMessage }];
       let madeToolCall = false;
       for (let round = 0; round < MAX_ROUNDS; round++) {
+        const cancelCheck = await req.db.agentRun.findUnique({ where: { id: run.id }, select: { cancelRequested: true } });
+        if (cancelCheck?.cancelRequested) { wasCancelled = true; fullOutput = "⛔ Run stopped by user."; break; }
         const resp = await client.messages.create({
           model: model || "claude-sonnet-4-6",
           max_tokens: 4096, system: systemPrompt, messages: msgs,
@@ -710,6 +718,8 @@ router.post("/:slug/agents/:id/run", authenticate, async (req, res) => {
       const messages = [{ role: "system", content: systemPrompt }, { role: "user", content: userMessage }];
       let madeToolCall = false;
       for (let round = 0; round < MAX_ROUNDS; round++) {
+        const cancelCheck = await req.db.agentRun.findUnique({ where: { id: run.id }, select: { cancelRequested: true } });
+        if (cancelCheck?.cancelRequested) { wasCancelled = true; fullOutput = "⛔ Run stopped by user."; break; }
         const reqBody = { model, messages, temperature: 0.3, max_tokens: 4096 };
         if (tools.length) { reqBody.tools = tools; reqBody.tool_choice = "auto"; }
         const resp   = await client.chat.completions.create(reqBody);
@@ -742,22 +752,30 @@ router.post("/:slug/agents/:id/run", authenticate, async (req, res) => {
       }
     }
 
+    // Final cancel check — catches the race where cancel was requested
+    // while an LLM call was in-flight and the loop exited via natural finish_reason
+    if (!wasCancelled) {
+      const finalCancel = await req.db.agentRun.findUnique({ where: { id: run.id }, select: { cancelRequested: true } });
+      if (finalCancel?.cancelRequested) { wasCancelled = true; fullOutput = "⛔ Run stopped by user."; }
+    }
+
     // Append tool call summary to output for logs
-    if (runToolCallNames.length) {
+    if (!wasCancelled && runToolCallNames.length) {
       const counts = runToolCallNames.reduce((acc, n) => { acc[n] = (acc[n] || 0) + 1; return acc; }, {});
       const summary = Object.entries(counts).map(([n, c]) => `  ✅ ${n}${c > 1 ? ` ×${c}` : ""}`).join("\n");
       fullOutput += `\n\n---\n🔧 Tool calls:\n${summary}`;
     }
 
-    await req.db.agentRun.update({
-      where: { id: run.id },
-      data:  { status: "success", output: fullOutput, completedAt: new Date() },
-    });
+    if (!wasCancelled) {
+      await req.db.agentRun.update({
+        where: { id: run.id },
+        data:  { status: "success", output: fullOutput, completedAt: new Date() },
+      });
+      const { maybeChain } = require("../utils/agentChain");
+      maybeChain(agent, fullOutput, req.db, 0, { workspaceId: workspace.id, runId: run.id }).catch(e => console.error("[chain]", e.message));
+    }
 
-    const { maybeChain } = require("../utils/agentChain");
-    maybeChain(agent, fullOutput, req.db, 0, { workspaceId: workspace.id, runId: run.id }).catch(e => console.error("[chain]", e.message));
-
-    res.write(`data: ${JSON.stringify({ done: true, output: fullOutput })}\n\n`);
+    res.write(`data: ${JSON.stringify({ done: true, output: fullOutput, cancelled: wasCancelled })}\n\n`);
     res.end();
   } catch (err) {
     await req.db.agentRun.update({
@@ -926,8 +944,9 @@ router.patch("/:slug/chain-approvals/:id", authenticate, async (req, res) => {
 
     const chatCtx = { workspaceId: workspace.id, threadId: approval.threadId || null };
 
+    const nextAgent = await req.db.agent.findFirst({ where: { slug: approval.nextAgentSlug } });
+
     if (decision === "approved") {
-      const nextAgent = await req.db.agent.findFirst({ where: { slug: approval.nextAgentSlug } });
       if (nextAgent) {
         await req.db.chat.create({
           data: { workspaceId: workspace.id, threadId: chatCtx.threadId, role: "assistant",
@@ -937,6 +956,19 @@ router.patch("/:slug/chain-approvals/:id", authenticate, async (req, res) => {
         runChainedAgent(nextAgent, req.db, approval.runOutput, 0, chatCtx).catch(e => console.error("[approval]", e.message));
       }
     } else {
+      if (nextAgent) {
+        await req.db.agentRun.create({
+          data: {
+            agentId: nextAgent.id,
+            status: "rejected",
+            triggerType: "chained",
+            input: (approval.runOutput || "").slice(0, 2000) || null,
+            output: "❌ Chain rejected by user — agent was not started.",
+            triggeredFromWorkspaceId: workspace.id,
+            completedAt: new Date(),
+          },
+        });
+      }
       await req.db.chat.create({
         data: { workspaceId: workspace.id, threadId: chatCtx.threadId, role: "assistant",
           content: `*❌ Chain rejected — @${approval.nextAgentSlug} will not run.*` },

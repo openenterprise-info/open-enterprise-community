@@ -12,9 +12,11 @@ const PERIODS = [
 
 function statusBadge(status) {
   const s = {
-    success: { bg: "bg-green-100 text-green-700", dot: "bg-green-500" },
-    error:   { bg: "bg-red-100 text-red-600",     dot: "bg-red-500"   },
-    running: { bg: "bg-blue-100 text-blue-600",   dot: "bg-blue-500"  },
+    success:   { bg: "bg-green-100 text-green-700",   dot: "bg-green-500"  },
+    error:     { bg: "bg-red-100 text-red-600",       dot: "bg-red-500"    },
+    running:   { bg: "bg-blue-100 text-blue-600",     dot: "bg-blue-500"   },
+    cancelled: { bg: "bg-gray-100 text-gray-500",     dot: "bg-gray-400"   },
+    rejected:  { bg: "bg-orange-100 text-orange-600", dot: "bg-orange-500" },
   };
   const style = s[status] || { bg: "bg-gray-100 text-gray-500", dot: "bg-gray-400" };
   return (
@@ -34,12 +36,17 @@ export default function WorkspaceRunLogsPage() {
   const [expanded, setExpanded]   = useState(null);
   const [period, setPeriod]       = useState("all");
   const [clearing, setClearing]   = useState(false);
+  const [runningAgentCount, setRunningAgentCount] = useState(0);
 
   function fetchRuns(p) {
     setLoading(true);
     const q = p !== "all" ? `?period=${p}` : "";
     api.get(`/workspaces/${slug}/agent-runs${q}`)
-      .then(r => setRuns(r.data.runs || []))
+      .then(r => {
+        const runs = r.data.runs || [];
+        setRuns(runs);
+        setRunningAgentCount(runs.filter(x => x.status === "running").length);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }
@@ -51,6 +58,21 @@ export default function WorkspaceRunLogsPage() {
   }, [slug]);
 
   useEffect(() => { if (slug) fetchRuns(period); }, [period]);
+
+  useEffect(() => {
+    if (!slug) return;
+    const id = setInterval(() => {
+      const q = period !== "all" ? `?period=${period}` : "";
+      api.get(`/workspaces/${slug}/agent-runs${q}`)
+        .then(r => {
+          const updated = r.data.runs || [];
+          setRuns(updated);
+          setRunningAgentCount(updated.filter(x => x.status === "running").length);
+        })
+        .catch(() => {});
+    }, 6000);
+    return () => clearInterval(id);
+  }, [slug, period]);
 
   async function clearRuns() {
     setClearing(true);
@@ -99,7 +121,13 @@ export default function WorkspaceRunLogsPage() {
           </button>
           <button onClick={() => navigate(`/workspace/${slug}/agents`)} className="flex items-center gap-2.5 w-full px-2 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors">
             <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-            Agents
+            <span className="flex-1 text-left">Agents</span>
+            {runningAgentCount > 0 && (
+              <span className="relative flex h-2 w-2 mr-1">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -141,7 +169,7 @@ export default function WorkspaceRunLogsPage() {
                 <div className="flex gap-1 border border-gray-200 rounded-lg overflow-hidden">
                   <button onClick={() => {
                     const headers = ["Agent", "Status", "Trigger", "Triggered By", "Started", "Duration", "Output", "Error"];
-                    const rows = runs.map(r => [r.agent?.name || "", r.status, r.triggerType, r.triggeredBy ? (r.triggeredBy.name || r.triggeredBy.email) : "", fmt(r.startedAt), duration(r), r.output || "", r.error || ""]);
+                    const rows = runs.map(r => [r.agent?.name || "", r.status, r.triggerType, r.triggeredBy ? (r.triggeredBy.name || r.triggeredBy.email) : (["manual","chat"].includes(r.triggerType) ? "Admin" : ""), fmt(r.startedAt), duration(r), r.output || "", r.error || ""]);
                     const csv = [headers, ...rows].map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
                     const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" }));
                     a.download = `run-logs-${new Date().toISOString().slice(0,10)}.csv`; a.click();
@@ -198,7 +226,7 @@ export default function WorkspaceRunLogsPage() {
                         <td className="px-4 py-3 font-medium text-gray-900">{r.agent?.name || "—"}</td>
                         <td className="px-4 py-3">{statusBadge(r.status)}</td>
                         <td className="px-4 py-3 text-gray-500 capitalize">{r.triggerType}</td>
-                        <td className="px-4 py-3 text-gray-500">{r.triggeredBy ? (r.triggeredBy.name || r.triggeredBy.email) : "—"}</td>
+                        <td className="px-4 py-3 text-gray-500">{r.triggeredBy ? (r.triggeredBy.name || r.triggeredBy.email) : (["manual","chat"].includes(r.triggerType) ? "Admin" : "—")}</td>
                         <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{fmt(r.startedAt)}</td>
                         <td className="px-4 py-3 text-gray-500">{duration(r)}</td>
                         <td className="px-4 py-3">
@@ -211,6 +239,35 @@ export default function WorkspaceRunLogsPage() {
                       {expanded === r.id && (
                         <tr className="bg-gray-50">
                           <td colSpan={7} className="px-6 py-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Output</span>
+                              <div className="flex gap-1 border border-gray-200 rounded-lg overflow-hidden">
+                                <button onClick={() => {
+                                  const headers = ["Agent", "Status", "Trigger", "Triggered By", "Started", "Duration", "Output", "Error"];
+                                  const row = [r.agent?.name || "", r.status, r.triggerType, r.triggeredBy ? (r.triggeredBy.name || r.triggeredBy.email) : (["manual","chat"].includes(r.triggerType) ? "Admin" : ""), fmt(r.startedAt), duration(r), r.output || "", r.error || ""];
+                                  const csv = [headers, row].map(cols => cols.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+                                  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" }));
+                                  a.download = `run-${r.id}-${new Date().toISOString().slice(0,10)}.csv`; a.click();
+                                }} className="px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">.csv</button>
+                                <button onClick={() => {
+                                  const lines = [
+                                    `# ${r.agent?.name || "Agent"} — Run Log`,
+                                    `- **Status:** ${r.status}  **Trigger:** ${r.triggerType}  **Started:** ${fmt(r.startedAt)}  **Duration:** ${duration(r)}`,
+                                    "",
+                                  ];
+                                  if (r.output) { lines.push("## Output", "```", r.output, "```", ""); }
+                                  if (r.error)  { lines.push("## Error",  "```", r.error,  "```", ""); }
+                                  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/markdown" }));
+                                  a.download = `run-${r.id}-${new Date().toISOString().slice(0,10)}.md`; a.click();
+                                }} className="px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50 border-l border-gray-200 transition-colors">.md</button>
+                                <button onClick={() => {
+                                  const escape = s => String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+                                  const w = window.open("","_blank");
+                                  w.document.write(`<html><head><title>${escape(r.agent?.name)} Run Log</title><style>body{font-family:system-ui,sans-serif;font-size:13px;padding:32px;max-width:900px;margin:auto}h1{font-size:18px;font-weight:700;margin-bottom:4px}h2{font-size:13px;font-weight:600;color:#4b5563;margin:16px 0 6px}.meta{font-size:12px;color:#6b7280;margin-bottom:20px}pre{background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:12px;font-size:11px;white-space:pre-wrap;word-break:break-word;font-family:monospace}pre.error{background:#fef2f2;border-color:#fecaca;color:#dc2626}@media print{pre{page-break-inside:avoid}}</style></head><body><h1>${escape(r.agent?.name||"Agent")} — Run Log</h1><div class="meta">Status: <strong>${escape(r.status)}</strong> · ${escape(r.triggerType)} · ${escape(fmt(r.startedAt))} · ${escape(duration(r))}</div>${r.output?`<h2>Output</h2><pre>${escape(r.output)}</pre>`:""}${r.error?`<h2>Error</h2><pre class="error">${escape(r.error)}</pre>`:""}</body></html>`);
+                                  w.document.close(); w.print();
+                                }} className="px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50 border-l border-gray-200 transition-colors">.pdf</button>
+                              </div>
+                            </div>
                             {r.output && <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono bg-white border border-gray-200 rounded-lg p-3 max-h-64 overflow-y-auto">{r.output}</pre>}
                             {r.error && <pre className={`text-xs text-red-600 whitespace-pre-wrap font-mono bg-red-50 border border-red-200 rounded-lg p-3 max-h-64 overflow-y-auto ${r.output ? "mt-2" : ""}`}>{r.error}</pre>}
                             {!r.output && !r.error && <p className="text-xs text-gray-400 italic">No output recorded.</p>}
