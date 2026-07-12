@@ -119,8 +119,8 @@ export default function WorkspaceRunLogsPage() {
               {runs.length > 0 && (
                 <div className="flex gap-1 border border-gray-200 rounded-lg overflow-hidden">
                   <button onClick={() => {
-                    const headers = ["Agent", "Status", "Trigger", "Triggered By", "Started", "Duration"];
-                    const rows = runs.map(r => [r.agent?.name || "", r.status, r.triggerType, r.triggeredBy ? (r.triggeredBy.name || r.triggeredBy.email) : "", fmt(r.startedAt), duration(r)]);
+                    const headers = ["Agent", "Status", "Trigger", "Triggered By", "Started", "Duration", "Output", "Error"];
+                    const rows = runs.map(r => [r.agent?.name || "", r.status, r.triggerType, r.triggeredBy ? (r.triggeredBy.name || r.triggeredBy.email) : "", fmt(r.startedAt), duration(r), r.output || "", r.error || ""]);
                     const csv = [headers, ...rows].map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
                     const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" }));
                     a.download = `run-logs-${new Date().toISOString().slice(0,10)}.csv`; a.click();
