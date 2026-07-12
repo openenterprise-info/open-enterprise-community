@@ -201,9 +201,9 @@ export default function WorkspaceAgentsPage() {
         cronExpression: form.cronExpression || null,
         enabled:        form.enabled,
         visualize:      form.visualize || false,
-        workflow:       JSON.stringify(form.steps || []),
-        params:         JSON.stringify(form.params || []),
-        chains:         JSON.stringify(form.chains || []),
+        workflow:       form.steps || [],
+        params:         form.params || [],
+        chains:         form.chains || [],
       };
       if (studioAgent.isNew) {
         const { data } = await api.post(`/workspaces/${slug}/agents`, payload);
