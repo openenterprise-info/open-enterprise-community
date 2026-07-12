@@ -36,6 +36,7 @@ import SettingsPage    from "./pages/Settings/SettingsPage";
 import MaintenancePage from "./pages/Settings/MaintenancePage";
 import VectorsPage     from "./pages/Settings/VectorsPage";
 import ApprovalsPage   from "./pages/Agents/ApprovalsPage";
+import MarketplacePage from "./pages/Marketplace/MarketplacePage";
 
 function AppRoutes() {
   return (
@@ -61,6 +62,7 @@ function AppRoutes() {
         <Route path="/chats"               element={<ChatsPage />} />
         <Route path="/agent-runs"          element={<AgentRunsPage />} />
         <Route path="/approvals"           element={<ApprovalsPage />} />
+        <Route path="/marketplace"         element={<MarketplacePage />} />
         <Route path="/users"               element={<UsersPage />} />
         <Route path="/developer"           element={<ApiKeysPage />} />
         <Route path="/developer/embed"     element={<EmbedPage />} />
