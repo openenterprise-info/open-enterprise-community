@@ -42,7 +42,7 @@ See the [`sample-agents/`](sample-agents/) folder for ready-to-use examples.
 |-----------|------------|
 | Frontend | React + Vite |
 | Backend | Node.js + Express |
-| Database | SQLite |
+| Database | SQLite / PostgreSQL |
 | File Storage | Local filesystem |
 | Queue | In-memory |
 | Vector DB | LanceDB (default) + 7 others |
@@ -56,38 +56,16 @@ See the [`sample-agents/`](sample-agents/) folder for ready-to-use examples.
 
 ## Feature Capabilities
 
-| Category | Feature | Status |
-|---|---|---|
-| **Foundation** | Multiple LLMs | ✅ 18 providers (OpenAI, Anthropic, Azure, Groq, Gemini, Ollama, Mistral, and more) |
-| | Embeddings | ✅ 7 providers (OpenAI, Azure, Ollama, Cohere, Gemini, and more) |
-| | Vector Databases | ✅ 8 adapters (LanceDB default, Pinecone, Qdrant, Chroma, Weaviate, PgVector, Milvus, Zilliz) |
-| **Knowledge** | RAG | ✅ Ingestion queue, chunking, embedding, vector upsert, similarity search, cited responses |
-| | Memory | ⚠️ Agent-level only (last N run outputs); no per-user/conversation memory |
-| | Context Engineering | ⚠️ System prompts, temperature, top-k, chat history limits; no dynamic windowing |
-| **Interaction** | AI Assistant / Chat | ✅ SSE streaming, RAG, tool calling, threads, DLP, @connector and @agent routing |
-| | Workspaces | ✅ CRUD, user roles, per-workspace LLM and vector DB overrides |
-| **Integration** | Tools / Connectors | ✅ 28 native connector types (PostgreSQL, MySQL, MongoDB, Slack, Gmail, Jira, GitHub, Notion, HubSpot, and more) |
-| | Tool Calling | ✅ Multi-round loops up to 25, OpenAI function calling + Anthropic tool use |
-| | MCP | ⚠️ 25 MCP connectors in catalog; MCP protocol client/host runtime not yet implemented |
-| **Workflow** | Chains | ✅ Sequential agent chaining with configurable depth |
-| | Conditional Branches | ⚠️ Chain-level only (always / on_success / on_critical / on_warning); no in-step branching |
-| | Multi-step Pipelines | ⚠️ Steps exist as YAML instruction blocks; not discrete units with outputs feeding forward |
-| | Loops | ⚠️ Tool-call round loop only (system, max 25 rounds); no user-definable loop nodes |
-| | Routers | ✅ A router is a YAML-defined agent that classifies input and triggers the right chain |
-| | State Management | ✅ Steps carry state within agents; agents read/write connectors (DB, Redis) for cross-agent state |
-| **Agents** | Agents | ✅ CRUD, slug addressing, YAML export, run history, SSE streaming, cron scheduling, group tagging |
-| | Agent Planning | ❌ No plan→execute separation, no ReAct-style reasoning traces |
-| | Multi-agent Collaboration | ⚠️ Sequential chaining only; no parallel execution or peer-to-peer communication |
-| | Reflection / Self-Critique | ❌ No reflection loop, self-evaluation, or critique-and-revise mechanisms |
-| **Execution** | Automation | ✅ node-cron scheduler, jobs registered at startup and on agent create/update |
-| | Event-driven Workflows | ✅ API exposed — external systems (webhooks, Zapier, event buses) trigger agents |
-| | Human Approval | ✅ Approve/reject UI, 24 hr timeout, workspace-scoped |
-| | Runtime / Execution Engine | ✅ API provided; DLQ and retry handled by a dedicated DLQ agent |
-| **Governance** | Guardrails / DLP | ✅ Block, warn, redact, or audit sensitive content; custom regex policies; per-workspace toggle; violations log with CSV / MD / PDF export |
-| **Operations** | Observability | ✅ Token Usage (per-user tokens + costs), Activity Log (admin action timeline), Dashboard (run counts, error rates, 30-day trends) |
-| **Ecosystem** | Marketplace | ⚠️ Cross-workspace agent/connector/KB sharing and YAML export available; browsable marketplace UI coming soon |
-
-**✅ 18 full · ⚠️ 8 partial · ❌ 2 missing**
+- **Foundation** — Multiple LLMs, Embeddings, Vector Databases
+- **Knowledge** — RAG, Memory, Context Engineering
+- **Interaction** — AI Assistant / Chat, Workspaces
+- **Integration** — Tools / Connectors, Tool Calling, MCP
+- **Workflow** — Chains, Conditional Branches, Multi-step Pipelines, Loops, Routers, State Management
+- **Agents** — Agents, Agent Planning, Multi-agent Collaboration, Reflection / Self-Critique
+- **Execution** — Automation, Event-driven Workflows, Human Approval, Runtime / Execution Engine
+- **Governance** — Guardrails / DLP
+- **Operations** — Observability (Token Usage, Activity Log, Dashboard)
+- **Ecosystem** — Marketplace
 
 ---
 
