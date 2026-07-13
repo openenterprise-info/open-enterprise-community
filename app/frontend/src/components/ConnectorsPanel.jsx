@@ -672,6 +672,7 @@ function setNestedValue(obj, path, value) {
   return result;
 }
 
+const DB_CONNECTOR_IDS = new Set(CONNECTOR_TYPES.map(t => t.id));
 const OAUTH_TYPES = new Set(["gmail", "gdrive", "onedrive", "dropbox", "box"]);
 const CLOUD_STORAGE_TYPES = new Set(["gdrive", "onedrive", "dropbox", "box"]);
 const INTEGRATION_CONNECTOR_TYPES = new Set([
@@ -721,6 +722,7 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
   const [ghError, setGhError]     = useState("");
   const [loading, setLoading]               = useState(true);
   const [showForm, setShowForm]     = useState(false);
+  const [comingSoon, setComingSoon] = useState(false);
   const [form, setForm]             = useState({ name: "", slug: "", type: "postgresql", config: {}, auth: {}, allowedOps: ["SELECT"] });
   const [saving, setSaving]         = useState(false);
   const [testing, setTesting]       = useState(null);
@@ -840,6 +842,7 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
 
   useEffect(() => {
     if (!focusType) return;
+    setComingSoon(false);
     if (INTEGRATION_CONNECTOR_TYPES.has(focusType)) {
       const intg = INTEGRATION_TYPES.find(t => t.id === focusType);
       const isGoogle = focusType === "gmail" || focusType === "gdrive";
@@ -854,10 +857,14 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
         setApiKeySetup(focusType);
         setApiKeyFields({});
         setApiKeyError("");
+      } else {
+        setComingSoon(true);
       }
-    } else {
+    } else if (DB_CONNECTOR_IDS.has(focusType)) {
       setForm(f => ({ ...f, type: focusType, config: {}, auth: {} }));
       setShowForm(true);
+    } else {
+      setComingSoon(true);
     }
   }, [focusType]);
 
@@ -1121,8 +1128,21 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
         </div>
       )}
 
+      {/* ── Coming Soon (catalog-only connector clicked) ── */}
+      {comingSoon && (
+        <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
+            <svg className="w-7 h-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <p className="text-sm font-semibold text-gray-700 mb-1">Coming Soon</p>
+          <p className="text-xs text-gray-400 max-w-xs">This connector is not yet available. It will be built and contributed by the community.</p>
+        </div>
+      )}
+
       {/* ── Databases section ── */}
-      {(section === "databases" || section === "both" || (!section && subTab === "data-sources")) &&
+      {!comingSoon && (section === "databases" || section === "both" || (!section && subTab === "data-sources")) &&
        (!isFocused || (focusType && !INTEGRATION_CONNECTOR_TYPES.has(focusType)) || (focusEditConnector && !INTEGRATION_CONNECTOR_TYPES.has(focusEditConnector.type))) && (
         <>
           {section === "both" && !isFocused && (

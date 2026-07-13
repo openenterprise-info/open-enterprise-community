@@ -621,7 +621,7 @@ export default function WorkspaceAgentsPage() {
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Agents</h2>
+              <h2 className="text-xl font-bold text-gray-900">Agents <span className="ml-2 text-xs font-semibold bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full align-middle">{agents.length}</span></h2>
               <p className="text-sm text-gray-400 mt-0.5">Build, manage, and run agents in this workspace</p>
             </div>
             <div className="flex items-center gap-2">
