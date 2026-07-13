@@ -2705,6 +2705,32 @@ const ALL_TYPES = [
   { id: "o9-solutions", label: "o9 Solutions", color: "bg-orange-700", initial: "OS", cat: "Operations" },
   { id: "manhattan-active-wm", label: "Manhattan Active WM", color: "bg-orange-700", initial: "MA", cat: "Operations" },
   { id: "highjump", label: "HighJump", color: "bg-orange-700", initial: "HI", cat: "Operations" },
+
+  { id: "mcp-filesystem", label: "MCP Filesystem", color: "bg-violet-600", initial: "FS", cat: "MCP" },
+  { id: "mcp-github", label: "MCP GitHub", color: "bg-violet-600", initial: "GH", cat: "MCP" },
+  { id: "mcp-gitlab", label: "MCP GitLab", color: "bg-violet-600", initial: "GL", cat: "MCP" },
+  { id: "mcp-postgres", label: "MCP PostgreSQL", color: "bg-violet-600", initial: "PG", cat: "MCP" },
+  { id: "mcp-sqlite", label: "MCP SQLite", color: "bg-violet-600", initial: "SL", cat: "MCP" },
+  { id: "mcp-slack", label: "MCP Slack", color: "bg-violet-600", initial: "SL", cat: "MCP" },
+  { id: "mcp-google-drive", label: "MCP Google Drive", color: "bg-violet-600", initial: "GD", cat: "MCP" },
+  { id: "mcp-google-maps", label: "MCP Google Maps", color: "bg-violet-600", initial: "GM", cat: "MCP" },
+  { id: "mcp-brave-search", label: "MCP Brave Search", color: "bg-violet-600", initial: "BS", cat: "MCP" },
+  { id: "mcp-puppeteer", label: "MCP Puppeteer", color: "bg-violet-600", initial: "PU", cat: "MCP" },
+  { id: "mcp-fetch", label: "MCP Fetch", color: "bg-violet-600", initial: "FE", cat: "MCP" },
+  { id: "mcp-memory", label: "MCP Memory", color: "bg-violet-600", initial: "ME", cat: "MCP" },
+  { id: "mcp-sequential-thinking", label: "MCP Sequential Thinking", color: "bg-violet-600", initial: "ST", cat: "MCP" },
+  { id: "mcp-aws-kb-retrieval", label: "MCP AWS KB Retrieval", color: "bg-violet-600", initial: "AW", cat: "MCP" },
+  { id: "mcp-everart", label: "MCP EverArt", color: "bg-violet-600", initial: "EA", cat: "MCP" },
+  { id: "mcp-sentry", label: "MCP Sentry", color: "bg-violet-600", initial: "SE", cat: "MCP" },
+  { id: "mcp-notion", label: "MCP Notion", color: "bg-violet-600", initial: "NO", cat: "MCP" },
+  { id: "mcp-linear", label: "MCP Linear", color: "bg-violet-600", initial: "LI", cat: "MCP" },
+  { id: "mcp-jira", label: "MCP Jira", color: "bg-violet-600", initial: "JI", cat: "MCP" },
+  { id: "mcp-hubspot", label: "MCP HubSpot", color: "bg-violet-600", initial: "HS", cat: "MCP" },
+  { id: "mcp-stripe", label: "MCP Stripe", color: "bg-violet-600", initial: "ST", cat: "MCP" },
+  { id: "mcp-cloudflare", label: "MCP Cloudflare", color: "bg-violet-600", initial: "CF", cat: "MCP" },
+  { id: "mcp-kubernetes", label: "MCP Kubernetes", color: "bg-violet-600", initial: "K8", cat: "MCP" },
+  { id: "mcp-docker", label: "MCP Docker", color: "bg-violet-600", initial: "DO", cat: "MCP" },
+  { id: "mcp-openapi", label: "MCP OpenAPI", color: "bg-violet-600", initial: "OA", cat: "MCP" },
 ];
 
 function Spinner() {
@@ -2988,6 +3014,7 @@ export default function WorkspaceConnectorsPage() {
             { key: "Legal",                label: "Legal Tech"             },
             { key: "Real Estate",          label: "Real Estate & Hospitality" },
             { key: "Operations",           label: "Operations & Logistics" },
+            { key: "MCP",                  label: "MCP Servers"            },
           ].map(cat => {
             const items = filtered.filter(t => t.cat === cat.key);
             if (!items.length) return null;

@@ -35,6 +35,10 @@ import EmbedPage       from "./pages/Developer/EmbedPage";
 import SettingsPage    from "./pages/Settings/SettingsPage";
 import MaintenancePage from "./pages/Settings/MaintenancePage";
 import VectorsPage     from "./pages/Settings/VectorsPage";
+import CompliancePage  from "./pages/Settings/CompliancePage";
+import ViolationsPage  from "./pages/Settings/ViolationsPage";
+import TokenUsagePage  from "./pages/Settings/TokenUsagePage";
+import ActivityLogPage from "./pages/Settings/ActivityLogPage";
 import ApprovalsPage   from "./pages/Agents/ApprovalsPage";
 import MarketplacePage from "./pages/Marketplace/MarketplacePage";
 
@@ -67,8 +71,12 @@ function AppRoutes() {
         <Route path="/developer"           element={<ApiKeysPage />} />
         <Route path="/developer/embed"     element={<EmbedPage />} />
         <Route path="/settings"            element={<SettingsPage />} />
-        <Route path="/settings/maintenance" element={<MaintenancePage />} />
-        <Route path="/settings/vectors"    element={<VectorsPage />} />
+        <Route path="/settings/maintenance"  element={<MaintenancePage />} />
+        <Route path="/settings/vectors"     element={<VectorsPage />} />
+        <Route path="/settings/compliance"  element={<CompliancePage />} />
+        <Route path="/settings/violations"  element={<ViolationsPage />} />
+        <Route path="/settings/token-usage" element={<TokenUsagePage />} />
+        <Route path="/settings/activity"    element={<ActivityLogPage />} />
         <Route path="*"                    element={<HomeRedirect />} />
       </Route>
     </Routes>
