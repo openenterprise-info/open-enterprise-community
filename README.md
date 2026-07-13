@@ -4,9 +4,16 @@ Lightweight, open-source enterprise AI platform. Workspaces, Agents, Connectors 
 
 ## Connector Catalog
 
-2,500+ connectors across 39 categories — Databases, CRM, DevOps, AI/ML, Finance, HR, Healthcare, Legal, Marketing, Analytics, E-commerce, ERP, IoT, and more.
+2,500+ connectors across 39 categories — the largest open-source connector catalog for enterprise AI.
 
-Browsable from the **Connectors** tab inside your workspace.
+- **Databases** — PostgreSQL, MySQL, MongoDB, Redis, Snowflake, Elasticsearch, and more
+- **CRM & Sales** — Salesforce, HubSpot, Pipedrive, Zoho CRM, and more
+- **Developer Tools & DevOps** — GitHub, GitLab, Docker, Kubernetes, Datadog, and more
+- **AI & ML** — OpenAI, Anthropic, HuggingFace, Pinecone, and more
+- **Finance & Accounting** — Stripe, QuickBooks, Xero, Plaid, and more
+- **HR, Healthcare, Legal, Education, E-commerce, ERP, IoT** — and 28 more categories
+
+All connectors are browsable from the **Connectors** tab inside your workspace.
 
 ---
 
