@@ -27,6 +27,168 @@ function yamlToAgentJson(y) {
   };
 }
 
+// ── Templates ─────────────────────────────────────────────────────────────────
+
+const TEMPLATES = [
+  {
+    name: "Security Monitor",
+    description: "Monitors infrastructure and logs for security anomalies and suspicious activity.",
+    category: "DevOps",
+    color: "bg-red-100 text-red-700",
+    systemPrompt: "You are a security monitoring agent. Analyze logs, metrics, and system events for anomalies, unauthorized access attempts, unusual traffic patterns, or any suspicious behavior. Summarize findings and flag critical issues.",
+    steps: [],
+    triggerType: "cron",
+    cronExpression: "0 * * * *",
+  },
+  {
+    name: "Security Remediation",
+    description: "Automates remediation of common security findings from the security monitor.",
+    category: "DevOps",
+    color: "bg-red-100 text-red-700",
+    systemPrompt: "You are a security remediation agent. Given a list of security findings, determine appropriate remediation steps, execute safe automated fixes, and escalate critical issues that require human review.",
+    steps: [],
+    triggerType: "manual",
+  },
+  {
+    name: "Outbound Sales",
+    description: "Runs outbound sales outreach workflows from a CSV of prospects.",
+    category: "Marketing",
+    color: "bg-blue-100 text-blue-700",
+    systemPrompt: "You are an outbound sales agent. For each prospect, research their company, personalize an outreach message based on their industry and role, and send via the configured email connector. Log all outreach attempts.",
+    steps: [],
+    triggerType: "manual",
+  },
+  {
+    name: "Reply Tracker",
+    description: "Tracks email replies from prospects and schedules follow-ups.",
+    category: "Marketing",
+    color: "bg-blue-100 text-blue-700",
+    systemPrompt: "You are a reply tracking agent. Check the inbox for replies to outreach emails, categorize them (interested, not interested, out of office, needs follow-up), and trigger the appropriate next action.",
+    steps: [],
+    triggerType: "cron",
+    cronExpression: "0 9 * * *",
+  },
+  {
+    name: "Blog Publisher",
+    description: "Generates and publishes one blog post per run via GitHub from a topic CSV.",
+    category: "Marketing",
+    color: "bg-blue-100 text-blue-700",
+    systemPrompt: "You are a blog publishing agent. Read the next unpublished topic from the Google Drive CSV, generate a high-quality blog post with an intro, 3-5 sections, and a conclusion, then commit it to the GitHub repository and update the index.",
+    steps: [],
+    triggerType: "manual",
+  },
+  {
+    name: "Blog Revoker",
+    description: "Deletes a published blog post and resets the CSV row for republishing.",
+    category: "Marketing",
+    color: "bg-blue-100 text-blue-700",
+    systemPrompt: "You are a blog revoking agent. Given a post slug, delete the blog post file from GitHub, remove the index card and sitemap entry, and reset the corresponding CSV row so the topic can be republished.",
+    steps: [],
+    triggerType: "manual",
+  },
+  {
+    name: "SQL Query Agent",
+    description: "Queries a database and returns structured results in natural language.",
+    category: "SQL",
+    color: "bg-emerald-100 text-emerald-700",
+    systemPrompt: "You are a SQL query agent. Translate natural language questions into SQL queries, execute them against the connected database, and return the results in a clear, readable format. Always validate queries before execution.",
+    steps: [],
+    triggerType: "manual",
+  },
+  {
+    name: "Row Count Reporter",
+    description: "Returns total row counts and basic stats from a database table.",
+    category: "SQL",
+    color: "bg-emerald-100 text-emerald-700",
+    systemPrompt: "You are a database reporting agent. Connect to the database and return total row counts, null counts, and basic statistics for the specified tables. Format the output as a clean summary report.",
+    steps: [],
+    triggerType: "manual",
+  },
+  {
+    name: "REST API Consumer",
+    description: "Fetches data from an external REST API and summarizes the response.",
+    category: "REST",
+    color: "bg-violet-100 text-violet-700",
+    systemPrompt: "You are a REST API consumer agent. Fetch data from the configured API endpoint, parse the JSON response, and produce a concise human-readable summary of the key information returned.",
+    steps: [],
+    triggerType: "manual",
+  },
+  {
+    name: "DB to API Pusher",
+    description: "Queries a database and pushes results to a REST API endpoint via POST.",
+    category: "REST",
+    color: "bg-violet-100 text-violet-700",
+    systemPrompt: "You are a data pipeline agent. Query the connected database for the specified records, transform the data into the required format, and POST it to the target REST API endpoint. Log success and failure responses.",
+    steps: [],
+    triggerType: "manual",
+  },
+];
+
+function TemplatesPanel({ onClose, onUse }) {
+  const [search, setSearch] = useState("");
+  const [activeCategory, setActiveCategory] = useState("All");
+
+  const categories = ["All", ...Array.from(new Set(TEMPLATES.map(t => t.category)))];
+  const filtered = TEMPLATES.filter(t => {
+    const matchCat = activeCategory === "All" || t.category === activeCategory;
+    const matchSearch = !search || t.name.toLowerCase().includes(search.toLowerCase()) || t.description.toLowerCase().includes(search.toLowerCase());
+    return matchCat && matchSearch;
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 flex">
+      <div className="flex-1 bg-black/40" onClick={onClose} />
+      <div className="w-[480px] bg-white h-full flex flex-col shadow-2xl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <div>
+            <h2 className="text-base font-bold text-gray-900">Templates</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Pick a template to pre-fill the agent studio</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+        </div>
+
+        <div className="px-5 pt-4 space-y-3">
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Search templates…"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo/30" />
+          <div className="flex gap-1.5 flex-wrap">
+            {categories.map(c => (
+              <button key={c} onClick={() => setActiveCategory(c)}
+                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                  activeCategory === c ? "bg-indigo text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}>
+                {c}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+          {filtered.length === 0 ? (
+            <p className="text-center text-sm text-gray-400 py-8">No templates match your search.</p>
+          ) : filtered.map(tpl => (
+            <div key={tpl.name} className="border border-gray-200 rounded-xl p-4 hover:border-indigo/40 hover:bg-indigo/[0.02] transition-colors group">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide ${tpl.color}`}>{tpl.category}</span>
+                  </div>
+                  <p className="text-sm font-semibold text-gray-800">{tpl.name}</p>
+                  <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{tpl.description}</p>
+                </div>
+                <button onClick={() => onUse(tpl)}
+                  className="shrink-0 px-3 py-1.5 text-xs font-semibold text-indigo border border-indigo/30 rounded-lg hover:bg-indigo hover:text-white transition-colors">
+                  Use
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Agent card ────────────────────────────────────────────────────────────────
 
 function ApiModal({ agent, workspaceSlug: wsSlugProp, onClose, navigate }) {
@@ -314,6 +476,7 @@ export default function WorkspaceAgentsPage() {
   const [importing, setImporting]       = useState(false);
   const [importWarning, setImportWarning] = useState("");
   const [pendingApprovals, setPendingApprovals] = useState(0);
+  const [showTemplates, setShowTemplates] = useState(false);
   const uploadRef                       = useRef(null);
 
   useEffect(() => {
@@ -406,6 +569,25 @@ export default function WorkspaceAgentsPage() {
       enabled: true,
       visualize: false,
       workspace: { id: workspace?.id, name: workspace?.name, slug },
+    });
+  }
+
+  function openFromTemplate(tpl) {
+    setShowTemplates(false);
+    setStudioAgent({
+      isNew:          true,
+      name:           tpl.name,
+      description:    tpl.description,
+      systemPrompt:   tpl.systemPrompt,
+      connectorIds:   "[]",
+      workflow:       JSON.stringify(tpl.steps || []),
+      params:         "[]",
+      chains:         "[]",
+      triggerType:    tpl.triggerType || "manual",
+      cronExpression: tpl.cronExpression || null,
+      enabled:        true,
+      visualize:      false,
+      workspace:      { id: workspace?.id, name: workspace?.name, slug },
     });
   }
 
@@ -660,6 +842,13 @@ export default function WorkspaceAgentsPage() {
                 </svg>
                 Run Logs
               </button>
+              <button onClick={() => setShowTemplates(true)}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                </svg>
+                Templates
+              </button>
               <button onClick={() => navigate(`/workspace/${slug}/settings`)}
                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -737,6 +926,7 @@ export default function WorkspaceAgentsPage() {
       )}
       {yamlAgent && <YamlModal agent={yamlAgent} yaml={yaml} onClose={() => setYamlAgent(null)} />}
       {apiAgent  && <ApiModal  agent={apiAgent}  workspaceSlug={slug} onClose={() => setApiAgent(null)} navigate={navigate} />}
+      {showTemplates && <TemplatesPanel onClose={() => setShowTemplates(false)} onUse={openFromTemplate} />}
       {confirmDelete && (
         <ConfirmDialog
           title="Delete Agent" message="Delete agent" detail={confirmDelete.name}
