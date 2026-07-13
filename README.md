@@ -186,7 +186,7 @@ Once the app is running, follow these steps to verify everything works end to en
 
 1. **Log in** with your `SUPER_ADMIN_EMAIL` and `SUPER_ADMIN_PASSWORD`
 2. **Configure LLM & Embedding** — go to **Settings → Instance Settings** and set your LLM provider and Embedding provider API keys
-3. **Create a workspace** from the admin panel
+3. **Create a workspace** from the **Workspaces** page
 4. **Ingest data** — open the workspace, go to **Settings → Knowledge Base** and upload some documents
 5. **Test RAG** — ask questions in the workspace chat related to the ingested data
 6. **Add connectors** — connect databases or enterprise tools (GitHub, Notion, Slack, etc.) from the Connectors panel
