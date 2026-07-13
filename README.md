@@ -50,6 +50,7 @@ See the [`sample-agents/`](sample-agents/) folder for ready-to-use examples.
 | Embedding | Any provider (OpenAI, Ollama, etc.) |
 | Deployment | Single Docker container |
 | Process Manager | PM2 |
+| Connectors | 2,500+ across 39 categories |
 
 ---
 
