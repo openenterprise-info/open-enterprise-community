@@ -6,18 +6,18 @@ Lightweight, open-source enterprise AI platform. Workspaces, Agents, Connectors 
 
 2,500+ connectors across 39 categories — the largest open-source connector catalog for enterprise AI:
 
-**Databases** — PostgreSQL, MySQL, MongoDB, Redis, Snowflake, Elasticsearch, DuckDB, CockroachDB, and more
-**CRM & Sales** — Salesforce, HubSpot, Pipedrive, Zoho CRM, Outreach, Apollo, and more
-**Developer Tools & DevOps** — GitHub, GitLab, Docker, Kubernetes, Terraform, Datadog, and more
-**AI & ML** — OpenAI, Anthropic, HuggingFace, LangSmith, Weights & Biases, Pinecone, and more
-**Finance & Accounting** — Stripe, QuickBooks, Xero, Plaid, Tipalti, NetSuite, and more
-**HR & Payroll** — BambooHR, Workday, Greenhouse, ADP, Paylocity, and more
-**Healthcare** — Epic, DrChrono, SimplePractice, Redox, Teladoc, and more
-**Legal Tech** — Clio, MyCase, RelativityOne, iManage, Everlaw, and more
-**Education & LMS** — Canvas, Moodle, Google Classroom, Docebo, Blackboard, and more
-**Real Estate & Hospitality** — Yardi, AppFolio, Cloudbeds, Guesty, OpenTable, and more
-**Operations & Logistics** — Samsara, project44, Procore, ServiceTitan, Blue Yonder, and more
-**+ 28 more categories** including Marketing, Security, Analytics, E-commerce, ERP, Blockchain, IoT, and more
+- **Databases** — PostgreSQL, MySQL, MongoDB, Redis, Snowflake, Elasticsearch, DuckDB, CockroachDB, and more
+- **CRM & Sales** — Salesforce, HubSpot, Pipedrive, Zoho CRM, Outreach, Apollo, and more
+- **Developer Tools & DevOps** — GitHub, GitLab, Docker, Kubernetes, Terraform, Datadog, and more
+- **AI & ML** — OpenAI, Anthropic, HuggingFace, LangSmith, Weights & Biases, Pinecone, and more
+- **Finance & Accounting** — Stripe, QuickBooks, Xero, Plaid, Tipalti, NetSuite, and more
+- **HR & Payroll** — BambooHR, Workday, Greenhouse, ADP, Paylocity, and more
+- **Healthcare** — Epic, DrChrono, SimplePractice, Redox, Teladoc, and more
+- **Legal Tech** — Clio, MyCase, RelativityOne, iManage, Everlaw, and more
+- **Education & LMS** — Canvas, Moodle, Google Classroom, Docebo, Blackboard, and more
+- **Real Estate & Hospitality** — Yardi, AppFolio, Cloudbeds, Guesty, OpenTable, and more
+- **Operations & Logistics** — Samsara, project44, Procore, ServiceTitan, Blue Yonder, and more
+- **+ 28 more categories** including Marketing, Security, Analytics, E-commerce, ERP, Blockchain, IoT, and more
 
 All connectors are browsable from the **Connectors** tab inside your workspace. Live integrations connect immediately; the rest display "Coming Soon" — open an issue or submit a PR to add one.
 
