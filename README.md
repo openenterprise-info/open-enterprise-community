@@ -45,7 +45,7 @@ See the [`sample-agents/`](sample-agents/) folder for ready-to-use examples.
 
 - **Foundation** — Multiple LLMs, Embeddings, Vector Databases
 - **Knowledge** — RAG, Memory, Context Engineering
-- **Interaction** — AI Assistant / Chat, Workspaces
+- **Interaction** — AI Assistant / Chat, Workspaces (Multi-tenant)
 - **Integration** — Tools / Connectors, Tool Calling, MCP
 - **Workflow** — Chains, Conditional Branches, Multi-step Pipelines, Loops, Routers, State Management
 - **Agents** — Agents, Agent Planning, Multi-agent Collaboration, Reflection / Self-Critique
