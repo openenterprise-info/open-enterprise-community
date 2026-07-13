@@ -226,4 +226,4 @@ To use: go to **Workspaces → Chat → Agents → Import**, select a YAML file,
 
 ## License
 
-[AGPL-3.0](LICENSE)
+[Apache-2.0](LICENSE)
