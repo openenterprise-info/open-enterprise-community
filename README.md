@@ -277,10 +277,20 @@ Our team handles the architecture review, deployment runbooks, and production re
 
 ### Who It's For
 
-- **Enterprises** rolling out AI assistants and agents across departments
-- **ISVs and SaaS companies** embedding AI into their own products under their own brand
-- **Regulated industries** — finance, healthcare, legal — that need compliance controls and audit trails
-- **Teams that have outgrown the Community Edition** and need SLA, SSO, and dedicated support
+**You've proven the concept. Now you need to scale it.**
+
+If you're running Open Enterprise in production, managing multiple teams, handling sensitive data, or building AI into a product you sell — the Community Edition will eventually hit a wall. Not because it's limited, but because enterprise environments demand enterprise controls.
+
+**You're the right fit if:**
+
+- Your organization is deploying AI across departments and needs centralized visibility into usage, cost, and compliance
+- You're an ISV or SaaS company that wants to ship AI features under your own brand — without building the platform from scratch
+- You operate in finance, healthcare, legal, or any regulated industry where data governance, audit trails, and policy enforcement aren't optional
+- Your IT or security team is asking for SSO, role-based access, and DLP before they'll approve a wider rollout
+- You need a vendor you can actually call — not just a GitHub issue and a prayer
+- You're tired of patching together open-source tools and want a platform your team can own, extend, and rely on
+
+**Open Enterprise Commercial is for organizations that take AI seriously.**
 
 ---
 
