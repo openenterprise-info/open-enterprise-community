@@ -122,8 +122,9 @@ export default function AppLayout() {
     fetch("/api/instance")
       .then(r => r.json())
       .then(d => {
-        setLicenseType(d.licenseType || "community");
-        if (d.brandingName) setBranding({ name: d.brandingName, url: d.brandingUrl || null, logo: d.brandingLogo || null });
+        const lt = d.licenseType || "community";
+        setLicenseType(lt);
+        if (lt === "enterprise" && d.brandingName) setBranding({ name: d.brandingName, url: d.brandingUrl || null, logo: d.brandingLogo || null });
       })
       .catch(() => {});
   }, []);

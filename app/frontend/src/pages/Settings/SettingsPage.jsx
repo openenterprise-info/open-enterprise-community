@@ -532,12 +532,17 @@ function SettingsForm() {
   const [saving, setSaving]               = useState(false);
   const [saved, setSaved]                 = useState(false);
   const [switchConfirm, setSwitchConfirm] = useState(null);
+  const [licenseType, setLicenseType]     = useState("community");
 
   useEffect(() => {
-    api.get("/settings").then(r => {
-      const s = r.data.settings || {};
+    Promise.all([
+      api.get("/settings"),
+      fetch("/api/instance").then(r => r.json()).catch(() => ({})),
+    ]).then(([settingsRes, instance]) => {
+      const s = settingsRes.data.settings || {};
       setSettings(s);
       setSavedSettings(s);
+      setLicenseType(instance.licenseType || "community");
       setLoading(false);
     });
   }, []);
@@ -571,6 +576,8 @@ function SettingsForm() {
     }
     doSave();
   }
+
+  const visibleTabs = SETTINGS_TABS.filter(t => t.id !== "branding" || licenseType === "enterprise");
 
   if (loading) return <div className="flex justify-center py-6"><Spinner /></div>;
 
@@ -611,7 +618,7 @@ function SettingsForm() {
       )}
       <form onSubmit={handleSave}>
         <div className="flex flex-wrap gap-2 mb-6 p-1 bg-gray-100 rounded-xl">
-          {SETTINGS_TABS.map(tab => (
+          {visibleTabs.map(tab => (
             <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)}
               className={`px-4 py-2 text-sm font-medium rounded-lg transition-all whitespace-nowrap ${activeTab === tab.id ? "bg-white text-indigo shadow-sm ring-1 ring-gray-200" : "text-gray-500 hover:text-gray-700 hover:bg-white/60"}`}>
               {tab.label}
