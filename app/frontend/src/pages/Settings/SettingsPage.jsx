@@ -447,35 +447,64 @@ function AudioTab({ settings, set }) {
 }
 
 function BrandingTab({ settings, set }) {
+  function handleLogoUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => set("branding_logo", ev.target.result);
+    reader.readAsDataURL(file);
+  }
+
   return (
-    <div className="space-y-5 max-w-lg">
+    <div className="space-y-6 max-w-lg">
       <p className="text-xs text-gray-500">
-        White-label the footer shown across all pages. Leave blank to show the default
-        <span className="font-medium text-gray-700"> "Powered by openenterprise.info"</span> footer
-        (Community) or no footer (Enterprise).
+        White-label the app name, logo, and footer. Leave blank to keep the Open Enterprise defaults.
       </p>
+
+      {/* Logo */}
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-2">Logo</label>
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 overflow-hidden"
+            style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}>
+            {settings.branding_logo
+              ? <img src={settings.branding_logo} alt="logo" className="w-full h-full object-contain" />
+              : <span className="text-white font-black text-sm">{(settings.branding_name?.[0] || "E").toUpperCase()}</span>
+            }
+          </div>
+          <div className="flex-1">
+            <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              Upload Logo
+              <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+            </label>
+            {settings.branding_logo && (
+              <button type="button" onClick={() => set("branding_logo", "")}
+                className="ml-2 text-xs text-red-400 hover:text-red-600">Remove</button>
+            )}
+            <p className="text-xs text-gray-400 mt-1">PNG, SVG or JPG. Displayed at 32×32 px.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Brand Name */}
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-1">Brand Name</label>
-        <input
-          className="input"
-          type="text"
-          value={settings.branding_name || ""}
-          onChange={e => set("branding_name", e.target.value)}
-          placeholder="e.g. Acme Corp"
-        />
-        <p className="text-xs text-gray-400 mt-1">Shown as "Powered by {settings.branding_name || "Acme Corp"}" in the footer.</p>
+        <input className="input" type="text" value={settings.branding_name || ""}
+          onChange={e => set("branding_name", e.target.value)} placeholder="e.g. Acme Corp" />
+        <p className="text-xs text-gray-400 mt-1">Replaces "Open Enterprise" in the top navbar and footer.</p>
       </div>
+
+      {/* Brand URL */}
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-1">Brand URL</label>
-        <input
-          className="input"
-          type="url"
-          value={settings.branding_url || ""}
-          onChange={e => set("branding_url", e.target.value)}
-          placeholder="e.g. https://acme.com"
-        />
-        <p className="text-xs text-gray-400 mt-1">The footer text links to this URL.</p>
+        <input className="input" type="url" value={settings.branding_url || ""}
+          onChange={e => set("branding_url", e.target.value)} placeholder="e.g. https://acme.com" />
+        <p className="text-xs text-gray-400 mt-1">The footer "Powered by" text links to this URL.</p>
       </div>
+
       {settings.branding_name && (
         <div className="rounded-lg bg-indigo/5 border border-indigo/20 px-4 py-3 text-sm text-indigo">
           Preview: <span className="font-medium">Powered by {settings.branding_name}</span>

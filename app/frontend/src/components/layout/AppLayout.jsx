@@ -123,7 +123,7 @@ export default function AppLayout() {
       .then(r => r.json())
       .then(d => {
         setLicenseType(d.licenseType || "community");
-        if (d.brandingName) setBranding({ name: d.brandingName, url: d.brandingUrl || null });
+        if (d.brandingName) setBranding({ name: d.brandingName, url: d.brandingUrl || null, logo: d.brandingLogo || null });
       })
       .catch(() => {});
   }, []);
@@ -154,13 +154,16 @@ export default function AppLayout() {
       }}>
         <div className="flex items-center gap-3">
           <button onClick={() => navigate("/workspaces")} className="flex items-center gap-3 hover:opacity-85 transition-opacity">
-            <div className="relative w-8 h-8 rounded-lg flex items-center justify-center" style={{
+            <div className="relative w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden" style={{
               background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
               boxShadow: "0 0 12px rgba(99,102,241,0.5)"
             }}>
-              <span className="text-white font-black text-sm">E</span>
+              {branding?.logo
+                ? <img src={branding.logo} alt="logo" className="w-full h-full object-contain" />
+                : <span className="text-white font-black text-sm">{branding?.name?.[0]?.toUpperCase() || "E"}</span>
+              }
             </div>
-            <span className="text-white font-semibold text-base tracking-tight">Open Enterprise</span>
+            <span className="text-white font-semibold text-base tracking-tight">{branding?.name || "Open Enterprise"}</span>
             <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{
               background: "rgba(99,102,241,0.15)",
               border: "1px solid rgba(99,102,241,0.3)",
