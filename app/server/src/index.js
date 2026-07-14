@@ -41,6 +41,16 @@ app.use(express.urlencoded({ extended: true }));
 app.use((req, _res, next) => { req.db = prisma; next(); });
 
 app.get("/api/instance", async (req, res) => {
+  // All 3 must match exactly — any mismatch falls back to community
+  const isEnterprise =
+    process.env.LICENSE_TYPE    === "enterprise" &&
+    process.env.LICENSE_EDITION === "Open Enterprise Commercial" &&
+    process.env.LICENSE_PRICE   === "custom";
+
+  const licenseType = isEnterprise ? "enterprise"                : "community";
+  const edition     = isEnterprise ? "Open Enterprise Commercial" : "Open Enterprise Community";
+  const price       = isEnterprise ? "custom"                    : "free";
+
   try {
     const [brandingName, brandingUrl, brandingLogo] = await Promise.all([
       req.db.setting.findUnique({ where: { key: "branding_name" } }),
@@ -48,15 +58,15 @@ app.get("/api/instance", async (req, res) => {
       req.db.setting.findUnique({ where: { key: "branding_logo" } }),
     ]);
     res.json({
-      licenseType:  process.env.LICENSE_TYPE    || "community",
-      edition:      process.env.LICENSE_EDITION || "Open Enterprise Community",
-      price:        process.env.LICENSE_PRICE   || "free",
+      licenseType,
+      edition,
+      price,
       brandingName: brandingName?.value || null,
       brandingUrl:  brandingUrl?.value  || null,
       brandingLogo: brandingLogo?.value || null,
     });
   } catch {
-    res.json({ licenseType: process.env.LICENSE_TYPE || "community", edition: process.env.LICENSE_EDITION || "Open Enterprise Community", price: process.env.LICENSE_PRICE || "free", brandingName: null, brandingUrl: null, brandingLogo: null });
+    res.json({ licenseType, edition, price, brandingName: null, brandingUrl: null, brandingLogo: null });
   }
 });
 
