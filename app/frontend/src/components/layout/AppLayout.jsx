@@ -115,12 +115,16 @@ export default function AppLayout() {
   const [expandedGroups, setExpandedGroups] = useState(
     () => new Set(NAV_GROUPS.map(g => g.label))
   );
-  const [licenseType, setLicenseType] = useState("community");
+  const [licenseType, setLicenseType]   = useState("community");
+  const [branding, setBranding]         = useState(null);
 
   useEffect(() => {
     fetch("/api/instance")
       .then(r => r.json())
-      .then(d => setLicenseType(d.licenseType || "community"))
+      .then(d => {
+        setLicenseType(d.licenseType || "community");
+        if (d.brandingName) setBranding({ name: d.brandingName, url: d.brandingUrl || null });
+      })
       .catch(() => {});
   }, []);
 
@@ -232,16 +236,23 @@ export default function AppLayout() {
           <div className="flex-1 p-8">
             <Outlet />
           </div>
-          <footer className="shrink-0 border-t border-gray-100 py-3 px-8 flex items-center justify-center">
-            <a
-              href="https://www.openenterprise.info"
-              target="_blank"
-              rel="noreferrer"
-              className="text-xs text-gray-400 hover:text-indigo transition-colors"
-            >
-              Powered by <span className="font-semibold">openenterprise.info</span>
-            </a>
-          </footer>
+          {(licenseType === "community" || branding) && (
+            <footer className="shrink-0 border-t border-gray-100 py-3 px-8 flex items-center justify-center">
+              {branding ? (
+                branding.url ? (
+                  <a href={branding.url} target="_blank" rel="noreferrer" className="text-xs text-gray-400 hover:text-indigo transition-colors">
+                    Powered by <span className="font-semibold">{branding.name}</span>
+                  </a>
+                ) : (
+                  <span className="text-xs text-gray-400">Powered by <span className="font-semibold">{branding.name}</span></span>
+                )
+              ) : (
+                <a href="https://www.openenterprise.info" target="_blank" rel="noreferrer" className="text-xs text-gray-400 hover:text-indigo transition-colors">
+                  Powered by <span className="font-semibold">openenterprise.info</span>
+                </a>
+              )}
+            </footer>
+          )}
         </main>
       </div>
     </div>

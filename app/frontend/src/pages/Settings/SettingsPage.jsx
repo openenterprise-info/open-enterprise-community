@@ -446,12 +446,53 @@ function AudioTab({ settings, set }) {
   );
 }
 
+function BrandingTab({ settings, set }) {
+  return (
+    <div className="space-y-5 max-w-lg">
+      <p className="text-xs text-gray-500">
+        White-label the footer shown across all pages. Leave blank to show the default
+        <span className="font-medium text-gray-700"> "Powered by openenterprise.info"</span> footer
+        (Community) or no footer (Enterprise).
+      </p>
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Brand Name</label>
+        <input
+          className="input"
+          type="text"
+          value={settings.branding_name || ""}
+          onChange={e => set("branding_name", e.target.value)}
+          placeholder="e.g. Acme Corp"
+        />
+        <p className="text-xs text-gray-400 mt-1">Shown as "Powered by {settings.branding_name || "Acme Corp"}" in the footer.</p>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Brand URL</label>
+        <input
+          className="input"
+          type="url"
+          value={settings.branding_url || ""}
+          onChange={e => set("branding_url", e.target.value)}
+          placeholder="e.g. https://acme.com"
+        />
+        <p className="text-xs text-gray-400 mt-1">The footer text links to this URL.</p>
+      </div>
+      {settings.branding_name && (
+        <div className="rounded-lg bg-indigo/5 border border-indigo/20 px-4 py-3 text-sm text-indigo">
+          Preview: <span className="font-medium">Powered by {settings.branding_name}</span>
+          {settings.branding_url && <span className="text-xs text-indigo/60 ml-1">→ {settings.branding_url}</span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const SETTINGS_TABS = [
   { id: "llm",       label: "LLM Provider" },
   { id: "embedding", label: "Embedding Provider" },
   { id: "vectordb",  label: "Vector Database" },
   { id: "splitting", label: "Chunking" },
   { id: "audio",     label: "Audio" },
+  { id: "branding",  label: "Branding" },
 ];
 
 function SettingsForm() {
@@ -553,6 +594,7 @@ function SettingsForm() {
         {activeTab === "vectordb"  && <VectorDBTab settings={settings} set={set} />}
         {activeTab === "splitting" && <TextSplittingTab settings={settings} set={set} />}
         {activeTab === "audio"     && <AudioTab settings={settings} set={set} />}
+        {activeTab === "branding"  && <BrandingTab settings={settings} set={set} />}
         <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-100 mt-5">
           {saved && <span className="text-green-600 text-sm font-medium">Settings saved!</span>}
           <button type="submit" className="btn-primary px-5 py-2" disabled={saving}>{saving ? "Saving…" : "Save Settings"}</button>

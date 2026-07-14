@@ -40,12 +40,22 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use((req, _res, next) => { req.db = prisma; next(); });
 
-app.get("/api/instance", (_req, res) => {
-  res.json({
-    licenseType: process.env.LICENSE_TYPE    || "community",
-    edition:     process.env.LICENSE_EDITION || "Open Enterprise Community",
-    price:       process.env.LICENSE_PRICE   || "free",
-  });
+app.get("/api/instance", async (req, res) => {
+  try {
+    const [brandingName, brandingUrl] = await Promise.all([
+      req.db.setting.findUnique({ where: { key: "branding_name" } }),
+      req.db.setting.findUnique({ where: { key: "branding_url"  } }),
+    ]);
+    res.json({
+      licenseType:  process.env.LICENSE_TYPE    || "community",
+      edition:      process.env.LICENSE_EDITION || "Open Enterprise Community",
+      price:        process.env.LICENSE_PRICE   || "free",
+      brandingName: brandingName?.value || null,
+      brandingUrl:  brandingUrl?.value  || null,
+    });
+  } catch {
+    res.json({ licenseType: process.env.LICENSE_TYPE || "community", edition: process.env.LICENSE_EDITION || "Open Enterprise Community", price: process.env.LICENSE_PRICE || "free", brandingName: null, brandingUrl: null });
+  }
 });
 
 app.use("/api/auth",       authRoutes);
