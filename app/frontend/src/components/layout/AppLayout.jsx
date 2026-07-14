@@ -237,8 +237,20 @@ export default function AppLayout() {
           </div>
         </aside>
 
-        <main className="flex-1 overflow-y-auto p-8">
-          <Outlet />
+        <main className="flex-1 overflow-y-auto flex flex-col">
+          <div className="flex-1 p-8">
+            <Outlet />
+          </div>
+          <footer className="shrink-0 border-t border-gray-100 py-3 px-8 flex items-center justify-center">
+            <a
+              href="https://www.openenterprise.info"
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs text-gray-400 hover:text-indigo transition-colors"
+            >
+              Powered by <span className="font-semibold">openenterprise.info</span>
+            </a>
+          </footer>
         </main>
       </div>
     </div>
