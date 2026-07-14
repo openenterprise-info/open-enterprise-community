@@ -233,24 +233,42 @@ To use: go to **Workspaces → Chat → Agents → Import**, select a YAML file,
 
 ## Open Enterprise Commercial
 
-Need more for your team or organization? **Open Enterprise Commercial** is the managed, enterprise-grade edition built on the same core — with the features that production deployments demand.
+The Community Edition is free forever — but when your organization needs more than self-service, **Open Enterprise Commercial** is built for you.
 
-**Features**
-- **Security** — Data Loss Prevention (DLP), content compliance policies, violation tracking
-- **Observability** — Token usage analytics, activity logs, cost dashboards per user and workspace
-- **White-label** — Replace branding, logo, and footer with your own — deploy it as your own product
-- **Custom connectors** — Tailored integrations built for your specific systems and workflows
-- **SSO / SAML** — Single sign-on via Okta, Azure AD, and other identity providers
+Whether you're deploying AI across 50 employees or 5,000, running regulated workloads, or building AI-powered products on top of Open Enterprise — the Commercial edition gives you the enterprise controls, white-label flexibility, and dedicated support that production demands.
 
-**Services**
-- **Implementation support** — Hands-on onboarding, environment setup, and go-live assistance
-- **Dedicated success manager** — A named contact who knows your deployment and team
-- **SLA-backed uptime** — Guaranteed response and resolution times for critical issues
-- **Priority support** — Direct access to the engineering team, not a ticket queue
-- **Custom training** — Tailored sessions for your admins, developers, and end users
-- **Roadmap influence** — Shape upcoming features based on your business needs
+**No compromises. No workarounds. Just a deployment your team can rely on.**
 
-Contact [team@openenterprise.info](mailto:team@openenterprise.info) to learn more about Commercial pricing.
+---
+
+### Enterprise Features
+
+- **SSO / SAML** — Single sign-on via Okta, Azure AD, Google Workspace, and any SAML 2.0 provider. One login, zero friction.
+- **Security & Compliance** — Data Loss Prevention (DLP), content policy enforcement, audit-ready violation logs. Stay compliant without slowing down your teams.
+- **Observability** — Per-user and per-workspace token usage, cost dashboards, and full activity logs. Know exactly what's running and what it costs.
+- **White-label** — Ship it as your own product. Replace every logo, name, and link with your brand. Your customers never need to know what's running under the hood.
+- **Custom Connectors** — Need a connector that doesn't exist yet? We build it. Your internal systems, your proprietary APIs, your data sources — all connected.
+- **Advanced Agent Workflows** — Multi-agent orchestration, approval gates, event-driven pipelines, and enterprise-grade scheduling built for complex automation at scale.
+
+### Dedicated Services
+
+- **Guided implementation** — We don't hand you docs and wish you luck. Our team works alongside yours to design, deploy, and validate your setup from day one.
+- **Dedicated success manager** — A named person who knows your environment, your team, and your goals — available when you need them.
+- **SLA-backed support** — Contractual response and resolution times. Critical issues get immediate attention, not a queue.
+- **Custom training** — Hands-on workshops for your admins, developers, and end users — tailored to how your organization actually works.
+- **Roadmap access** — Commercial customers shape our roadmap. If you need a capability, tell us — we build it.
+- **Private deployment support** — Air-gapped environments, VPC deployments, and on-premise installs fully supported.
+
+### Who It's For
+
+- **Enterprises** rolling out AI assistants and agents across departments
+- **ISVs and SaaS companies** embedding AI into their own products under their own brand
+- **Regulated industries** — finance, healthcare, legal — that need compliance controls and audit trails
+- **Teams that have outgrown the Community Edition** and need SLA, SSO, and dedicated support
+
+---
+
+Ready to talk? Reach out to [team@openenterprise.info](mailto:team@openenterprise.info) — we'll scope your requirements and get you a proposal within 24 hours.
 
 ---
 
