@@ -216,19 +216,24 @@ export default function AppLayout() {
           </nav>
 
           {/* Sidebar footer — edition badge + CTA */}
-          <div className="shrink-0 border-t border-gray-100 px-3 py-3">
-            {/* Edition badge */}
-            <div className="flex items-center gap-1.5">
-              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
-                licenseType === "enterprise"
-                  ? "bg-indigo/10 text-indigo"
-                  : "bg-emerald-50 text-emerald-600"
-              }`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${licenseType === "enterprise" ? "bg-indigo" : "bg-emerald-500"}`} />
-                {licenseType === "enterprise" ? "Enterprise" : "Community · Free"}
-              </span>
-            </div>
-
+          <div className="shrink-0 border-t border-gray-100 px-3 py-3 space-y-1.5">
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
+              licenseType === "enterprise"
+                ? "bg-indigo/10 text-indigo"
+                : "bg-emerald-50 text-emerald-600"
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${licenseType === "enterprise" ? "bg-indigo" : "bg-emerald-500"}`} />
+              {licenseType === "enterprise" ? "Enterprise" : "Community · Free"}
+            </span>
+            <a
+              href="https://www.openenterprise.info"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-indigo transition-colors"
+            >
+              Powered by
+              <span className="font-semibold text-gray-500 hover:text-indigo">openenterprise.info</span>
+            </a>
           </div>
         </aside>
 
