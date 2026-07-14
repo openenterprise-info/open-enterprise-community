@@ -161,7 +161,7 @@ export default function AppLayout() {
             }}>
               {branding?.logo
                 ? <img src={branding.logo} alt="logo" className="w-full h-full object-contain" />
-                : <span className="text-white font-black text-sm">{branding?.name?.[0]?.toUpperCase() || "E"}</span>
+                : <span className="text-white font-black text-sm">{branding?.name?.[0]?.toUpperCase() || "O"}</span>
               }
             </div>
             <span className="text-white font-semibold text-base tracking-tight">{branding?.name || "Open Enterprise"}</span>
