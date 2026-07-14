@@ -257,7 +257,23 @@ Whether you're deploying AI across 50 employees or 5,000, running regulated work
 - **SLA-backed support** — Contractual response and resolution times. Critical issues get immediate attention, not a queue.
 - **Custom training** — Hands-on workshops for your admins, developers, and end users — tailored to how your organization actually works.
 - **Roadmap access** — Commercial customers shape our roadmap. If you need a capability, tell us — we build it.
-- **Private deployment support** — Air-gapped environments, VPC deployments, and on-premise installs fully supported.
+- **Flexible deployment** — Kubernetes, Docker Swarm, bare metal, VPC, air-gapped, and on-premise installs all fully supported. We'll help you deploy the way your infrastructure demands.
+
+### Infrastructure & Deployment
+
+Run Open Enterprise anywhere your organization requires — no compromises on where your data lives:
+
+- **Kubernetes** — Helm charts, horizontal pod autoscaling, and production-grade manifests
+- **Docker Swarm** — Multi-node deployments with built-in load balancing
+- **Bare metal / VM** — Optimised for self-managed servers in your own data center
+- **AWS / Azure / GCP** — Deployment guides and Terraform templates for all major clouds
+- **Air-gapped environments** — Fully offline deployments with no outbound connectivity required
+- **High availability** — Active-active clustering, failover, and disaster recovery configurations
+- **Multi-region** — Replicated deployments across regions for latency and compliance requirements
+
+Our team handles the architecture review, deployment runbooks, and production readiness checks.
+
+---
 
 ### Who It's For
 
