@@ -147,17 +147,6 @@ Open [http://localhost:3000](http://localhost:3000) and log in with the `SUPER_A
 
 All LLM and embedding settings are configured from the admin panel inside the app.
 
-### License Tiers
-
-All three variables must match exactly — any mismatch falls back to Community.
-
-| Tier | LICENSE_TYPE | LICENSE_EDITION | LICENSE_PRICE |
-|------|-------------|-----------------|---------------|
-| Community (default) | `community` | `Open Enterprise Community` | `free` |
-| Enterprise | `enterprise` | `Open Enterprise Commercial` | `custom` |
-
-Enterprise unlocks: Security (Compliance, Violations), Observability (Token Usage, Activity Log), and white-label Branding.
-
 ---
 
 ## Docker
