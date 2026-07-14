@@ -5,6 +5,7 @@ app/*/node_modules/
 # Environment
 app/server/.env
 app/server/.env.*
+!app/server/.env.example
 
 # Database & uploads
 app/server/storage/
