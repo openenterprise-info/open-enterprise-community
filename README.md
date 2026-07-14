@@ -57,9 +57,9 @@ See the [`sample-agents/`](sample-agents/) folder for ready-to-use examples.
 - **Workflow** — Chains, Conditional Branches, Multi-step Pipelines, Loops, Routers, State Management
 - **Agents** — Agents, Agent Planning, Multi-agent Collaboration, Reflection / Self-Critique
 - **Execution** — Automation, Event-driven Workflows, Human Approval, Runtime / Execution Engine
-- **Governance** — Guardrails / DLP
-- **Operations** — Observability (Token Usage, Activity Log, Dashboard)
-- **Ecosystem** — Marketplace
+- **Governance** — Guardrails / DLP *(Enterprise)*
+- **Operations** — Observability: Token Usage, Activity Log, Dashboard *(Enterprise)*
+- **Ecosystem** — Marketplace, Agent Templates
 
 ---
 
@@ -133,16 +133,30 @@ Open [http://localhost:3000](http://localhost:3000) and log in with the `SUPER_A
 
 ## Environment Variables Reference
 
-| Variable               | Required | Default | Description                          |
-|------------------------|----------|---------|--------------------------------------|
-| `JWT_SECRET`           | Yes      | —       | Secret key for signing auth tokens   |
-| `SUPER_ADMIN_EMAIL`    | Yes      | —       | Email for the super admin account    |
-| `SUPER_ADMIN_PASSWORD` | Yes      | —       | Password for the super admin account |
-| `FRONTEND_PORT`        | No       | `3000`  | Vite dev server port                 |
-| `SERVER_PORT`          | No       | `3001`  | API server port                      |
-| `PROCESSOR_PORT`       | No       | `3002`  | Document processor port              |
+| Variable               | Required | Default                       | Description                                                                 |
+|------------------------|----------|-------------------------------|-----------------------------------------------------------------------------|
+| `JWT_SECRET`           | Yes      | —                             | Signs and verifies login tokens. Keep the same across restarts — changing it logs everyone out. Does not affect your data. |
+| `SUPER_ADMIN_EMAIL`    | Yes      | —                             | Email for the super admin account                                           |
+| `SUPER_ADMIN_PASSWORD` | Yes      | —                             | Password for the super admin account                                        |
+| `FRONTEND_PORT`        | No       | `3000`                        | Vite dev server port                                                        |
+| `SERVER_PORT`          | No       | `3001`                        | API server port                                                             |
+| `PROCESSOR_PORT`       | No       | `3002`                        | Document processor port                                                     |
+| `LICENSE_TYPE`         | No       | `community`                   | Edition identifier. See license section below.                              |
+| `LICENSE_EDITION`      | No       | `Open Enterprise Community`   | Edition display name.                                                       |
+| `LICENSE_PRICE`        | No       | `free`                        | Pricing tier.                                                               |
 
 All LLM and embedding settings are configured from the admin panel inside the app.
+
+### License Tiers
+
+All three variables must match exactly — any mismatch falls back to Community.
+
+| Tier | LICENSE_TYPE | LICENSE_EDITION | LICENSE_PRICE |
+|------|-------------|-----------------|---------------|
+| Community (default) | `community` | `Open Enterprise Community` | `free` |
+| Enterprise | `enterprise` | `Open Enterprise Commercial` | `custom` |
+
+Enterprise unlocks: Security (Compliance, Violations), Observability (Token Usage, Activity Log), and white-label Branding.
 
 ---
 
@@ -197,7 +211,8 @@ Once the app is running, follow these steps to verify everything works end to en
 4. **Ingest data** — open the workspace, go to **Settings → Knowledge Base** and upload some documents
 5. **Test RAG** — ask questions in the workspace chat related to the ingested data
 6. **Add connectors** — connect databases or enterprise tools (GitHub, Notion, Slack, etc.) from the Connectors panel
-7. **Build & test agents** — create an agent, attach connectors, and run it
+7. **Build & test agents** — create an agent from scratch or pick a template (green **Templates** button), attach connectors, and run it
+8. **Browse the Marketplace** — explore ready-to-use agent templates across Security, Sales, Marketing, Integrations, and Analytics
 
 Thank you for testing Open Enterprise! If you run into issues, please [open an issue](https://github.com/openenterprise-info/open-enterprise-community/issues).
 
