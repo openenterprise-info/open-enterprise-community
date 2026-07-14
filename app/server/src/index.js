@@ -40,6 +40,14 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use((req, _res, next) => { req.db = prisma; next(); });
 
+app.get("/api/instance", (_req, res) => {
+  res.json({
+    licenseType: process.env.LICENSE_TYPE    || "community",
+    edition:     process.env.LICENSE_EDITION || "Open Enterprise Community",
+    price:       process.env.LICENSE_PRICE   || "free",
+  });
+});
+
 app.use("/api/auth",       authRoutes);
 app.use("/api/workspaces", workspaceRoutes);
 app.use("/api/documents",  documentRoutes);

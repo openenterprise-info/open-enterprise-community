@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, Outlet, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import UserMenu from "../UserMenu";
@@ -59,6 +59,7 @@ const NAV_GROUPS = [
   {
     label: "Security",
     adminOnly: true,
+    enterpriseOnly: true,
     items: [
       {
         id: "compliance", label: "Compliance", path: "/settings/compliance",
@@ -73,6 +74,7 @@ const NAV_GROUPS = [
   {
     label: "Observability",
     adminOnly: true,
+    enterpriseOnly: true,
     items: [
       {
         id: "token-usage", label: "Token Usage", path: "/settings/token-usage",
@@ -113,6 +115,14 @@ export default function AppLayout() {
   const [expandedGroups, setExpandedGroups] = useState(
     () => new Set(NAV_GROUPS.map(g => g.label))
   );
+  const [licenseType, setLicenseType] = useState("community");
+
+  useEffect(() => {
+    fetch("/api/instance")
+      .then(r => r.json())
+      .then(d => setLicenseType(d.licenseType || "community"))
+      .catch(() => {});
+  }, []);
 
   if (loading) {
     return (
@@ -161,6 +171,7 @@ export default function AppLayout() {
         <aside className="w-52 bg-white border-r border-gray-200 flex flex-col overflow-y-auto shrink-0">
           <nav className="p-3 flex-1">
             {NAV_GROUPS.filter(g => {
+              if (g.enterpriseOnly && licenseType !== "enterprise") return false;
               if (g.adminOnly) return user?.role === "admin";
               if (g.managerOnly) return user?.role === "admin" || user?.role === "manager";
               return true;
