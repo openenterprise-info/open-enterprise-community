@@ -24,7 +24,7 @@ Need more for your team or organization? **Open Enterprise Commercial** is the m
 - **Custom training** — Tailored sessions for your admins, developers, and end users
 - **Roadmap influence** — Shape upcoming features based on your business needs
 
-[Contact us](https://www.openenterprise.info) to learn more about Commercial pricing.
+Contact [team@openenterprise.info](mailto:team@openenterprise.info) to learn more about Commercial pricing.
 
 ---
 
