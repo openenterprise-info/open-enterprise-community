@@ -20,19 +20,6 @@ All connectors are browsable from the **Connectors** tab inside your workspace.
 
 ---
 
-## No Code. Just YAML.
-
-Most AI agent frameworks require you to write Python, wire up LangGraph nodes, or manage complex orchestration code. Open Enterprise is different — define any agent workflow in a simple YAML file. Steps, connectors, schedules, and logic are all declared, not coded.
-
-- No LangGraph, no LangChain, no custom Python
-- Multi-step workflows with conditional logic in plain YAML
-- Import, export, and share agents as single files
-- Any complexity — from a simple Q&A bot to a 10-step automated pipeline
-
-See the [`sample-agents/`](sample-agents/) folder for ready-to-use examples.
-
----
-
 ## Tech Stack
 
 | Component | Technology |
@@ -207,6 +194,17 @@ Once the app is running, follow these steps to verify everything works end to en
 8. **Browse the Marketplace** — explore ready-to-use agent templates across Security, Sales, Marketing, Integrations, and Analytics
 
 Thank you for testing Open Enterprise! If you run into issues, please [open an issue](https://github.com/openenterprise-info/open-enterprise-community/issues).
+
+---
+
+## No Code. Just YAML.
+
+Most AI agent frameworks require you to write Python, wire up LangGraph nodes, or manage complex orchestration code. Open Enterprise is different — define any agent workflow in a simple YAML file. Steps, connectors, schedules, and logic are all declared, not coded.
+
+- No LangGraph, no LangChain, no custom Python
+- Multi-step workflows with conditional logic in plain YAML
+- Import, export, and share agents as single files
+- Any complexity — from a simple Q&A bot to a 10-step automated pipeline
 
 ---
 
