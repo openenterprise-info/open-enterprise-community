@@ -252,7 +252,7 @@ export default function AppLayout() {
                 )
               ) : (
                 <a href="https://www.openenterprise.info" target="_blank" rel="noreferrer" className="text-xs text-gray-400 hover:text-indigo transition-colors">
-                  Powered by <span className="font-semibold">openenterprise.info</span>
+                  Powered by <span className="font-semibold">www.openenterprise.info</span>
                 </a>
               )}
             </footer>
