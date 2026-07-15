@@ -1,8 +1,9 @@
 # Commercial edition (never committed to community repo)
 app/commercial/
 
-# Release script (local only)
+# Scripts (local only)
 release.sh
+sync.sh
 
 # Dependencies
 app/node_modules/
