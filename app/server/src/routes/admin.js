@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const { authenticate, requireAdmin, requireManagerOrAdmin, requireManagerOrAdminOrUser } = require("../middleware/auth");
+const { authenticate, requireAdmin, requireManagerOrAdmin, requireManagerOrAdminOrUser, requireCommercial } = require("../middleware/auth");
 const bcrypt = require("bcryptjs");
 const { v4: uuidv4 } = require("uuid");
 const { logActivity } = require("../utils/activityLog");
@@ -518,7 +518,7 @@ router.delete("/purge/threads", requireAdmin, async (req, res) => {
   res.json({ message: `Purged ${count} thread(s) and their chat history.` });
 });
 
-router.delete("/purge/dlp-violations", requireAdmin, async (req, res) => {
+router.delete("/purge/dlp-violations", requireAdmin, requireCommercial, async (req, res) => {
   const where = purgeWhere(req.query);
   const { count } = await req.db.dlpViolation.deleteMany({ where });
   res.json({ message: `Purged ${count} DLP violation record(s).` });

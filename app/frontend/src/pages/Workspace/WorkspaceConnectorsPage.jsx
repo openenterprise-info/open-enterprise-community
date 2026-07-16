@@ -2755,6 +2755,11 @@ export default function WorkspaceConnectorsPage() {
   const [confirmDel,  setConfirmDel]  = useState(null);
   const [deleting,    setDeleting]    = useState(null);
   const [runningAgentCount, setRunningAgentCount] = useState(0);
+  const [connectorSharingEnabled, setConnectorSharingEnabled] = useState(false);
+  const [sharesMap,         setSharesMap]         = useState({});
+  const [sharePickerConnId, setSharePickerConnId] = useState(null);
+  const [peerWorkspaces,    setPeerWorkspaces]    = useState([]);
+  const [sharingTo,         setSharingTo]         = useState(null);
 
   useEffect(() => {
     if (!slug) return;
@@ -2784,6 +2789,52 @@ export default function WorkspaceConnectorsPage() {
   }, [workspace?.id]);
 
   useEffect(() => { loadConnectors(); }, [loadConnectors]);
+
+  function loadShares() {
+    api.get(`/workspaces/${slug}/connector-shares`)
+      .then(r => {
+        const map = {};
+        (r.data.shares || []).forEach(s => {
+          if (!map[s.connectorId]) map[s.connectorId] = [];
+          map[s.connectorId].push(s);
+        });
+        setSharesMap(map);
+      }).catch(() => {});
+  }
+
+  useEffect(() => {
+    if (!slug) return;
+    api.get("/features").then(r => {
+      const enabled = r.data.connectorSharing !== false;
+      setConnectorSharingEnabled(enabled);
+      if (enabled) loadShares();
+    }).catch(() => {});
+  }, [slug]);
+
+  async function openSharePicker(connId) {
+    if (sharePickerConnId === connId) { setSharePickerConnId(null); return; }
+    setSharePickerConnId(connId);
+    if (!peerWorkspaces.length) {
+      api.get("/admin/workspaces")
+        .then(r => setPeerWorkspaces((r.data.workspaces || []).filter(w => w.slug !== slug)))
+        .catch(() => {});
+    }
+  }
+
+  async function addConnectorShare(connId, grantedWorkspaceId) {
+    setSharingTo(grantedWorkspaceId);
+    try {
+      await api.post(`/workspaces/${slug}/connector-shares`, { connectorId: connId, grantedWorkspaceId });
+      loadShares();
+    } catch { } finally { setSharingTo(null); }
+  }
+
+  async function removeConnectorShare(shareId) {
+    try {
+      await api.delete(`/workspaces/${slug}/connector-shares/${shareId}`);
+      loadShares();
+    } catch { }
+  }
 
   async function handleTest(c) {
     setTesting(c.id);
@@ -2946,6 +2997,14 @@ export default function WorkspaceConnectorsPage() {
                           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                           Edit
                         </button>
+                        {/* Share */}
+                        {connectorSharingEnabled && (
+                          <button onClick={() => openSharePicker(c.id)} title="Share with workspace"
+                            className={`flex-1 flex items-center justify-center gap-1 py-1 rounded-lg text-[10px] font-medium transition-colors ${sharePickerConnId === c.id ? "text-indigo bg-indigo/10" : "text-gray-500 hover:text-indigo hover:bg-indigo/5"}`}>
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+                            Share
+                          </button>
+                        )}
                         {/* Delete */}
                         <button onClick={() => setConfirmDel(c)} title="Delete connection"
                           className="flex-1 flex items-center justify-center gap-1 py-1 rounded-lg text-[10px] font-medium text-gray-500 hover:text-red-500 hover:bg-red-50 transition-colors">
@@ -2953,6 +3012,38 @@ export default function WorkspaceConnectorsPage() {
                           Delete
                         </button>
                       </div>
+                      {/* Share picker */}
+                      {connectorSharingEnabled && sharePickerConnId === c.id && (
+                        <div className="border-t border-gray-100 px-3 py-3 bg-gray-50 space-y-2">
+                          <p className="text-xs font-semibold text-gray-700">Share with workspace</p>
+                          {(sharesMap[c.id] || []).length > 0 && (
+                            <div className="space-y-1">
+                              {(sharesMap[c.id] || []).map(s => (
+                                <div key={s.id} className="flex items-center gap-2 px-2 py-1.5 bg-indigo/5 rounded-lg">
+                                  <span className="text-xs font-medium text-gray-700 flex-1">{s.grantedWorkspace.name}</span>
+                                  <span className="text-[10px] text-green-600 font-semibold">Shared</span>
+                                  <button onClick={() => removeConnectorShare(s.id)} className="text-gray-300 hover:text-red-500 transition-colors">
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          <div className="space-y-1 max-h-32 overflow-y-auto">
+                            {peerWorkspaces.filter(w => !(sharesMap[c.id] || []).some(s => s.grantedWorkspace.id === w.id)).length === 0
+                              ? <p className="text-xs text-gray-400">All workspaces already added.</p>
+                              : peerWorkspaces.filter(w => !(sharesMap[c.id] || []).some(s => s.grantedWorkspace.id === w.id)).map(w => (
+                                <button key={w.id} onClick={() => addConnectorShare(c.id, w.id)} disabled={sharingTo === w.id}
+                                  className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg border border-gray-200 hover:border-indigo hover:bg-indigo/5 transition-colors text-left disabled:opacity-50 text-xs">
+                                  <span className="font-medium text-gray-700">{w.name}</span>
+                                  <span className="text-gray-400">{sharingTo === w.id ? "Sharing…" : "Share →"}</span>
+                                </button>
+                              ))
+                            }
+                          </div>
+                          <button onClick={() => setSharePickerConnId(null)} className="text-[10px] text-gray-400 hover:text-gray-600">✕ Close</button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}

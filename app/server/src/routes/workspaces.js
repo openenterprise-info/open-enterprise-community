@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const { authenticate, requireAdmin, requireManagerOrAdmin } = require("../middleware/auth");
+const { authenticate, requireAdmin, requireManagerOrAdmin, requireCommercial } = require("../middleware/auth");
 const { v4: uuidv4 } = require("uuid");
 const fs = require("fs");
 const path = require("path");
@@ -790,7 +790,7 @@ router.post("/:slug/agents/:id/run", authenticate, async (req, res) => {
 // ── Agent Sharing ─────────────────────────────────────────────────────────────
 
 // List shares for agents in this workspace
-router.get("/:slug/agent-shares", authenticate, requireManagerOrAdmin, async (req, res) => {
+router.get("/:slug/agent-shares", authenticate, requireCommercial, requireManagerOrAdmin, async (req, res) => {
   try {
     const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.slug } });
     if (!workspace) return res.status(404).json({ error: "Workspace not found" });
@@ -808,7 +808,7 @@ router.get("/:slug/agent-shares", authenticate, requireManagerOrAdmin, async (re
 });
 
 // Create a share
-router.post("/:slug/agent-shares", authenticate, requireManagerOrAdmin, async (req, res) => {
+router.post("/:slug/agent-shares", authenticate, requireCommercial, requireManagerOrAdmin, async (req, res) => {
   try {
     const featureSetting = await req.db.setting.findUnique({ where: { key: "feature.agentSharing" } });
     if (featureSetting?.value === "false") return res.status(403).json({ error: "Agent Sharing is disabled on this installation." });
@@ -838,7 +838,7 @@ router.post("/:slug/agent-shares", authenticate, requireManagerOrAdmin, async (r
 });
 
 // Delete a share
-router.delete("/:slug/agent-shares/:shareId", authenticate, requireManagerOrAdmin, async (req, res) => {
+router.delete("/:slug/agent-shares/:shareId", authenticate, requireCommercial, requireManagerOrAdmin, async (req, res) => {
   try {
     const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.slug } });
     if (!workspace) return res.status(404).json({ error: "Workspace not found" });
@@ -855,7 +855,7 @@ router.delete("/:slug/agent-shares/:shareId", authenticate, requireManagerOrAdmi
 
 // ── Connector Shares ─────────────────────────────────────────────────────────
 
-router.get("/:slug/connector-shares", authenticate, requireManagerOrAdmin, async (req, res) => {
+router.get("/:slug/connector-shares", authenticate, requireCommercial, requireManagerOrAdmin, async (req, res) => {
   try {
     const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.slug } });
     if (!workspace) return res.status(404).json({ error: "Workspace not found" });
@@ -871,7 +871,7 @@ router.get("/:slug/connector-shares", authenticate, requireManagerOrAdmin, async
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.post("/:slug/connector-shares", authenticate, requireManagerOrAdmin, async (req, res) => {
+router.post("/:slug/connector-shares", authenticate, requireCommercial, requireManagerOrAdmin, async (req, res) => {
   try {
     const featureSetting = await req.db.setting.findUnique({ where: { key: "feature.connectorSharing" } });
     if (featureSetting?.value === "false") return res.status(403).json({ error: "Connector Sharing is disabled on this installation." });
@@ -896,7 +896,7 @@ router.post("/:slug/connector-shares", authenticate, requireManagerOrAdmin, asyn
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.delete("/:slug/connector-shares/:shareId", authenticate, requireManagerOrAdmin, async (req, res) => {
+router.delete("/:slug/connector-shares/:shareId", authenticate, requireCommercial, requireManagerOrAdmin, async (req, res) => {
   try {
     const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.slug } });
     if (!workspace) return res.status(404).json({ error: "Workspace not found" });

@@ -23,7 +23,8 @@ export default function MaintenancePage() {
     { id: "chats",        label: "Chat History",    desc: "All chat messages in threads"                          },
     { id: "agent-runs",   label: "Agent Runs",      desc: "All agent run logs and outputs"                        },
     { id: "agent-memory", label: "Agent Memory",    desc: "Clears run outputs used as memory (keeps run history)" },
-    { id: "threads",      label: "Threads",         desc: "All threads (and their chat history)"                  },
+    { id: "threads",        label: "Threads",         desc: "All threads (and their chat history)"                  },
+    { id: "dlp-violations", label: "DLP Violations",  desc: "All recorded DLP policy violation logs"                 },
   ];
 
   async function doPurge(type) {

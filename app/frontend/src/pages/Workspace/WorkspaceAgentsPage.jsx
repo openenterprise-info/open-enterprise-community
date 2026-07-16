@@ -8,6 +8,7 @@ import AgentStudio from "../../components/AgentStudio";
 import { Spinner, EmptyState } from "../../components/ui";
 import { useAuth } from "../../context/AuthContext";
 import { TEMPLATES } from "../../utils/agentTemplates";
+import { AgentSharingSection } from "../../components/WorkspaceDrawer";
 
 function yamlToAgentJson(y) {
   return {
@@ -383,6 +384,7 @@ export default function WorkspaceAgentsPage() {
   const [importWarning, setImportWarning] = useState("");
   const [pendingApprovals, setPendingApprovals] = useState(0);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [agentSharingEnabled, setAgentSharingEnabled] = useState(false);
   const uploadRef                       = useRef(null);
 
   useEffect(() => {
@@ -395,6 +397,10 @@ export default function WorkspaceAgentsPage() {
     const id = setInterval(fetchPending, 5000);
     return () => clearInterval(id);
   }, [slug]);
+
+  useEffect(() => {
+    api.get("/features").then(r => setAgentSharingEnabled(r.data.agentSharing !== false)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!slug) return;
@@ -815,6 +821,12 @@ export default function WorkspaceAgentsPage() {
                   onDelete={setConfirmDelete}
                 />
               ))}
+            </div>
+          )}
+
+          {agentSharingEnabled && workspace && (
+            <div className="border border-gray-200 rounded-xl p-5">
+              <AgentSharingSection ws={workspace} />
             </div>
           )}
         </div>

@@ -171,7 +171,7 @@ function UsageBar({ label, used, limit, formatUsed, formatLimit }) {
 function InstanceUsageSection({ usage }) {
   if (!usage) return null;
   return (
-    <div>
+    <div className="w-1/2">
       <SectionTitle>Instance Usage</SectionTitle>
       <div className="bg-white rounded-xl border border-indigo/20 overflow-hidden">
         <div className="px-5 py-3 bg-indigo/5 border-b border-indigo/10 flex items-center justify-between">
@@ -180,25 +180,39 @@ function InstanceUsageSection({ usage }) {
         </div>
         <div className="p-5 space-y-4">
           <UsageBar
-            label="Storage"
-            used={usage.storageUsedGb}
-            limit={usage.storageLimitGb}
-            formatUsed={v => v < 1 ? `${(v * 1024).toFixed(0)} MB` : `${v.toFixed(2)} GB`}
-            formatLimit={v => `${v} GB`}
+            label="Max Workspaces"
+            used={usage.workspaceCount ?? 0}
+            limit={usage.workspaceLimit}
+            formatUsed={v => String(v)}
+            formatLimit={v => String(v)}
           />
           <UsageBar
-            label="Connectors"
+            label="Max Users"
+            used={usage.userCount ?? 0}
+            limit={usage.userLimit}
+            formatUsed={v => String(v)}
+            formatLimit={v => String(v)}
+          />
+          <UsageBar
+            label="Max Connectors"
             used={usage.connectorCount}
             limit={usage.connectorLimit}
             formatUsed={v => String(v)}
             formatLimit={v => String(v)}
           />
           <UsageBar
-            label="Agent Runs this month"
+            label="Agent Runs per Month"
             used={usage.agentRunsThisMonth}
             limit={usage.agentRunsLimit}
             formatUsed={v => v.toLocaleString()}
             formatLimit={v => v.toLocaleString()}
+          />
+          <UsageBar
+            label="Ingestion Space (GB)"
+            used={usage.storageUsedGb}
+            limit={usage.storageLimitGb}
+            formatUsed={v => v < 1 ? `${(v * 1024).toFixed(0)} MB` : `${v.toFixed(2)} GB`}
+            formatLimit={v => `${v} GB`}
           />
         </div>
       </div>
@@ -276,6 +290,8 @@ function AdminMetrics({ stats }) {
         <StatCard label="Successful Runs" value={fmt(stats.agentRunSuccess  || 0)} sub="completed ok" />
         <StatCard label="Failed Runs"     value={fmt(stats.agentRunErrors   || 0)} sub="errors"       />
       </div>
+
+      <InstanceUsageSection usage={stats.usage} />
 
       <SectionTitle>Usage &amp; Cost</SectionTitle>
 

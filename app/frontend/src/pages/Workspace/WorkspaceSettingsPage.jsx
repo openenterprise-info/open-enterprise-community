@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../../utils/api";
 import { Spinner } from "../../components/ui";
+import { AgentSharingSection } from "../../components/WorkspaceDrawer";
 
 function WorkspaceSidebar({ slug, workspace, navigate }) {
   return (
@@ -48,12 +49,17 @@ export default function WorkspaceSettingsPage() {
   const [saving, setSaving]               = useState(false);
   const [saved, setSaved]                 = useState(false);
   const [error, setError]                 = useState("");
+  const [agentSharingEnabled, setAgentSharingEnabled] = useState(false);
 
   // Agent settings
   const [maxRounds, setMaxRounds]         = useState(25);
   const [maxChainDepth, setMaxChainDepth] = useState(5);
   const [memoryEnabled, setMemoryEnabled] = useState(false);
   const [memoryRuns, setMemoryRuns]       = useState(5);
+
+  useEffect(() => {
+    api.get("/features").then(r => setAgentSharingEnabled(r.data.agentSharing !== false)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!slug) return;
@@ -175,6 +181,12 @@ export default function WorkspaceSettingsPage() {
                   )}
                 </div>
               </div>
+
+              {agentSharingEnabled && workspace && (
+                <div className="bg-white border border-gray-200 rounded-xl p-5">
+                  <AgentSharingSection ws={workspace} />
+                </div>
+              )}
 
               <div className="flex items-center gap-3">
                 <button type="submit" disabled={saving} className="btn-primary px-5 py-2 text-sm disabled:opacity-50">

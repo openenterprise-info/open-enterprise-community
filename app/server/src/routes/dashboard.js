@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const { authenticate } = require("../middleware/auth");
+const { authenticate, requireCommercial } = require("../middleware/auth");
 const { getTierFromDB, getAgentRunsThisMonth } = require("../utils/tier");
 
 const EMBEDDING_RATES = {
@@ -209,16 +209,21 @@ router.get("/admin", authenticate, async (req, res) => {
         chats:     ws._count.chats,
         documents: ws._count.documents,
       })),
-    // Usage vs limits — null means unlimited (Infinity can't serialize to JSON)
-    usage: {
-      storageUsedGb:        parseFloat(storageUsedGb.toFixed(3)),
-      storageUsedBytes:     totalStorageBytes,
-      storageLimitGb:       isFinite(tier.ingestionSpaceGb)     ? tier.ingestionSpaceGb     : null,
+    // Usage vs limits — commercial only; null means unlimited (Infinity can't serialize to JSON)
+    usage: (process.env.LICENSE_TYPE === "enterprise" && process.env.LICENSE_EDITION === "Open Enterprise Commercial" && process.env.LICENSE_PRICE === "custom") ? {
+      tierName:             tier.name,
+      workspaceCount:       workspaces.length,
+      workspaceLimit:       isFinite(tier.maxWorkspaces)        ? tier.maxWorkspaces        : null,
+      userCount:            users.length,
+      userLimit:            isFinite(tier.maxUsers)             ? tier.maxUsers             : null,
       connectorCount,
       connectorLimit:       isFinite(tier.maxConnectors)        ? tier.maxConnectors        : null,
       agentRunsThisMonth,
       agentRunsLimit:       isFinite(tier.maxAgentRunsPerMonth) ? tier.maxAgentRunsPerMonth : null,
-    },
+      storageUsedGb:        parseFloat(storageUsedGb.toFixed(3)),
+      storageUsedBytes:     totalStorageBytes,
+      storageLimitGb:       isFinite(tier.ingestionSpaceGb)     ? tier.ingestionSpaceGb     : null,
+    } : null,
     agentRunCount:    recentAgentRuns.length,
     agentRunSuccess:  recentAgentRuns.filter(r => r.status === "success").length,
     agentRunErrors:   recentAgentRuns.filter(r => r.status === "error").length,

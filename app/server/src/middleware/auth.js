@@ -49,4 +49,15 @@ function requireManagerOrAdminOrUser(req, res, next) {
   next();
 }
 
-module.exports = { authenticate, requireAdmin, requireManagerOrAdmin, requireManagerOrAdminOrUser, authenticateApiKey };
+function requireCommercial(req, res, next) {
+  if (
+    process.env.LICENSE_TYPE    !== "enterprise" ||
+    process.env.LICENSE_EDITION !== "Open Enterprise Commercial" ||
+    process.env.LICENSE_PRICE   !== "custom"
+  ) {
+    return res.status(403).json({ error: "This feature requires a commercial license." });
+  }
+  next();
+}
+
+module.exports = { authenticate, requireAdmin, requireManagerOrAdmin, requireManagerOrAdminOrUser, authenticateApiKey, requireCommercial };
