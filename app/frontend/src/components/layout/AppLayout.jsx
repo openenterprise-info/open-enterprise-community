@@ -254,7 +254,7 @@ export default function AppLayout() {
           <div className={`flex-1 ${isFullBleed ? "overflow-hidden" : "p-8"}`}>
             <Outlet />
           </div>
-          {(licenseType === "community" || branding) && !isFullBleed && (
+          {(licenseType === "community" || branding) && (
             <footer className="shrink-0 border-t border-gray-100 py-3 px-8 flex items-center justify-center">
               {branding ? (
                 branding.url ? (
