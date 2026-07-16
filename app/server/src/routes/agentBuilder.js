@@ -109,7 +109,6 @@ router.post("/chat", authenticate, async (req, res) => {
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
-  res.flushHeaders(); // send headers immediately so the client enters the reader loop
 
   let clientGone = false;
   req.on("close", () => { clientGone = true; });
@@ -117,6 +116,9 @@ router.post("/chat", authenticate, async (req, res) => {
     if (clientGone) return;
     try { res.write(data); } catch { clientGone = true; }
   }
+
+  // Flush headers immediately with a SSE comment so the client reader starts
+  safeWrite(": ping\n\n");
 
   try {
     const { provider, client } = await getLLMClient();
