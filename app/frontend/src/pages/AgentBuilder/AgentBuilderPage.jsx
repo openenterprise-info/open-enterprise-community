@@ -16,14 +16,16 @@ function extractLastYaml(messages) {
   return null;
 }
 
-function MessageBubble({ msg }) {
+function MessageBubble({ msg, isStreaming }) {
   const isUser = msg.role === "user";
-  const parts = msg.content.split(/(```yaml[\s\S]*?```)/g);
+  const content = msg.content || "";
+  const parts = content.split(/(```yaml[\s\S]*?```)/g);
+  const isEmpty = !content.trim();
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
       {!isUser && (
-        <div className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center shrink-0 mr-2 mt-0.5">
+        <div className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center shrink-0 mr-2 mt-1">
           <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
           </svg>
@@ -34,37 +36,46 @@ function MessageBubble({ msg }) {
           ? "bg-indigo-600 text-white rounded-br-sm"
           : "bg-white border border-gray-200 text-gray-800 rounded-bl-sm shadow-sm"
       }`}>
-        {parts.map((part, i) => {
-          if (part.startsWith("```yaml")) {
-            const code = part.replace(/^```yaml\n/, "").replace(/```$/, "");
-            return (
-              <div key={i} className="mt-2 mb-1">
-                <div className="flex items-center justify-between px-3 py-1 bg-gray-800 rounded-t-lg">
-                  <span className="text-xs text-gray-400 font-mono">agent.yaml</span>
-                  <span className="text-xs text-green-400 font-medium">YAML</span>
+        {isEmpty && isStreaming ? (
+          <div className="flex gap-1 py-0.5">
+            <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+            <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+            <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+          </div>
+        ) : isEmpty ? (
+          <span className="text-gray-400 italic">…</span>
+        ) : (
+          parts.map((part, i) => {
+            if (part.startsWith("```yaml")) {
+              const code = part.replace(/^```yaml\n?/, "").replace(/\n?```$/, "");
+              return (
+                <div key={i} className="mt-2 mb-1">
+                  <div className="flex items-center justify-between px-3 py-1 bg-gray-800 rounded-t-lg">
+                    <span className="text-xs text-gray-400 font-mono">agent.yaml</span>
+                    <span className="text-xs text-green-400 font-medium">YAML</span>
+                  </div>
+                  <pre className="bg-gray-900 text-green-300 text-xs font-mono p-3 rounded-b-lg overflow-x-auto whitespace-pre">{code}</pre>
                 </div>
-                <pre className="bg-gray-900 text-green-300 text-xs font-mono p-3 rounded-b-lg overflow-x-auto whitespace-pre">{code}</pre>
-              </div>
-            );
-          }
-          if (!part.trim()) return null;
-          return (
-            <span key={i} className="whitespace-pre-wrap">{part}</span>
-          );
-        })}
+              );
+            }
+            if (!part) return null;
+            return <span key={i} className="whitespace-pre-wrap">{part}</span>;
+          })
+        )}
       </div>
     </div>
   );
 }
 
+const WELCOME = {
+  role: "assistant",
+  content: "Hi! I'm your Agent Builder. Tell me what you want your agent to do — I'll help you design it and generate the YAML.\n\nFor example: \"I want an agent that runs every Monday morning, connects to my SSH server to check disk usage, and sends a Slack alert if any partition is above 80%\"",
+  isWelcome: true,
+};
+
 export default function AgentBuilderPage() {
   const navigate = useNavigate();
-  const [messages, setMessages] = useState([
-    {
-      role: "assistant",
-      content: "Hi! I'm your Agent Builder. Tell me what you want your agent to do — I'll help you design it and generate the YAML.\n\nFor example: *\"I want an agent that runs every Monday morning, connects to my SSH server to check disk usage, and sends a Slack alert if any partition is above 80%\"*",
-    },
-  ]);
+  const [messages, setMessages] = useState([WELCOME]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -72,6 +83,7 @@ export default function AgentBuilderPage() {
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const abortRef = useRef(null);
+  const contentRef = useRef("");
 
   const currentYaml = extractLastYaml(messages);
 
@@ -85,15 +97,15 @@ export default function AgentBuilderPage() {
     setInput("");
 
     const userMsg = { role: "user", content: text };
-    const newMessages = [...messages, userMsg];
-    setMessages(newMessages);
+
+    // Build API messages: skip the welcome placeholder, only send real conversation
+    const apiMessages = [...messages, userMsg]
+      .filter(m => !m.isWelcome)
+      .map(({ role, content }) => ({ role, content }));
+
+    setMessages(prev => [...prev, userMsg, { role: "assistant", content: "" }]);
     setStreaming(true);
-
-    const apiMessages = newMessages.map(m => ({ role: m.role, content: m.content }));
-    let assistantContent = "";
-    const placeholder = { role: "assistant", content: "" };
-
-    setMessages(prev => [...prev, placeholder]);
+    contentRef.current = "";
 
     try {
       const controller = new AbortController();
@@ -107,6 +119,16 @@ export default function AgentBuilderPage() {
         signal: controller.signal,
       });
 
+      if (!res.ok) {
+        const err = await res.text();
+        setMessages(prev => {
+          const updated = [...prev];
+          updated[updated.length - 1] = { role: "assistant", content: `Error ${res.status}: ${err}` };
+          return updated;
+        });
+        return;
+      }
+
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
@@ -116,35 +138,38 @@ export default function AgentBuilderPage() {
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
-        buffer = lines.pop();
+        buffer = lines.pop() ?? "";
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
           try {
             const data = JSON.parse(line.slice(6));
             if (data.chunk) {
-              assistantContent += data.chunk;
+              contentRef.current += data.chunk;
+              const snap = contentRef.current;
               setMessages(prev => {
                 const updated = [...prev];
-                updated[updated.length - 1] = { role: "assistant", content: assistantContent };
+                updated[updated.length - 1] = { role: "assistant", content: snap };
                 return updated;
               });
             }
             if (data.error) {
-              assistantContent += `\n\n_Error: ${data.error}_`;
+              contentRef.current = `Error: ${data.error}`;
+              const snap = contentRef.current;
               setMessages(prev => {
                 const updated = [...prev];
-                updated[updated.length - 1] = { role: "assistant", content: assistantContent };
+                updated[updated.length - 1] = { role: "assistant", content: snap };
                 return updated;
               });
             }
-          } catch { /* ignore */ }
+          } catch { /* ignore malformed lines */ }
         }
       }
     } catch (err) {
       if (err.name !== "AbortError") {
+        const msg = `Connection error: ${err.message}`;
         setMessages(prev => {
           const updated = [...prev];
-          updated[updated.length - 1] = { role: "assistant", content: "_Connection error. Please try again._" };
+          updated[updated.length - 1] = { role: "assistant", content: msg };
           return updated;
         });
       }
@@ -176,27 +201,17 @@ export default function AgentBuilderPage() {
 
   async function importToWorkspace() {
     if (!currentYaml) return;
-    setImportMsg("Select a workspace to import into (feature coming soon — for now, copy the YAML and use the Marketplace import).");
+    setImportMsg("Select a workspace to import into (feature coming soon — copy the YAML and use Marketplace import for now).");
     setTimeout(() => setImportMsg(""), 4000);
   }
 
-  function addToMarketplace() {
-    if (!currentYaml) return;
-    navigate("/marketplace");
-  }
-
   function clearChat() {
-    setMessages([
-      {
-        role: "assistant",
-        content: "Chat cleared. Tell me about the agent you'd like to build.",
-      },
-    ]);
+    setMessages([WELCOME]);
     setInput("");
   }
 
   return (
-    <div className="flex h-full gap-0 overflow-hidden">
+    <div className="flex h-full overflow-hidden">
       {/* Left panel — Chat */}
       <div className="flex flex-col flex-1 min-w-0 bg-gray-50 border-r border-gray-200">
         {/* Header */}
@@ -223,24 +238,12 @@ export default function AgentBuilderPage() {
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {messages.map((msg, i) => (
-            <MessageBubble key={i} msg={msg} />
+            <MessageBubble
+              key={i}
+              msg={msg}
+              isStreaming={streaming && i === messages.length - 1 && msg.role === "assistant"}
+            />
           ))}
-          {streaming && messages[messages.length - 1]?.role !== "assistant" && (
-            <div className="flex justify-start mb-4">
-              <div className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center shrink-0 mr-2 mt-0.5">
-                <svg className="w-3.5 h-3.5 text-white animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-              </div>
-              <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
-                <div className="flex gap-1">
-                  <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                  <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                  <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-                </div>
-              </div>
-            </div>
-          )}
           <div ref={bottomRef} />
         </div>
 
@@ -327,8 +330,8 @@ export default function AgentBuilderPage() {
               <svg className="w-10 h-10 text-gray-700 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              <p className="text-sm text-gray-600">YAML preview will appear here once the agent design includes a YAML block.</p>
-              <p className="text-xs text-gray-700 mt-2">Tell the builder what agent you want to create to get started.</p>
+              <p className="text-sm text-gray-600">YAML preview appears here once the AI outputs a design.</p>
+              <p className="text-xs text-gray-700 mt-2">Describe the agent you want to build.</p>
             </div>
           )}
         </div>
@@ -349,7 +352,7 @@ export default function AgentBuilderPage() {
               Import to Workspace
             </button>
             <button
-              onClick={addToMarketplace}
+              onClick={() => navigate("/marketplace")}
               className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm font-medium rounded-lg transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
