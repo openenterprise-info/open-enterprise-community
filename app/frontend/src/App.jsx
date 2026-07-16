@@ -38,9 +38,11 @@ import VectorsPage     from "./pages/Settings/VectorsPage";
 import CompliancePage  from "./pages/Settings/CompliancePage";
 import ViolationsPage  from "./pages/Settings/ViolationsPage";
 import TokenUsagePage  from "./pages/Settings/TokenUsagePage";
-import ActivityLogPage from "./pages/Settings/ActivityLogPage";
-import ApprovalsPage   from "./pages/Agents/ApprovalsPage";
-import MarketplacePage from "./pages/Marketplace/MarketplacePage";
+import ActivityLogPage  from "./pages/Settings/ActivityLogPage";
+import SSOPage          from "./pages/Settings/SSOPage";
+import TierLimitsPage   from "./pages/Settings/TierLimitsPage";
+import ApprovalsPage    from "./pages/Agents/ApprovalsPage";
+import MarketplacePage  from "./pages/Marketplace/MarketplacePage";
 
 function AppRoutes() {
   return (
@@ -77,6 +79,8 @@ function AppRoutes() {
         <Route path="/settings/violations"  element={<ViolationsPage />} />
         <Route path="/settings/token-usage" element={<TokenUsagePage />} />
         <Route path="/settings/activity"    element={<ActivityLogPage />} />
+        <Route path="/settings/sso"         element={<SSOPage />} />
+        <Route path="/settings/tier-limits" element={<TierLimitsPage />} />
         <Route path="*"                    element={<HomeRedirect />} />
       </Route>
     </Routes>
