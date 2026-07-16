@@ -43,6 +43,7 @@ import SSOPage          from "./pages/Settings/SSOPage";
 import TierLimitsPage   from "./pages/Settings/TierLimitsPage";
 import ApprovalsPage    from "./pages/Agents/ApprovalsPage";
 import MarketplacePage  from "./pages/Marketplace/MarketplacePage";
+import AgentBuilderPage from "./pages/AgentBuilder/AgentBuilderPage";
 
 function AppRoutes() {
   return (
@@ -69,6 +70,7 @@ function AppRoutes() {
         <Route path="/agent-runs"          element={<AgentRunsPage />} />
         <Route path="/approvals"           element={<ApprovalsPage />} />
         <Route path="/marketplace"         element={<MarketplacePage />} />
+        <Route path="/agent-builder"       element={<AgentBuilderPage />} />
         <Route path="/users"               element={<UsersPage />} />
         <Route path="/developer"           element={<ApiKeysPage />} />
         <Route path="/developer/embed"     element={<EmbedPage />} />
