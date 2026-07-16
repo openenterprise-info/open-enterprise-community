@@ -99,9 +99,10 @@ export default function AgentBuilderPage() {
       const controller = new AbortController();
       abortRef.current = controller;
 
+      const token = localStorage.getItem("oe_token") || sessionStorage.getItem("oe_token");
       const res = await fetch("/api/agent-builder/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ messages: apiMessages }),
         signal: controller.signal,
       });
@@ -195,7 +196,7 @@ export default function AgentBuilderPage() {
   }
 
   return (
-    <div className="flex h-full gap-0 overflow-hidden -m-8">
+    <div className="flex h-full gap-0 overflow-hidden">
       {/* Left panel — Chat */}
       <div className="flex flex-col flex-1 min-w-0 bg-gray-50 border-r border-gray-200">
         {/* Header */}

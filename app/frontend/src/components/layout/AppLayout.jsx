@@ -158,6 +158,8 @@ export default function AppLayout() {
     });
   }
 
+  const isFullBleed = pathname === "/agent-builder";
+
   return (
     <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
       <nav className="shrink-0 flex items-center justify-between px-6 py-3" style={{
@@ -248,11 +250,11 @@ export default function AppLayout() {
           </div>
         </aside>
 
-        <main className="flex-1 overflow-y-auto flex flex-col">
-          <div className="flex-1 p-8">
+        <main className={`flex-1 flex flex-col ${isFullBleed ? "overflow-hidden" : "overflow-y-auto"}`}>
+          <div className={`flex-1 ${isFullBleed ? "overflow-hidden" : "p-8"}`}>
             <Outlet />
           </div>
-          {(licenseType === "community" || branding) && (
+          {(licenseType === "community" || branding) && !isFullBleed && (
             <footer className="shrink-0 border-t border-gray-100 py-3 px-8 flex items-center justify-center">
               {branding ? (
                 branding.url ? (
