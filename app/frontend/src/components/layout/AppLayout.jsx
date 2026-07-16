@@ -173,11 +173,6 @@ export default function AppLayout() {
               }
             </div>
             <span className="text-white font-semibold text-base tracking-tight">{branding?.name || "Open Enterprise"}</span>
-            <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{
-              background: "rgba(99,102,241,0.15)",
-              border: "1px solid rgba(99,102,241,0.3)",
-              color: "#a5b4fc"
-            }}>v{__APP_VERSION__}</span>
           </button>
         </div>
         <UserMenu user={user} logout={logout} />
@@ -241,7 +236,10 @@ export default function AppLayout() {
                 : "bg-emerald-50 text-emerald-600"
             }`}>
               <span className={`w-1.5 h-1.5 rounded-full ${licenseType === "enterprise" ? "bg-indigo" : "bg-emerald-500"}`} />
-              {licenseType === "enterprise" ? "Enterprise" : "Community · Free"}
+              {licenseType === "enterprise" ? "Enterprise Edition" : "Community Edition"}
+            </span>
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide bg-amber-50 text-amber-600">
+              v{__APP_VERSION__}
             </span>
           </div>
         </aside>
