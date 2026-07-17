@@ -547,7 +547,11 @@ export default function AgentBuilderPage() {
         {/* Action buttons */}
         {lastYaml && (
           <div className="shrink-0 p-4 border-t border-gray-700 flex flex-col gap-2">
-            {hint && <p className="text-xs text-amber-300 bg-amber-900/30 rounded-lg px-3 py-2">{hint}</p>}
+            {hint && (
+              <p className={`text-xs rounded-lg px-3 py-2 ${hint.startsWith("Saved") ? "text-green-300 bg-green-900/30" : "text-amber-300 bg-amber-900/30"}`}>
+                {hint}
+              </p>
+            )}
             <button
               onClick={() => { setHint("Workspace import picker coming soon — copy the YAML and use Marketplace import for now."); setTimeout(() => setHint(""), 4000); }}
               className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors"
@@ -556,11 +560,23 @@ export default function AgentBuilderPage() {
               Import to Workspace
             </button>
             <button
-              onClick={() => navigate("/marketplace")}
+              onClick={() => {
+                try {
+                  const parsed = yamlLoad(lastYaml);
+                  if (!parsed || typeof parsed !== "object") { setHint("Could not parse YAML."); setTimeout(() => setHint(""), 3000); return; }
+                  const existing = JSON.parse(localStorage.getItem("oe_marketplace_saved") || "[]");
+                  const idx = existing.findIndex(s => s.slug === parsed.slug);
+                  const entry = { ...parsed, yaml: lastYaml, savedAt: Date.now(), source: "builder" };
+                  if (idx >= 0) existing[idx] = entry; else existing.push(entry);
+                  localStorage.setItem("oe_marketplace_saved", JSON.stringify(existing));
+                  setHint("Saved to Marketplace! ✓");
+                  setTimeout(() => setHint(""), 3000);
+                } catch { setHint("Failed to save."); setTimeout(() => setHint(""), 3000); }
+              }}
               className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm font-medium rounded-lg transition-colors"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-              Go to Marketplace
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+              Save to Marketplace
             </button>
           </div>
         )}
