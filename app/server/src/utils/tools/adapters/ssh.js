@@ -4,10 +4,12 @@ function getConfig(connector) {
   const auth   = connector.authConfig ? JSON.parse(connector.authConfig) : {};
   const config = connector.config     ? JSON.parse(connector.config)     : {};
   return {
-    host:       auth.host       || config.host       || "localhost",
+    host:       auth.host        || config.host        || "localhost",
     port:       parseInt(auth.port || config.port || "22"),
-    username:   auth.username   || config.username   || "root",
-    privateKey: auth.privateKey || config.privateKey || null,
+    username:   auth.username    || config.username    || "root",
+    privateKey: auth.privateKey  || config.privateKey  || null,
+    passphrase: auth.passphrase  || config.passphrase  || undefined,
+    password:   auth.password    || config.password    || undefined,
   };
 }
 
@@ -41,7 +43,12 @@ function runCommand(cfg, command, timeout = 30000) {
     conn.on("error", err => { clearTimeout(timer); done(err); });
 
     const connectCfg = { host: cfg.host, port: cfg.port, username: cfg.username };
-    if (cfg.privateKey) connectCfg.privateKey = cfg.privateKey;
+    if (cfg.privateKey) {
+      connectCfg.privateKey = cfg.privateKey;
+      if (cfg.passphrase) connectCfg.passphrase = cfg.passphrase;
+    } else if (cfg.password) {
+      connectCfg.password = cfg.password;
+    }
     conn.connect(connectCfg);
   });
 }
@@ -87,7 +94,7 @@ async function executeTool(action, args, connector) {
   if (action !== "exec") return `Unknown SSH action: ${action}`;
 
   const cfg = getConfig(connector);
-  if (!cfg.privateKey) return "SSH connector not configured: private key is required.";
+  if (!cfg.privateKey && !cfg.password) return "SSH connector not configured: provide privateKeyPath or password.";
 
   const { command, timeout } = args;
   if (!command) return "Missing required field: command.";

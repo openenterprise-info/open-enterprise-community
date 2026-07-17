@@ -77,11 +77,11 @@ async function executeTool(action, args, connector) {
       const { Pool } = require("pg");
       const pool = new Pool({
         connectionString: cfg.url || undefined,
-        host:     cfg.host     || "localhost",
-        port:     parseInt(cfg.port || "5432"),
-        database: cfg.database || undefined,
-        user:     auth.username || undefined,
-        password: auth.password || undefined,
+        host:     cfg.host     || auth.host     || "localhost",
+        port:     parseInt(cfg.port || auth.port || "5432"),
+        database: cfg.database || auth.database || undefined,
+        user:     auth.username || auth.user || cfg.user || undefined,
+        password: auth.password || cfg.password || undefined,
         ssl:      cfg.ssl ? { rejectUnauthorized: false } : false,
         connectionTimeoutMillis: 10000,
         query_timeout: 30000,
@@ -95,11 +95,11 @@ async function executeTool(action, args, connector) {
     if (connector.type === "mysql") {
       const mysql = require("mysql2/promise");
       const conn = await mysql.createConnection({
-        host:     cfg.host     || "localhost",
-        port:     parseInt(cfg.port || "3306"),
-        database: cfg.database || undefined,
-        user:     auth.username || undefined,
-        password: auth.password || undefined,
+        host:     cfg.host     || auth.host     || "localhost",
+        port:     parseInt(cfg.port || auth.port || "3306"),
+        database: cfg.database || auth.database || undefined,
+        user:     auth.username || auth.user || cfg.user || undefined,
+        password: auth.password || cfg.password || undefined,
         ssl:      cfg.ssl ? { rejectUnauthorized: false } : undefined,
         connectTimeout: 10000,
       });

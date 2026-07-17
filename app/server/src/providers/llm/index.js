@@ -105,4 +105,32 @@ async function chat(messages, { stream = false, systemPrompt = null, temperature
   return response.choices[0].message.content;
 }
 
-module.exports = { chat, getLLMClient, getSetting };
+/**
+ * Read LLM settings from DB and return a plain config object
+ * that can be passed directly to engine.run() or createLLMClient().
+ */
+async function getLLMConfig() {
+  const provider = (await getSetting("llm_provider")) || process.env.LLM_PROVIDER || "openai";
+  const apiKey   = (await getSetting("llm_api_key"))  || null;
+  const model    = (await getSetting("llm_model"))    || process.env.OPENAI_MODEL || process.env.OLLAMA_MODEL || "gpt-4o";
+
+  if (provider === "azure") {
+    return {
+      provider,
+      apiKey:          apiKey || process.env.AZURE_OPENAI_API_KEY,
+      model,
+      azureEndpoint:   (await getSetting("llm_azure_endpoint"))   || process.env.AZURE_OPENAI_ENDPOINT,
+      azureDeployment: (await getSetting("llm_azure_deployment"))  || process.env.AZURE_OPENAI_DEPLOYMENT,
+    };
+  }
+
+  const compat = OPENAI_COMPATIBLE[provider];
+  if (compat?.localBaseUrlKey) {
+    return { provider, apiKey: apiKey || compat.apiKey || "no-key", model,
+             baseURL: (await getSetting(compat.localBaseUrlKey)) || compat.localDefault };
+  }
+
+  return { provider, apiKey, model };
+}
+
+module.exports = { chat, getLLMClient, getLLMConfig, getSetting };

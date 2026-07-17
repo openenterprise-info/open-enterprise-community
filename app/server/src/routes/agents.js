@@ -1,7 +1,8 @@
 const router = require("express").Router();
 const { authenticate, requireManagerOrAdmin } = require("../middleware/auth");
-const { getToolDefinitions, getAnthropicToolDefinitions, executeTool } = require("../utils/tools/registry");
-const { getLLMClient, getSetting } = require("../providers/llm");
+const { executeTool } = require("../utils/tools/registry");
+const { getLLMConfig } = require("../providers/llm");
+const engine    = require("../engine");
 const scheduler = require("../utils/scheduler");
 
 router.use(authenticate, requireManagerOrAdmin);
@@ -139,109 +140,40 @@ router.post("/workspaces/:workspaceId/agents/:id/run", async (req, res) => {
       ? await req.db.connector.findMany({ where: { id: { in: connectorIds }, status: "active" } })
       : [];
 
-    const systemPrompt = agent.systemPrompt ||
-      "You are a helpful AI agent. Complete the task given to you using the available tools.";
+    const llmConfig  = await getLLMConfig();
+    const agentSpec  = {
+      systemPrompt: agent.systemPrompt,
+      workflow:     JSON.parse(agent.workflow || "[]"),
+      params:       JSON.parse(agent.params   || "[]"),
+      maxRounds:    5,
+      input,
+    };
 
-    const userMessage = input?.trim() || "Execute the agent task now using the available tools. Do not ask for clarification.";
-
-    const { provider, client } = await getLLMClient();
-    const model = (await getSetting("llm_model")) || process.env.OPENAI_MODEL || process.env.OLLAMA_MODEL || "gpt-4o";
-
-    const MAX_ROUNDS = 5;
-    let fullOutput = "";
-
-    if (provider === "anthropic") {
-      const tools = getAnthropicToolDefinitions(connectors);
-      const msgs  = [{ role: "user", content: userMessage }];
-
-      for (let round = 0; round < MAX_ROUNDS; round++) {
-        const resp = await client.messages.create({
-          model: model || "claude-3-5-sonnet-20241022",
-          max_tokens: 4096,
-          system: systemPrompt,
-          messages: msgs,
-          tools: tools.length ? tools : undefined,
-          temperature: 0.3,
-        });
-
-        if (resp.stop_reason !== "tool_use" || !tools.length) {
-          fullOutput = resp.content?.find(b => b.type === "text")?.text || "";
-          break;
-        }
-
-        const toolUseBlocks = resp.content.filter(b => b.type === "tool_use");
-        res.write(`data: ${JSON.stringify({ tool_calls: toolUseBlocks.map(b => b.name) })}\n\n`);
-
-        msgs.push({ role: "assistant", content: resp.content });
-        const toolResults = [];
-        for (const tb of toolUseBlocks) {
-          const result = await executeTool(tb.name, tb.input, connectors, req.db);
-          toolResults.push({ type: "tool_result", tool_use_id: tb.id, content: String(result) });
-        }
-        msgs.push({ role: "user", content: toolResults });
-
-        const [cr0] = await req.db.$queryRaw`SELECT cancelRequested FROM AgentRun WHERE id = ${run.id}`;
-        if (cr0?.cancelRequested) { fullOutput = "[Run cancelled by user]"; break; }
-
-        if (round === MAX_ROUNDS - 1) {
-          const finalResp = await client.messages.create({
-            model: model || "claude-3-5-sonnet-20241022",
-            max_tokens: 4096, system: systemPrompt, messages: msgs, temperature: 0.3,
-          });
-          fullOutput = finalResp.content?.find(b => b.type === "text")?.text || "";
-        }
-      }
-    } else {
-      const tools    = getToolDefinitions(connectors);
-      const messages = [{ role: "system", content: systemPrompt }, { role: "user", content: userMessage }];
-
-      for (let round = 0; round < MAX_ROUNDS; round++) {
-        const reqBody = { model, messages, temperature: 0.3, max_tokens: 4096 };
-        if (tools.length) { reqBody.tools = tools; reqBody.tool_choice = "auto"; }
-
-        const resp   = await client.chat.completions.create(reqBody);
-        const choice = resp.choices[0];
-
-        if (choice.finish_reason !== "tool_calls" || !tools.length) {
-          fullOutput = choice.message.content || "";
-          break;
-        }
-
-        const toolCalls = choice.message.tool_calls || [];
-        res.write(`data: ${JSON.stringify({ tool_calls: toolCalls.map(tc => tc.function.name) })}\n\n`);
-
-        messages.push(choice.message);
-        for (const tc of toolCalls) {
-          let args = {};
-          try { args = JSON.parse(tc.function.arguments); } catch { /* */ }
-          const result = await executeTool(tc.function.name, args, connectors, req.db);
-          messages.push({ role: "tool", tool_call_id: tc.id, content: String(result) });
-        }
-
-        const [cr1] = await req.db.$queryRaw`SELECT cancelRequested FROM AgentRun WHERE id = ${run.id}`;
-        if (cr1?.cancelRequested) { fullOutput = "[Run cancelled by user]"; break; }
-
-        if (round === MAX_ROUNDS - 1) {
-          const finalResp = await client.chat.completions.create({ model, messages, temperature: 0.3, max_tokens: 4096 });
-          fullOutput = finalResp.choices[0].message.content || "";
-        }
-      }
-    }
-
-    await req.db.agentRun.update({
-      where: { id: run.id },
-      data:  { status: "success", output: fullOutput, completedAt: new Date() },
+    await engine.run(agentSpec, llmConfig, connectors, {
+      toolExecutor: (name, args, conns) => executeTool(name, args, conns, req.db),
+      onToolCall:   (name) => res.write(`data: ${JSON.stringify({ tool_calls: [name] })}\n\n`),
+      checkCancel:  async () => {
+        const [cr] = await req.db.$queryRaw`SELECT cancelRequested FROM AgentRun WHERE id = ${run.id}`;
+        return cr?.cancelRequested;
+      },
+      onDone: async (output) => {
+        await req.db.agentRun.update({ where: { id: run.id }, data: { status: "success", output, completedAt: new Date() } });
+        res.write(`data: ${JSON.stringify({ done: true, output, runId: run.id })}\n\n`);
+        res.end();
+      },
+      onError: async (err) => {
+        await req.db.agentRun.update({ where: { id: run.id }, data: { status: "error", error: err.message, completedAt: new Date() } });
+        res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+        res.end();
+      },
     });
-
-    res.write(`data: ${JSON.stringify({ done: true, output: fullOutput, runId: run.id })}\n\n`);
-    res.end();
   } catch (err) {
-    await req.db.agentRun.update({
-      where: { id: run.id },
-      data:  { status: "error", error: err.message, completedAt: new Date() },
-    });
-    res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
-    res.end();
+    // onError hook already handled DB + SSE; guard against double-end
+    if (!res.writableEnded) {
+      await req.db.agentRun.update({ where: { id: run.id }, data: { status: "error", error: err.message, completedAt: new Date() } }).catch(() => {});
+      res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+      res.end();
+    }
   }
 });
 

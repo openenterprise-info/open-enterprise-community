@@ -7,9 +7,28 @@
     "start": "node src/index.js",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
-    "db:push": "prisma db push"
+    "db:push": "prisma db push",
+    "build:bundle": "ncc build cli/index.js --out dist/bundle --external oracledb --external better-sqlite3 --external snowflake-sdk --external mssql",
+    "build:win":    "npm run build:bundle && node --experimental-sea-config sea-config.json && node scripts/inject-sea.js",
+    "build:all":    "npm run build:win"
+  },
+  "pkg": {
+    "scripts": [
+      "src/engine/**/*.js",
+      "src/utils/tools/**/*.js",
+      "src/providers/**/*.js"
+    ],
+    "assets": [
+      "cli/oe-config.example.json"
+    ],
+    "targets": [
+      "node18-win-x64",
+      "node18-linux-x64",
+      "node18-macos-arm64"
+    ]
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.27.0",
     "@elastic/elasticsearch": "^9.4.2",
     "@google-cloud/bigquery": "^8.3.1",
     "@lancedb/lancedb": "0.14.0",
@@ -32,6 +51,7 @@
     "googleapis": "^173.0.0",
     "imapflow": "^1.4.3",
     "ioredis": "^5.11.1",
+    "js-yaml": "^4.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^7.3.0",
     "mssql": "^12.5.5",
@@ -50,7 +70,9 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@yao-pkg/pkg": "^6.21.0",
     "nodemon": "^3.1.7",
+    "pkg": "^5.8.1",
     "prisma": "^5.22.0"
   }
 }
