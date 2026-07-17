@@ -37,14 +37,15 @@ BEHAVIOUR:
 - Always respond conversationally and helpfully`;
 
 router.post("/chat", authenticate, async (req, res) => {
+  console.log("[AgentBuilder] request received, user:", req.user?.email);
   const { messages } = req.body;
   if (!Array.isArray(messages) || messages.length === 0) {
     return res.status(400).json({ error: "messages array required" });
   }
+  console.log("[AgentBuilder] messages count:", messages.length, "last role:", messages[messages.length - 1]?.role);
 
-  let fullResponse = "";
   let clientGone = false;
-  req.on("close", () => { clientGone = true; });
+  req.on("close", () => { clientGone = true; console.log("[AgentBuilder] client disconnected"); });
 
   function safeWrite(data) {
     if (clientGone) return;
@@ -55,11 +56,18 @@ router.post("/chat", authenticate, async (req, res) => {
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+    safeWrite(": connected\n\n");
+    console.log("[AgentBuilder] SSE headers sent, getting LLM client...");
 
     const { provider, client } = await getLLMClient();
     const model = (await getSetting("llm_model")) || process.env.OPENAI_MODEL || process.env.OLLAMA_MODEL || "gpt-4o";
+    console.log("[AgentBuilder] provider:", provider, "model:", model);
+
+    let fullResponse = "";
 
     if (provider === "anthropic") {
+      console.log("[AgentBuilder] starting Anthropic stream");
       const stream = await client.messages.create({
         model: model || "claude-3-5-sonnet-20241022",
         max_tokens: 4096,
@@ -76,6 +84,7 @@ router.post("/chat", authenticate, async (req, res) => {
         }
       }
     } else {
+      console.log("[AgentBuilder] starting OpenAI-compatible stream");
       const allMessages = [{ role: "system", content: SYSTEM_PROMPT }, ...messages];
       const stream = await client.chat.completions.create({
         model,
@@ -94,17 +103,18 @@ router.post("/chat", authenticate, async (req, res) => {
       }
     }
 
+    console.log("[AgentBuilder] stream complete, response length:", fullResponse.length);
     if (!clientGone) {
       res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
       res.end();
     }
   } catch (err) {
-    console.error("[AgentBuilder] error:", err.message);
+    console.error("[AgentBuilder] error:", err.message, err.stack);
     if (!clientGone) {
       try {
         res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
         res.end();
-      } catch { /* client gone */ }
+      } catch (e2) { console.error("[AgentBuilder] failed to write error:", e2.message); }
     }
   }
 });

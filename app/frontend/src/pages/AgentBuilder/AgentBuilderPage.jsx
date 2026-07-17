@@ -125,37 +125,39 @@ export default function AgentBuilderPage() {
       }
 
       const reader = res.body.getReader();
-      const dec = new TextDecoder();
-      let buf = "";
-      let acc = "";
+      const decoder = new TextDecoder();
+      let accumulated = "";
+      let sseBuffer = "";
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        buf += dec.decode(value, { stream: true });
-        const lines = buf.split("\n");
-        buf = lines.pop() ?? "";
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          let evt;
-          try { evt = JSON.parse(line.slice(6)); } catch { continue; }
-          if (evt.chunk) {
-            acc += evt.chunk;
-            const snap = acc;
-            setMessages(prev => {
-              const u = [...prev];
-              u[u.length - 1] = { role: "assistant", content: snap };
-              return u;
-            });
-          }
-          if (evt.error) {
-            const snap = `Error from LLM: ${evt.error}`;
-            setMessages(prev => {
-              const u = [...prev];
-              u[u.length - 1] = { role: "assistant", content: snap };
-              return u;
-            });
-          }
+        sseBuffer += decoder.decode(value, { stream: true });
+        const parts = sseBuffer.split("\n\n");
+        sseBuffer = parts.pop();
+        for (const part of parts) {
+          const line = part.startsWith("data: ") ? part : part.split("\n").find(l => l.startsWith("data: "));
+          if (!line) continue;
+          try {
+            const evt = JSON.parse(line.slice(6));
+            if (evt.chunk) {
+              accumulated += evt.chunk;
+              const snap = accumulated;
+              setMessages(prev => {
+                const u = [...prev];
+                u[u.length - 1] = { role: "assistant", content: snap };
+                return u;
+              });
+            }
+            if (evt.error) {
+              const snap = `Error: ${evt.error}`;
+              setMessages(prev => {
+                const u = [...prev];
+                u[u.length - 1] = { role: "assistant", content: snap };
+                return u;
+              });
+            }
+          } catch { /* partial or SSE comment */ }
         }
       }
     } catch (err) {
