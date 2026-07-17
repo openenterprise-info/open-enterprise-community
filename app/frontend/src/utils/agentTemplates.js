@@ -21,6 +21,9 @@ KNOWN SAFE (do not flag these):
       { name: "Gather Data", content: `Run these SSH commands one at a time with no output between them:\n1. journalctl -u ssh --since "24 hours ago" 2>/dev/null | grep "Failed password" | awk '{print $(NF-3)}' | sort | uniq -c | sort -rn | head -20\n2. grep "Failed password" /var/log/auth.log 2>/dev/null | awk '{print $(NF-3)}' | sort | uniq -c | sort -rn | head -20\n3. who\n4. last -n 15\n5. ss -tlnp\n6. ps aux --sort=-%cpu | head -15\n7. cat /etc/passwd | grep -vE 'nologin|false|sync|halt|shutdown' | cut -d: -f1\n8. ls -la /etc/cron.d/ 2>/dev/null; crontab -l 2>/dev/null\n9. find /tmp /var/tmp -type f -newer /etc/passwd 2>/dev/null | head -10\n10. df -h && free -m` },
       { name: "Analyze & Report", content: `Write your full security report:\n\nStart with one of: ✅ ALL CLEAR | ⚠️ WARNING | 🚨 CRITICAL\n\n## Failed Login Attempts\nList top attacker IPs with attempt count. Flag any IP with >10 attempts as THREAT.\n\n## Active Sessions\nWho is currently logged in.\n\n## Open Ports\nOnly flag ports NOT in the known safe list.\n\n## Suspicious Processes\nOnly flag processes NOT in the known safe list.\n\n## User Accounts\nFlag any accounts other than root and ubuntu.\n\n## Verdict\nWrite CRITICAL if: any IP >20 attempts, or truly unknown users/processes found.\nWrite WARNING if: >5 failed attempts or genuinely unexpected ports.\nWrite ALL CLEAR if nothing suspicious found.` },
     ],
+    connectors: [
+      { name: "My Server", type: "ssh" },
+    ],
     triggerType: "manual",
   },
   {
@@ -39,6 +42,9 @@ RULES:
       { name: "Review Findings", content: "Read the Security Monitor report provided in context.\nIf it says ALL CLEAR, skip to Report immediately and write \"No action required\".\nOtherwise identify:\n- IPs with >20 failed SSH attempts to block\n- Any truly suspicious processes to kill\n- Any unexpected user accounts to lock" },
       { name: "Apply Remediations", content: "For each threat IP identified run:\n  iptables -A INPUT -s <IP> -j DROP\n\nEnsure iptables persistence directory exists:\n  mkdir -p /etc/iptables\n\nSave rules:\n  iptables-save > /etc/iptables/rules.v4\n\nInstall iptables-persistent:\n  apt-get install -y iptables-persistent\n\nSave via netfilter-persistent:\n  netfilter-persistent save\n\nVerify blocks:\n  iptables -L INPUT -n | grep DROP" },
       { name: "Report", content: "## Actions Taken\nList each IP blocked and why.\n\n## Persistence\nConfirm iptables rules saved.\n\n## Status\nWrite REMEDIATION COMPLETE if actions were taken.\nWrite NO ACTION REQUIRED if monitor reported ALL CLEAR." },
+    ],
+    connectors: [
+      { name: "My Server", type: "ssh" },
     ],
     triggerType: "manual",
   },
@@ -60,6 +66,10 @@ RULES:
       { name: "Send Emails", content: `For each contact, send an email using the email connector:\n- To: the contact's Email column value\n- Subject: Quick Question\n- Body: personalised message using First Name` },
       { name: "Update CSV", content: `Call update_rows on "{{csv_file}}":\n- matchColumn: Email\n- matchValues: list of every email address you just sent to\n- setColumn: First Email Sent\n- setValue: yes` },
       { name: "Report", content: "Provide a summary:\n- How many emails were sent\n- List each contact name and email that was contacted\n- Confirm the CSV was updated" },
+    ],
+    connectors: [
+      { name: "Google Drive", type: "gdrive" },
+      { name: "Zoho Mail",    type: "smtp"   },
     ],
     triggerType: "cron",
     cronExpression: "00 15 * * 1-5",
@@ -84,6 +94,10 @@ RULES:
       { name: "Classify Replies", content: "For each matched email, read the full email body.\n\nSkip auto-replies if subject starts with \"Automatic reply\", \"Out of Office\", \"OOO\", or body contains \"out of the office\".\n\nClassify as:\n- Interested: asks a question, wants to know more, mentions a call\n- Not Interested: no thanks, unsubscribe, not relevant\n- Bounce: delivery failure, mailer-daemon" },
       { name: "Update CSV", content: `For each classified reply, call update_rows on "{{csv_file}}":\n- If Interested: set column "Interested" to "yes"\n- If Not Interested: set column "Not Interested" to "yes"\n- If Bounce: set column "Bounce" to "yes"` },
       { name: "Report", content: "Summarise:\n- Total replies found\n- Auto-replies skipped\n- Interested contacts (name + email)\n- Not Interested contacts (name + email)\n- Bounced contacts (name + email)\n- Confirm CSV updated" },
+    ],
+    connectors: [
+      { name: "Google Drive", type: "gdrive" },
+      { name: "Zoho Mail",    type: "imap"   },
     ],
     triggerType: "manual",
   },
@@ -111,6 +125,10 @@ RULES:
       { name: "Mark CSV Published", content: `Call update_rows on "{{csv_file}}":\n- matchColumn: Slug, matchValue: {SLUG}, setColumn: Status, setValue: published\n- matchColumn: Slug, matchValue: {SLUG}, setColumn: Published Date, setValue: {TODAY}\n- matchColumn: Slug, matchValue: {SLUG}, setColumn: URL, setValue: /blog/{SLUG}.html` },
       { name: "Report", content: "Output a short summary:\n- Topic published\n- File path\n- Blog index updated: yes/no\n- Sitemap updated: yes/no\n- CSV marked published: yes/no" },
     ],
+    connectors: [
+      { name: "Google Drive", type: "gdrive"  },
+      { name: "GitHub",       type: "github"  },
+    ],
     triggerType: "manual",
   },
   {
@@ -134,6 +152,10 @@ RULES:
       { name: "Reset CSV Row", content: `Call update_rows on "{{csv_file}}" to clear the row for {{slug}}:\n- setColumn: Status, setValue: (empty)\n- setColumn: Published Date, setValue: (empty)\n- setColumn: URL, setValue: (empty)` },
       { name: "Report", content: "Output a short summary:\n- Slug revoked\n- Blog file deleted: yes / not found\n- Blog index card removed: yes / not found\n- Sitemap entry removed: yes / not found\n- CSV row reset: yes\n- Status: Ready to republish" },
     ],
+    connectors: [
+      { name: "Google Drive", type: "gdrive"  },
+      { name: "GitHub",       type: "github"  },
+    ],
     triggerType: "manual",
   },
   {
@@ -151,6 +173,9 @@ RULES:
     steps: [
       { name: "Fetch Data", content: "Call the REST API GET tool with:\n- path: /users/1" },
       { name: "Summarize Response", content: "Present the fetched data in a clean, readable format:\n\n## API Response Summary\n\n- **Endpoint called**: the path you fetched\n- **Key fields**: list every top-level field returned\n- **Details**: show name, email, and other key fields\n- **Status**: ✅ SUCCESS or ❌ ERROR with status code and message" },
+    ],
+    connectors: [
+      { name: "REST API", type: "http" },
     ],
     triggerType: "manual",
   },
@@ -172,6 +197,10 @@ RULES:
       { name: "Query Database", content: "Run this query:\n  SELECT *\n  FROM your_table\n  LIMIT 100;\n\nReplace `your_table` with the actual table name you want to sync." },
       { name: "Push to REST API", content: "Take the full result from the database query and POST it to the REST API.\n\nUse the REST API POST tool with:\n- path: /posts\n- body: { \"title\": \"Database Sync\", \"body\": <stringify the full query result array>, \"userId\": 1 }" },
       { name: "Report", content: "## Sync Report\n\n- **Records fetched**: count of rows returned\n- **Endpoint posted to**: the path used\n- **HTTP status**: the response status\n- **Result**: ✅ SUCCESS or ❌ FAILED with reason" },
+    ],
+    connectors: [
+      { name: "Database", type: "postgres" },
+      { name: "REST API", type: "http"     },
     ],
     triggerType: "manual",
   },
@@ -196,6 +225,9 @@ CHART:
     steps: [
       { name: "Query by Category", content: "Run this MySQL query:\n  SELECT count(product_id), category FROM products GROUP BY category;" },
     ],
+    connectors: [
+      { name: "MySQL DB", type: "mysql" },
+    ],
     triggerType: "manual",
   },
   {
@@ -212,6 +244,9 @@ RULES:
 - Return only the query result — no explanation needed`,
     steps: [
       { name: "Query Customers Count", content: "Run this MySQL query:\n  SELECT COUNT(*) AS total_customers FROM customers;\n\nReturn the result as pie chart." },
+    ],
+    connectors: [
+      { name: "MySQL DB", type: "mysql" },
     ],
     triggerType: "manual",
   },

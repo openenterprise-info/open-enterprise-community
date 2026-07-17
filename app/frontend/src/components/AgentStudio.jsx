@@ -122,6 +122,18 @@ function toYaml(form, connectors) {
   return lines.join("\n");
 }
 
+function isStepComplete(stepId, form) {
+  switch (stepId) {
+    case "trigger":
+      return !!form.name.trim() && !!form.slug.trim() &&
+             (form.triggerType !== "scheduled" || !!form.cronExpression.trim());
+    case "instructions":
+      return !!form.systemPrompt.trim();
+    default:
+      return true; // optional steps are always considered complete
+  }
+}
+
 function safeJson(str, fallback) {
   try { return str ? JSON.parse(str) : fallback; } catch { return fallback; }
 }
@@ -166,7 +178,8 @@ export default function AgentStudio({ initialAgent, connectors = [], agents = []
   function set(key, val) { setForm(f => ({ ...f, [key]: val })); }
 
   const [slugTaken, setSlugTaken] = useState(false);
-  const canSave = form.name.trim() && (form.triggerType !== "scheduled" || form.cronExpression.trim()) && !slugTaken;
+  const canSave = form.name.trim() && form.slug.trim() && form.systemPrompt.trim() &&
+                  (form.triggerType !== "scheduled" || form.cronExpression.trim()) && !slugTaken;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-white">
@@ -204,7 +217,11 @@ export default function AgentStudio({ initialAgent, connectors = [], agents = []
                       : "text-gray-500 hover:bg-white hover:text-gray-800"
                   }`}>
                   <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
-                    activeStep === step.id ? "bg-indigo text-white" : "bg-gray-200 text-gray-500"
+                    activeStep === step.id
+                      ? "bg-indigo text-white"
+                      : isStepComplete(step.id, form)
+                        ? "bg-green-500 text-white"
+                        : "bg-gray-200 text-gray-500"
                   }`}>{idx + 1}</div>
                   <div className="flex-1 min-w-0">
                     <p className="truncate">{step.label}</p>
