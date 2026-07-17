@@ -20,9 +20,9 @@ function extractLastYaml(messages) {
 
 // ── Visual Flow ────────────────────────────────────────────────────────────────
 const TRIGGER_COLORS = {
-  manual:    { bg: "bg-blue-900/60",   border: "border-blue-500",   text: "text-blue-300",   label: "Manual" },
-  scheduled: { bg: "bg-purple-900/60", border: "border-purple-500", text: "text-purple-300", label: "Scheduled" },
-  chat:      { bg: "bg-teal-900/60",   border: "border-teal-500",   text: "text-teal-300",   label: "Chat" },
+  manual:    { bg: "bg-blue-50",   border: "border-blue-200",   text: "text-blue-600",   label: "Manual" },
+  scheduled: { bg: "bg-purple-50", border: "border-purple-200", text: "text-purple-600", label: "Scheduled" },
+  chat:      { bg: "bg-teal-50",   border: "border-teal-200",   text: "text-teal-600",   label: "Chat" },
 };
 const CONNECTOR_ICONS = {
   ssh: "🖥", smtp: "📧", imap: "📬", gdrive: "📂", slack: "💬",
@@ -34,8 +34,8 @@ function FlowArrow() {
   return (
     <div className="flex justify-center my-1">
       <div className="flex flex-col items-center">
-        <div className="w-px h-4 bg-gray-600" />
-        <svg className="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
+        <div className="w-px h-4 bg-gray-200" />
+        <svg className="w-3 h-3 text-gray-300" fill="currentColor" viewBox="0 0 24 24">
           <path d="M12 21l-8-8h5V3h6v10h5z" />
         </svg>
       </div>
@@ -61,12 +61,12 @@ function TriggerNode({ trigger }) {
 
 function StepNode({ step, index }) {
   return (
-    <div className="rounded-xl border border-gray-600 bg-gray-800/70 px-4 py-3 mx-2">
+    <div className="rounded-xl border border-gray-200 bg-white px-4 py-3 mx-2 shadow-sm">
       <div className="flex items-center gap-2">
-        <span className="w-5 h-5 rounded-full bg-gray-700 text-gray-300 text-[10px] font-bold flex items-center justify-center shrink-0">
+        <span className="w-5 h-5 rounded-full bg-gray-100 text-gray-500 text-[10px] font-bold flex items-center justify-center shrink-0">
           {index + 1}
         </span>
-        <span className="text-xs font-semibold text-gray-200 truncate">{step.name || `Step ${index + 1}`}</span>
+        <span className="text-xs font-semibold text-gray-800 truncate">{step.name || `Step ${index + 1}`}</span>
       </div>
       {step.content && (
         <p className="mt-1.5 text-[11px] text-gray-400 leading-relaxed line-clamp-2 ml-7">
@@ -80,12 +80,12 @@ function StepNode({ step, index }) {
 function ConnectorNode({ connector }) {
   const icon = CONNECTOR_ICONS[connector.type] || "🔌";
   return (
-    <div className="rounded-xl border border-green-800 bg-green-950/50 px-4 py-2.5 mx-2">
+    <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-2.5 mx-2">
       <div className="flex items-center gap-2">
         <span className="text-sm">{icon}</span>
         <div>
-          <div className="text-xs font-semibold text-green-300">{connector.name || connector.type}</div>
-          {connector.type && <div className="text-[10px] text-green-600 uppercase tracking-wide">{connector.type}</div>}
+          <div className="text-xs font-semibold text-green-700">{connector.name || connector.type}</div>
+          {connector.type && <div className="text-[10px] text-green-500 uppercase tracking-wide">{connector.type}</div>}
         </div>
       </div>
     </div>
@@ -94,14 +94,14 @@ function ConnectorNode({ connector }) {
 
 function ChainNode({ chain }) {
   return (
-    <div className="rounded-xl border border-violet-700 bg-violet-950/50 px-4 py-2.5 mx-2">
+    <div className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 mx-2">
       <div className="flex items-center gap-2">
-        <svg className="w-3.5 h-3.5 text-violet-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-3.5 h-3.5 text-violet-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
         </svg>
         <div>
-          <div className="text-[10px] font-bold uppercase tracking-widest text-violet-400">Chain to</div>
-          <div className="text-xs font-semibold text-violet-300">{chain.agent || chain}</div>
+          <div className="text-[10px] font-bold uppercase tracking-widest text-violet-500">Chain to</div>
+          <div className="text-xs font-semibold text-violet-700">{chain.agent || chain}</div>
         </div>
       </div>
     </div>
@@ -110,11 +110,11 @@ function ChainNode({ chain }) {
 
 function ParamNode({ param }) {
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-700 bg-gray-800/50 mx-2">
-      <span className="text-[10px] text-amber-400 font-mono">{param.name}</span>
-      {param.label && <span className="text-[10px] text-gray-500">→ {param.label}</span>}
+    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-amber-200 bg-amber-50 mx-2">
+      <span className="text-[10px] text-amber-600 font-mono">{param.name}</span>
+      {param.label && <span className="text-[10px] text-gray-400">→ {param.label}</span>}
       {param.default !== undefined && param.default !== "" && (
-        <span className="ml-auto text-[10px] font-mono text-gray-600">default: {param.default}</span>
+        <span className="ml-auto text-[10px] font-mono text-gray-400">default: {param.default}</span>
       )}
     </div>
   );
@@ -126,11 +126,11 @@ function VisualFlow({ yamlText }) {
 
   if (!parsed || typeof parsed !== "object") {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-center px-6 gap-2">
-        <svg className="w-8 h-8 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="flex flex-col items-center justify-center h-full text-center px-6 gap-2 bg-white">
+        <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
         </svg>
-        <p className="text-xs text-gray-600">Could not parse YAML for visual flow.</p>
+        <p className="text-xs text-gray-400">Could not parse YAML for visual flow.</p>
       </div>
     );
   }
@@ -142,14 +142,14 @@ function VisualFlow({ yamlText }) {
   const params     = Array.isArray(parsed.params)     ? parsed.params     : [];
 
   return (
-    <div className="overflow-y-auto h-full py-4 flex flex-col gap-0">
+    <div className="overflow-y-auto h-full py-4 flex flex-col gap-0 bg-white">
       {/* Agent name */}
       {parsed.name && (
-        <div className="mx-2 mb-3 px-4 py-2 rounded-lg bg-gray-800 border border-gray-700">
-          <div className="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">Agent</div>
-          <div className="text-sm font-bold text-white">{parsed.name}</div>
+        <div className="mx-2 mb-3 px-4 py-2 rounded-lg bg-gray-50 border border-gray-200">
+          <div className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold">Agent</div>
+          <div className="text-sm font-bold text-gray-900">{parsed.name}</div>
           {parsed.description && (
-            <div className="text-[11px] text-gray-400 mt-0.5">{parsed.description}</div>
+            <div className="text-[11px] text-gray-500 mt-0.5">{parsed.description}</div>
           )}
         </div>
       )}
@@ -162,7 +162,7 @@ function VisualFlow({ yamlText }) {
         <>
           <FlowArrow />
           <div className="mx-2 mb-1">
-            <div className="text-[10px] uppercase tracking-widest text-gray-600 mb-1.5 px-1">Connectors</div>
+            <div className="text-[10px] uppercase tracking-widest text-gray-400 mb-1.5 px-1">Connectors</div>
             <div className="flex flex-col gap-1.5">
               {connectors.map((c, i) => <ConnectorNode key={i} connector={c} />)}
             </div>
@@ -175,7 +175,7 @@ function VisualFlow({ yamlText }) {
         <>
           <FlowArrow />
           <div className="mx-2 mb-1">
-            <div className="text-[10px] uppercase tracking-widest text-gray-600 mb-1.5 px-1">Steps</div>
+            <div className="text-[10px] uppercase tracking-widest text-gray-400 mb-1.5 px-1">Steps</div>
             <div className="flex flex-col gap-1.5">
               {steps.map((s, i) => (
                 <React.Fragment key={i}>
@@ -193,7 +193,7 @@ function VisualFlow({ yamlText }) {
         <>
           <FlowArrow />
           <div className="mx-2 mb-1">
-            <div className="text-[10px] uppercase tracking-widest text-gray-600 mb-1.5 px-1">Chains</div>
+            <div className="text-[10px] uppercase tracking-widest text-gray-400 mb-1.5 px-1">Chains</div>
             <div className="flex flex-col gap-1.5">
               {chains.map((c, i) => <ChainNode key={i} chain={c} />)}
             </div>
@@ -204,7 +204,7 @@ function VisualFlow({ yamlText }) {
       {/* Params */}
       {params.length > 0 && (
         <div className="mx-2 mt-3">
-          <div className="text-[10px] uppercase tracking-widest text-gray-600 mb-1.5 px-1">Parameters</div>
+          <div className="text-[10px] uppercase tracking-widest text-gray-400 mb-1.5 px-1">Parameters</div>
           <div className="flex flex-col gap-1">
             {params.map((p, i) => <ParamNode key={i} param={p} />)}
           </div>
@@ -469,7 +469,7 @@ export default function AgentBuilderPage() {
 
       {/* ── Right panel ── */}
       <div className="flex flex-col w-[420px] shrink-0 bg-gray-900">
-        {/* Tab bar */}
+        {/* Tab bar — stays dark so YAML tab looks right */}
         <div className="shrink-0 flex items-center gap-0 bg-gray-800 border-b border-gray-700">
           <button
             onClick={() => setRightTab("yaml")}
@@ -514,7 +514,7 @@ export default function AgentBuilderPage() {
         {/* Tab content */}
         <div className="flex-1 overflow-hidden">
           {rightTab === "yaml" ? (
-            <div className="h-full overflow-y-auto p-4">
+            <div className="h-full overflow-y-auto p-4 bg-gray-900">
               {lastYaml
                 ? <pre className="text-xs font-mono text-green-300 whitespace-pre leading-relaxed">{lastYaml}</pre>
                 : (
@@ -528,15 +528,15 @@ export default function AgentBuilderPage() {
               }
             </div>
           ) : (
-            <div className="h-full">
+            <div className="h-full bg-white">
               {lastYaml
                 ? <VisualFlow yamlText={lastYaml} />
                 : (
                   <div className="flex flex-col items-center justify-center h-full text-center px-6 gap-3">
-                    <svg className="w-10 h-10 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2v-2a2 2 0 012-2h2a2 2 0 012 2m0 0h6m-6 0v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H9m6 0V7m0 10a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
                     </svg>
-                    <p className="text-sm text-gray-500">Visual flow will appear once the AI generates a YAML agent.</p>
+                    <p className="text-sm text-gray-400">Visual flow will appear once the AI generates a YAML agent.</p>
                   </div>
                 )
               }
