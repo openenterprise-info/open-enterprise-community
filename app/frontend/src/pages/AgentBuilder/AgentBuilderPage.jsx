@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import jsyaml from "js-yaml";
+import { load as yamlLoad } from "js-yaml";
 
 // ── YAML helpers ──────────────────────────────────────────────────────────────
 function extractYaml(text) {
@@ -122,7 +122,7 @@ function ParamNode({ param }) {
 
 function VisualFlow({ yamlText }) {
   let parsed = null;
-  try { parsed = jsyaml.load(yamlText); } catch { /* bad yaml */ }
+  try { parsed = yamlLoad(yamlText); } catch { /* bad yaml */ }
 
   if (!parsed || typeof parsed !== "object") {
     return (
