@@ -268,15 +268,28 @@ function Bubble({ msg, isActive }) {
 }
 
 // ── Main page ──────────────────────────────────────────────────────────────────
+const STORAGE_KEY = "oe_agent_builder_chat";
+
 const WELCOME = {
   role: "assistant",
   isWelcome: true,
   content: "Hi! I'm your Agent Builder. Tell me what you want your agent to do and I'll help you design it and generate the YAML.\n\nFor example: \"I want an agent that runs every Monday, SSHs into my server to check disk usage, then sends a Slack alert if any partition is above 80%.\"",
 };
 
+function loadPersistedMessages() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch { /* corrupt data */ }
+  return [WELCOME];
+}
+
 export default function AgentBuilderPage() {
   const navigate = useNavigate();
-  const [messages, setMessages] = useState([WELCOME]);
+  const [messages, setMessages] = useState(loadPersistedMessages);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [rightTab, setRightTab] = useState("yaml");
@@ -287,6 +300,11 @@ export default function AgentBuilderPage() {
   const abortRef = useRef(null);
 
   const lastYaml = extractLastYaml(messages);
+
+  // Persist messages to localStorage on every change
+  useEffect(() => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(messages)); } catch { /* storage full */ }
+  }, [messages]);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
   // Switch to visual flow tab automatically when YAML first appears
@@ -379,7 +397,12 @@ export default function AgentBuilderPage() {
   }
 
   function stop() { abortRef.current?.abort(); }
-  function clear() { setMessages([WELCOME]); setInput(""); setRightTab("yaml"); }
+  function clear() {
+    localStorage.removeItem(STORAGE_KEY);
+    setMessages([WELCOME]);
+    setInput("");
+    setRightTab("yaml");
+  }
   async function copy() {
     if (!lastYaml) return;
     await navigator.clipboard.writeText(lastYaml);
