@@ -1,6 +1,12 @@
-// Commercial routes — auto-loaded when all 3 license vars match enterprise values
+// Commercial routes — auto-loaded when license vars match enterprise values
 function register(app) {
-  // Example: app.use("/api/sso", require("./sso"));
+  const { router: ssoRoutes }  = require("../../server/src/routes/sso");
+  const superAdminRoutes       = require("../../server/src/routes/superadmin");
+  const agentBuilderRoutes     = require("../../server/src/routes/agentBuilder");
+
+  app.use("/api/sso",           ssoRoutes);
+  app.use("/api/superadmin",    superAdminRoutes);
+  app.use("/api/agent-builder", agentBuilderRoutes);
 }
 
 module.exports = { register };

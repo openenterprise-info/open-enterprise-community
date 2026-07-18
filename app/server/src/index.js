@@ -21,11 +21,8 @@ const embedRoutes      = require("./routes/embed");
 const apiKeyRoutes     = require("./routes/apiKeys");
 const connectorRoutes  = require("./routes/connectors");
 const oauthRoutes      = require("./routes/oauth");
-const { router: ssoRoutes } = require("./routes/sso");
 const agentRoutes      = require("./routes/agents");
-const agentBuilderRoutes = require("./routes/agentBuilder");
 const scheduler        = require("./utils/scheduler");
-const superAdminRoutes = require("./routes/superadmin");
 const v1Routes         = require("./routes/v1");
 const swaggerUi        = require("swagger-ui-express");
 const openApiSpec      = { ...require("./docs/openapi.json"), info: { ...require("./docs/openapi.json").info, version } };
@@ -97,10 +94,7 @@ app.use("/api/embed",          embedRoutes);
 app.use("/api/admin/api-keys",  apiKeyRoutes);
 app.use("/api/admin",          connectorRoutes);
 app.use("/api/oauth",          oauthRoutes);
-app.use("/api/sso",            ssoRoutes);
 app.use("/api/admin",          agentRoutes);
-app.use("/api/agent-builder",  agentBuilderRoutes);
-app.use("/api/superadmin",    superAdminRoutes);
 
 // Swagger UI — public, must be registered before the authenticated v1 router
 app.get("/api/v1/docs/openapi.json", (_req, res) => res.json(openApiSpec));
