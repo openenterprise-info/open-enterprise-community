@@ -53,7 +53,6 @@ function agentToYaml(a) {
     conns.forEach(c => {
       lines.push(`  - connection_name: "${c.name}"`);
       lines.push(`    connection_type: ${c.type}`);
-      if (c.connection_id) lines.push(`    connection_id: "${c.connection_id}"`);
     });
   }
   const params = a.params || [];
@@ -521,7 +520,7 @@ export default function AgentsChatPanel({ slug, isManager, onClose, onApprovalDe
       triggerType:        y.trigger?.type || "manual",
       cronExpression:     y.trigger?.cron || "",
       enabled:            y.enabled !== false,
-      connectors:         (y.connectors || []).map(c => ({ name: c.connection_name || c.name, type: c.connection_type || c.type, connection_id: c.connection_id || "" })),
+      connectors:         (y.connectors || []).map(c => ({ name: c.connection_name || c.name, type: c.connection_type || c.type })),
       params:             (y.params || []).map(p => ({ name: p.name, label: p.label || "", default: p.default || "" })),
     };
   }

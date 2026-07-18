@@ -8,9 +8,10 @@
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
-    "build:bundle": "ncc build cli/index.js --out dist/bundle --external oracledb --external better-sqlite3 --external snowflake-sdk --external mssql",
-    "build:win":    "npm run build:bundle && node --experimental-sea-config sea-config.json && node scripts/inject-sea.js",
-    "build:all":    "npm run build:win"
+    "db:seed-masters": "node scripts/seed-connection-masters.js",
+    "build:bundle": "ncc build cli/index.js --out cli/bundle --external oracledb --external better-sqlite3 --external snowflake-sdk --external mssql",
+    "build:win": "npm run build:bundle && node --experimental-sea-config sea-config.json && node scripts/inject-sea.js",
+    "build:all": "npm run build:win"
   },
   "pkg": {
     "scripts": [
@@ -29,6 +30,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.27.0",
+    "@aws-sdk/client-s3": "^3.1090.0",
     "@elastic/elasticsearch": "^9.4.2",
     "@google-cloud/bigquery": "^8.3.1",
     "@lancedb/lancedb": "0.14.0",
@@ -53,7 +55,10 @@
     "ioredis": "^5.11.1",
     "js-yaml": "^4.1.0",
     "jsonwebtoken": "^9.0.2",
+    "kafkajs": "^2.2.4",
+    "ldapts": "^9.0.0",
     "mongodb": "^7.3.0",
+    "mqtt": "^5.15.2",
     "mssql": "^12.5.5",
     "multer": "^1.4.5-lts.1",
     "mysql2": "^3.22.5",
@@ -70,6 +75,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@vercel/ncc": "^0.44.1",
     "@yao-pkg/pkg": "^6.21.0",
     "nodemon": "^3.1.7",
     "pkg": "^5.8.1",

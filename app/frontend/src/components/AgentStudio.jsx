@@ -65,6 +65,9 @@ const PRESET_CRONS = [
 ];
 const PRESET_CRON_VALUES = PRESET_CRONS.slice(0, -1).map(p => p.cron);
 
+const TYPE_LABELS = { "rest-api": "REST API", "postgresql": "PostgreSQL", "mysql": "MySQL", "mssql": "SQL Server", "mongodb": "MongoDB", "redis": "Redis", "elasticsearch": "Elasticsearch", "ssh": "SSH", "gmail": "Gmail", "gdrive": "Google Drive", "github": "GitHub", "slack": "Slack", "zoho-mail": "Zoho Mail" };
+const fmtType = t => TYPE_LABELS[t] || t.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+
 function toYaml(form, connectors) {
   const lines = [`name: "${form.name || "Untitled Agent"}"`];
   if (form.slug)        lines.push(`slug: "${form.slug}"`);
@@ -98,7 +101,6 @@ function toYaml(form, connectors) {
     selected.forEach(c => {
       lines.push(`  - connection_name: "${c.name}"`);
       lines.push(`    connection_type: ${c.type}`);
-      if (c.slug) lines.push(`    connection_id: "${c.slug}"`);
     });
   }
   const chains = ((Array.isArray(form.chains) ? form.chains : [])).filter(c => c.nextAgent);
@@ -514,8 +516,8 @@ function PreviewStep({ form, set, connectors, maxRounds, maxChainDepth }) {
       }
       if (Array.isArray(y.connectors)) {
         const ids = y.connectors
-          .map(c => (c.connection_id && connectors.find(conn => conn.slug === c.connection_id))
-            || connectors.find(conn => conn.name === c.name))
+          .map(c => connectors.find(conn => conn.name === (c.connection_name || c.name) && conn.type === (c.connection_type || c.type))
+            || connectors.find(conn => conn.name === (c.connection_name || c.name)))
           .filter(Boolean)
           .map(c => c.id);
         set("connectorIds", ids);
@@ -866,10 +868,7 @@ function ConnectorsStep({ form, set, connectors }) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-800 truncate">{c.name}</p>
-                  <div className="flex items-center gap-1.5">
-                    <p className="text-xs text-gray-400 capitalize">{c.type}</p>
-                    {c.slug && <span className="text-xs font-mono text-indigo">@{c.slug}</span>}
-                  </div>
+                  <p className="text-xs text-gray-400">{fmtType(c.type)}</p>
                 </div>
                 <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${checked ? "border-indigo bg-indigo" : "border-gray-300"}`}>
                   {checked && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}

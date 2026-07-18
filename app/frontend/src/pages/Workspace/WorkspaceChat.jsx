@@ -532,7 +532,7 @@ export default function WorkspaceChat() {
       .then(r => setAgents((r.data.agents || []).filter(a => a.slug)))
       .catch(() => {});
     api.get(`/workspaces/${slug}/connectors`)
-      .then(r => setConnectors((r.data.connectors || []).filter(c => c.slug)))
+      .then(r => setConnectors((r.data.connectors || []).filter(c => c.name)))
       .catch(() => {});
   }, [slug]);
 
@@ -1189,10 +1189,10 @@ export default function WorkspaceChat() {
             {/* @mention autocomplete dropdown */}
             {mentionSearch !== null && (() => {
               const filteredAgents = agents.filter(a => a.slug?.startsWith(mentionSearch));
-              const filteredConns  = connectors.filter(c => c.slug?.startsWith(mentionSearch));
+              const filteredConns  = connectors.filter(c => c.name?.startsWith(mentionSearch));
               const hasResults = filteredAgents.length > 0 || filteredConns.length > 0;
-              function pickMention(slug) {
-                setInput(input.replace(/@[\w-]*$/, `@${slug} `));
+              function pickMention(name) {
+                setInput(input.replace(/@[\w-]*$/, `@${name} `));
                 setMentionSearch(null);
                 setTimeout(() => inputRef.current?.focus(), 0);
               }
@@ -1207,7 +1207,7 @@ export default function WorkspaceChat() {
                       {filteredAgents.map(a => (
                         <button key={a.id} type="button"
                           className="w-full flex items-center gap-3 px-3 py-2 hover:bg-indigo/5 text-left transition-colors"
-                          onMouseDown={e => { e.preventDefault(); pickMention(a.slug); }}>
+                          onMouseDown={e => { e.preventDefault(); pickMention(a.slug || a.name); }}>
                           <span className="w-7 h-7 rounded-full bg-indigo flex items-center justify-center text-white font-bold text-xs shrink-0">
                             {a.name?.[0]?.toUpperCase()}
                           </span>
@@ -1225,14 +1225,11 @@ export default function WorkspaceChat() {
                       {filteredConns.map(c => (
                         <button key={c.id} type="button"
                           className="w-full flex items-center gap-3 px-3 py-2 hover:bg-emerald-50 text-left transition-colors"
-                          onMouseDown={e => { e.preventDefault(); pickMention(c.slug); }}>
+                          onMouseDown={e => { e.preventDefault(); pickMention(c.name); }}>
                           <span className="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-xs shrink-0">
                             {c.name?.[0]?.toUpperCase()}
                           </span>
-                          <div>
-                            <p className="text-sm font-semibold text-gray-800">{c.name}</p>
-                            <p className="text-xs text-emerald-600 font-mono">@{c.slug}</p>
-                          </div>
+                          <p className="text-sm font-semibold text-gray-800">{c.name}</p>
                         </button>
                       ))}
                     </>

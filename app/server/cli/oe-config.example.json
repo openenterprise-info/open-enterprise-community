@@ -6,6 +6,12 @@
   },
   "connectors": [
 
+    // ── IMPORTANT ────────────────────────────────────────────────────────────
+    // connection_name and connection_type must exactly match what is defined
+    // in your agent YAML file under the connectors section.
+    // The runtime uses these to link credentials here to connectors in the YAML.
+    // ─────────────────────────────────────────────────────────────────────────
+
     // ── Native adapters (non-HTTP protocols) ─────────────────────────────────
 
     {
@@ -67,6 +73,8 @@
     {
       "connection_name": "Google Drive",
       "connection_type": "gdrive",
+      "clientId": "YOUR_GOOGLE_CLIENT_ID",
+      "clientSecret": "YOUR_GOOGLE_CLIENT_SECRET",
       "accessToken": "YOUR_GOOGLE_ACCESS_TOKEN",
       "refreshToken": "YOUR_GOOGLE_REFRESH_TOKEN",
       "expiresAt": 0

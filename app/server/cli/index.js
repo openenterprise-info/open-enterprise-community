@@ -66,11 +66,9 @@ function prepareConnectors(yamlConnectors, configConnectors) {
     // Normalise YAML connector fields — accept both new (connection_*) and legacy (name/type)
     const ycName = yc.connection_name || yc.name;
     const ycType = yc.connection_type || yc.type;
-    const ycId   = yc.connection_id;
 
-    // Match priority: connection_id → connection_name → connection_type
-    const cc = (ycId && (configConnectors || []).find(c => (c.connection_id || c.id) === ycId))
-            || (configConnectors || []).find(c => (c.connection_name || c.name) === ycName)
+    // Match by name first, then fall back to type
+    const cc = (configConnectors || []).find(c => (c.connection_name || c.name) === ycName)
             || (configConnectors || []).find(c => (c.connection_type || c.type) === ycType);
 
     if (!cc) {
@@ -78,7 +76,7 @@ function prepareConnectors(yamlConnectors, configConnectors) {
       return { id: i + 1, name: ycName, type: ycType, status: "active", authConfig: "{}", config: "{}" };
     }
 
-    const { connection_name, connection_type, connection_id, name, type, ...creds } = cc;
+    const { connection_name, connection_type, name, type, ...creds } = cc;
     const resolvedName = connection_name || name || ycName;
     const resolvedType = connection_type || type || ycType;
 

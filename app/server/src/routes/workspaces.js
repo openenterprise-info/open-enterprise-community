@@ -248,7 +248,7 @@ router.get("/:slug/agents/:id/export", authenticate, async (req, res) => {
       params:         JSON.parse(agent.params || "[]"),
       chains:         agent.chains ? JSON.parse(agent.chains) : [],
       connectorIds:   connectorIds,
-      connectors:     connectors.map(c => ({ type: c.type, name: c.name, ...(c.slug ? { connection_id: c.slug } : {}) })),
+      connectors:     connectors.map(c => ({ type: c.type, name: c.name })),
       trigger: {
         type: agent.triggerType,
         ...(agent.cronExpression ? { cron: agent.cronExpression } : {}),
@@ -280,8 +280,8 @@ router.post("/:slug/agents/import", authenticate, async (req, res) => {
     const matchedIds = [];
     const unmatchedTypes = [];
     for (const c of (agentJson.connectors || [])) {
-      const match = (c.connection_id && activeConnectors.find(ac => ac.slug === c.connection_id))
-        || activeConnectors.find(ac => ac.name === c.name && ac.type === c.type);
+      const match = activeConnectors.find(ac => ac.name === (c.connection_name || c.name) && ac.type === (c.connection_type || c.type))
+        || activeConnectors.find(ac => ac.name === (c.connection_name || c.name));
       if (match) matchedIds.push(match.id);
       else unmatchedTypes.push(c.name || c.type);
     }

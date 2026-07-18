@@ -15,6 +15,18 @@ function generateSlug(name) {
   return (name || "").toLowerCase().replace(/[^a-z0-9]/g, "") || "connector";
 }
 
+// Public-to-all-authenticated: connector type catalog (needed by workspace users too)
+router.get("/connection-masters", authenticate, async (req, res) => {
+  try {
+    const masters = await req.db.connectionMaster.findMany({
+      orderBy: [{ category: "asc" }, { label: "asc" }],
+    });
+    res.json({ masters });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.use(authenticate, requireManagerOrAdmin);
 
 const SENSITIVE_AUTH_KEYS = new Set([
@@ -65,8 +77,13 @@ router.post("/workspaces/:workspaceId/connectors", async (req, res) => {
   const workspaceId = parseInt(req.params.workspaceId);
   const { name, slug: providedSlug, type, config, authConfig } = req.body;
 
-  if (!name?.trim())          return res.status(400).json({ error: "Name required" });
-  if (!SUPPORTED_TYPES.includes(type)) return res.status(400).json({ error: `Unsupported type. Supported: ${SUPPORTED_TYPES.join(", ")}` });
+  if (!name?.trim()) return res.status(400).json({ error: "Name required" });
+  let typeIsValid = SUPPORTED_TYPES.includes(type);
+  if (!typeIsValid) {
+    const master = await req.db.connectionMaster.findUnique({ where: { key: type }, select: { fields: true } });
+    typeIsValid = !!master?.fields;
+  }
+  if (!typeIsValid) return res.status(400).json({ error: `Unsupported connector type: ${type}` });
 
   const existing = await req.db.connector.count();
   if (!await canAddConnector(existing, req.db)) {
@@ -384,5 +401,6 @@ router.delete("/workspaces/:workspaceId/connectors/:id", async (req, res) => {
   await logActivity(req.db, req.user, "connector.deleted", { name: connector.name, type: connector.type });
   res.json({ success: true });
 });
+
 
 module.exports = router;

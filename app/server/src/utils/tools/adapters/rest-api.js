@@ -47,7 +47,7 @@ async function executeTool(action, args, connector) {
   const cfg  = connector.config    ? JSON.parse(connector.config)    : {};
   const auth = connector.authConfig ? JSON.parse(connector.authConfig) : {};
 
-  const baseUrl = (cfg.baseUrl || "").replace(/\/$/, "");
+  const baseUrl = (auth.baseUrl || cfg.baseUrl || "").replace(/\/$/, "");
   if (!baseUrl) return "Connector base URL not configured.";
 
   const headers = { "Content-Type": "application/json", "Accept": "application/json" };

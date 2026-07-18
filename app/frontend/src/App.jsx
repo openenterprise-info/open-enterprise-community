@@ -42,8 +42,9 @@ import ActivityLogPage  from "./pages/Settings/ActivityLogPage";
 import SSOPage          from "./pages/Settings/SSOPage";
 import TierLimitsPage   from "./pages/Settings/TierLimitsPage";
 import ApprovalsPage    from "./pages/Agents/ApprovalsPage";
-import MarketplacePage  from "./pages/Marketplace/MarketplacePage";
-import AgentBuilderPage from "./pages/AgentBuilder/AgentBuilderPage";
+import MarketplacePage        from "./pages/Marketplace/MarketplacePage";
+import AgentBuilderPage       from "./pages/AgentBuilder/AgentBuilderPage";
+import ConnectorsLibraryPage  from "./pages/Agents/ConnectorsLibraryPage";
 
 function AppRoutes() {
   return (
@@ -69,8 +70,9 @@ function AppRoutes() {
         <Route path="/chats"               element={<ChatsPage />} />
         <Route path="/agent-runs"          element={<AgentRunsPage />} />
         <Route path="/approvals"           element={<ApprovalsPage />} />
-        <Route path="/marketplace"         element={<MarketplacePage />} />
-        <Route path="/agent-builder"       element={<AgentBuilderPage />} />
+        <Route path="/marketplace"           element={<MarketplacePage />} />
+        <Route path="/agent-builder"         element={<AgentBuilderPage />} />
+        <Route path="/connectors-library"    element={<ConnectorsLibraryPage />} />
         <Route path="/users"               element={<UsersPage />} />
         <Route path="/developer"           element={<ApiKeysPage />} />
         <Route path="/developer/embed"     element={<EmbedPage />} />

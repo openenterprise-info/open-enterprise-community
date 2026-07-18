@@ -18,7 +18,17 @@ const onedrive       = require("./adapters/onedrive");
 const dropbox        = require("./adapters/dropbox");
 const box            = require("./adapters/box");
 const ssh            = require("./adapters/ssh");
+const sftp           = require("./adapters/sftp");
+const s3             = require("./adapters/s3");
+const kafka          = require("./adapters/kafka");
+const mqttAdapter    = require("./adapters/mqtt");
+const ldap           = require("./adapters/ldap");
+const graphql        = require("./adapters/graphql");
+const web3           = require("./adapters/web3");
+const mcpClient      = require("./adapters/mcp-client");
+
 const ADAPTERS = {
+  // SQL databases
   postgresql:    database,
   mysql:         database,
   mssql:         database,
@@ -27,32 +37,106 @@ const ADAPTERS = {
   sqlite:        database,
   snowflake:     database,
   bigquery:      database,
+  mariadb:       database,
+  tidb:          database,
+  timescaledb:   database,
+  singlestore:   database,
+  db2:           database,
+  teradata:      database,
+  duckdb:        database,
+  // MySQL-compatible
+  planetscale:   database,
+  "vitess":      database,
+  // PostgreSQL-compatible
+  neon:          database,
+  supabase:      database,
+  "cratedb":     database,
+  "questdb":     database,
+  "yugabyte":    database,
+  "greenplum":   database,
+  "redshift":    database,
+  "alloydb":     database,
+  // NoSQL / in-memory
   mongodb:       mongodb,
   redis:         redis,
   elasticsearch: elasticsearch,
+  // File & object storage
+  "aws-s3":      s3,
+  "gcs":         s3,
+  "azure-blob":  s3,
+  "minio":       s3,
+  "cloudflare-r2": s3,
+  "wasabi":      s3,
+  "backblaze-b2": s3,
+  // SFTP
+  sftp:          sftp,
+  ftp:           sftp,
+  // Messaging / queues
+  kafka:         kafka,
+  "apache-kafka": kafka,
+  rabbitmq:      kafka,
+  activemq:      kafka,
+  "aws-sqs":     kafka,
+  "azure-service-bus": kafka,
+  "google-pubsub": kafka,
+  // MQTT / IoT
+  mqtt:          mqttAdapter,
+  "aws-iot":     mqttAdapter,
+  "hivemq":      mqttAdapter,
+  "mosquitto":   mqttAdapter,
+  // LDAP / Directory
+  ldap:          ldap,
+  "active-directory": ldap,
+  "azure-ad":    ldap,
+  openldap:      ldap,
+  // GraphQL
+  graphql:       graphql,
+  "hasura":      graphql,
+  "graphcms":    graphql,
+  "fauna":       graphql,
+  // Web3 / Blockchain
+  web3:          web3,
+  ethereum:      web3,
+  polygon:       web3,
+  solana:        web3,
+  "binance-smart-chain": web3,
+  avalanche:     web3,
+  arbitrum:      web3,
+  optimism:      web3,
+  "infura":      web3,
+  "alchemy":     web3,
+  moralis:       web3,
+  // MCP protocol
+  mcp:           mcpClient,
+  "mcp-server":  mcpClient,
+  // OAuth cloud storage
   onedrive:      onedrive,
   dropbox:       dropbox,
   box:           box,
-  "rest-api": restApi,
-  gmail:      gmail,
-  slack:      slack,
-  jira:       jira,
-  confluence: confluence,
-  notion:     notion,
-  hubspot:    hubspot,
-  freshdesk:  freshdesk,
-  zendesk:    zendesk,
-  github:     github,
-  "zoho-mail": zohoMail,
-  "gdrive":    gdrive,
-  "ssh":         ssh,
+  gdrive:        gdrive,
+  sharepoint:    onedrive,
+  // REST / HTTP (explicit + fallback)
+  "rest-api":    restApi,
+  "http":        restApi,
+  // Specific SaaS adapters
+  gmail:         gmail,
+  slack:         slack,
+  jira:          jira,
+  confluence:    confluence,
+  notion:        notion,
+  hubspot:       hubspot,
+  freshdesk:     freshdesk,
+  zendesk:       zendesk,
+  github:        github,
+  "zoho-mail":   zohoMail,
+  ssh:           ssh,
 };
 
 function getToolDefinitions(connectors) {
   const tools = [];
   for (const c of connectors) {
-    const adapter = ADAPTERS[c.type];
-    if (adapter) tools.push(...adapter.getToolDefinitions(c));
+    const adapter = ADAPTERS[c.type] || restApi;
+    tools.push(...adapter.getToolDefinitions(c));
   }
   return tools;
 }
@@ -60,8 +144,8 @@ function getToolDefinitions(connectors) {
 function getAnthropicToolDefinitions(connectors) {
   const tools = [];
   for (const c of connectors) {
-    const adapter = ADAPTERS[c.type];
-    if (adapter) tools.push(...adapter.getAnthropicToolDefinitions(c));
+    const adapter = ADAPTERS[c.type] || restApi;
+    tools.push(...adapter.getAnthropicToolDefinitions(c));
   }
   return tools;
 }
@@ -75,7 +159,7 @@ async function executeTool(toolName, args, connectors, db) {
   const connector   = connectors.find(c => c.id === connectorId);
   if (!connector) return "Connector not found.";
 
-  const adapter = ADAPTERS[connector.type];
+  const adapter = ADAPTERS[connector.type] || restApi;
   if (!adapter) return `Unsupported connector type: ${connector.type}`;
 
   return adapter.executeTool(action, args, connector, db);

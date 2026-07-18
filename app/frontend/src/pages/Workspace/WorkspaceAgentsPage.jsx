@@ -24,7 +24,7 @@ function yamlToAgentJson(y) {
     triggerType:        y.trigger?.type || "manual",
     cronExpression:     y.trigger?.cron || "",
     enabled:            y.enabled !== false,
-    connectors:         (y.connectors || []).map(c => ({ name: c.connection_name || c.name, type: c.connection_type || c.type, connection_id: c.connection_id || "" })),
+    connectors:         (y.connectors || []).map(c => ({ name: c.connection_name || c.name, type: c.connection_type || c.type })),
     params:             (y.params || []).map(p => ({ name: p.name, label: p.label || "", default: p.default || "" })),
   };
 }
@@ -278,7 +278,6 @@ function AgentCard({ agent, running, onOpen, onRun, onStop, onApi, onDownload, o
           <p className="text-sm font-bold text-gray-900 leading-snug">{agent.name}</p>
           <div className={`w-2 h-2 rounded-full shrink-0 mt-1 ${dotColor}`} />
         </div>
-        {agent.slug && <p className="text-xs font-mono text-indigo mb-1.5">@{agent.slug}</p>}
         {agent.description
           ? <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">{agent.description}</p>
           : <p className="text-xs text-gray-300 italic">No description</p>

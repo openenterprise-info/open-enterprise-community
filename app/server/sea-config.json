@@ -1,5 +1,5 @@
 {
-  "main": "dist/bundle/index.js",
-  "output": "dist/sea-prep.blob",
+  "main": "cli/bundle/index.js",
+  "output": "cli/sea-prep.blob",
   "disableExperimentalSEAWarning": true
 }

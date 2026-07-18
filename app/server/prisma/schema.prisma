@@ -320,6 +320,19 @@ model WorkspaceDlpPolicy {
   @@unique([workspaceId, policyId])
 }
 
+model ConnectionMaster {
+  id          Int      @id @default(autoincrement())
+  key         String   @unique
+  label       String
+  category    String
+  color       String
+  initial     String
+  adapterType String?
+  fields      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model DlpViolation {
   id            Int      @id @default(autoincrement())
   policyId      Int

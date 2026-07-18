@@ -704,6 +704,8 @@ const INTEGRATION_CONNECTOR_TYPES = new Set([
   "mixpanel", "amplitude", "segment", "heap", "posthog", "google-analytics", "tableau",
 ]);
 
+const toSlug = v => v.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-");
+
 export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngestionStarted, onInsertMention, section, focusType, focusEditConnector, onConnected }) {
   const [subTab, setSubTab]                 = useState("integrations");
   const [connectors, setConnectors]         = useState([]);
@@ -757,6 +759,7 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
   const [editIntgSaving, setEditIntgSaving] = useState(false);
   const [editIntgError, setEditIntgError]   = useState("");
   const [intgSlugStatus, setIntgSlugStatus] = useState(null); // null | "checking" | "available" | "taken"
+  const [mastersMap, setMastersMap] = useState({});
   const dbSlugDebounce       = useRef(null);
   const createSlugDebounce   = useRef(null);
   const intgSlugDebounce     = useRef(null);
@@ -847,21 +850,23 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
       const intg = INTEGRATION_TYPES.find(t => t.id === focusType);
       const isGoogle = focusType === "gmail" || focusType === "gdrive";
       const isCloudOAuth = !!intg?.oauthSetup;
+      const defaultIntgName = toSlug(intg?.label || focusType);
       if (isGoogle) {
         setShowGmailSetup(true);
-        setGmailCreds({ clientId: "", clientSecret: "", _for: focusType });
+        setGmailCreds({ clientId: "", clientSecret: "", _for: focusType, _name: defaultIntgName, _slug: defaultIntgName });
       } else if (isCloudOAuth) {
         setOauthSetupId(focusType);
-        setOauthSetupCreds({});
+        setOauthSetupCreds({ _name: defaultIntgName, _slug: defaultIntgName });
       } else if (API_KEY_FIELDS[focusType]) {
         setApiKeySetup(focusType);
-        setApiKeyFields({});
+        setApiKeyFields({ _name: defaultIntgName, _slug: defaultIntgName });
         setApiKeyError("");
       } else {
         setComingSoon(true);
       }
     } else if (DB_CONNECTOR_IDS.has(focusType)) {
-      setForm(f => ({ ...f, type: focusType, config: {}, auth: {} }));
+      const defaultName = toSlug(CONNECTOR_TYPES.find(t => t.id === focusType)?.label || focusType);
+      setForm(f => ({ ...f, type: focusType, name: defaultName, slug: defaultName, config: {}, auth: {} }));
       setShowForm(true);
     } else {
       setComingSoon(true);
@@ -949,7 +954,7 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
       const isRestApi    = editIntgType === "rest-api";
       const isApiKeyType = !!API_KEY_FIELDS[editIntgType];
       const payload = isRestApi
-        ? { name: authFields.connectorName?.trim() || editIntgType,
+        ? { name: authFields.name?.trim() || authFields.connectorName?.trim() || editIntgType,
             slug: connSlug?.trim() || undefined,
             config:     { baseUrl: authFields.baseUrl?.trim(), healthPath: authFields.healthPath?.trim() || "/" },
             authConfig: { bearerToken: authFields.bearerToken?.trim() || "", apiKey: authFields.apiKey?.trim() || "", headerName: authFields.headerName?.trim() || "" } }
@@ -978,6 +983,16 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
   }, [workspaceId]);
 
   useEffect(() => { loadConnectors(); }, [loadConnectors]);
+
+  useEffect(() => {
+    api.get("/admin/connection-masters")
+      .then(r => {
+        const map = {};
+        (r.data.masters || []).forEach(m => { map[m.key] = m; });
+        setMastersMap(map);
+      })
+      .catch(() => {});
+  }, []);
 
   const loadShares = useCallback(() => {
     if (!workspaceSlug) return;
@@ -1179,17 +1194,7 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-800 truncate">{c.name}</p>
-                    <p className="text-[10px] text-gray-400">
-                      {ct?.label || c.type}
-                      {c.slug && (
-                        <button type="button"
-                          onClick={() => onInsertMention?.("@" + c.slug)}
-                          title="Click to use @mention in chat"
-                          className="ml-1.5 font-mono text-indigo bg-indigo/10 hover:bg-indigo/20 px-1 py-0 rounded cursor-pointer leading-tight">
-                          @{c.slug}
-                        </button>
-                      )}
-                    </p>
+                    <p className="text-[10px] text-gray-400">{ct?.label || c.type}</p>
                   </div>
                   <button onClick={() => handleTest(c)} disabled={testing === c.id}
                     title={testing === c.id ? "Testing…" : "Test connection"}
@@ -1258,24 +1263,10 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
                   <div className="border-t border-gray-100 px-4 py-4 space-y-3 bg-white">
                     <p className="text-xs font-semibold text-gray-700">Edit Connection</p>
                     <p className="text-[10px] text-amber-600">Username &amp; password are not pre-filled for security — enter new values to update, leave blank to keep existing.</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Name</label>
-                        <input className="input text-sm py-1.5" value={editDbForm.name}
-                          onChange={e => setEditDbForm(f => ({ ...f, name: e.target.value }))} />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">
-                          Connection ID <span className="text-[10px] text-gray-400 font-normal">— @id</span>
-                        </label>
-                        <input className={`input text-sm py-1.5 font-mono ${dbSlugStatus === "taken" ? "border-red-400 focus:ring-red-300" : dbSlugStatus === "available" ? "border-green-400 focus:ring-green-300" : ""}`}
-                          placeholder="e.g. proddb"
-                          value={editDbForm.slug || ""}
-                          onChange={e => setEditDbForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, "") }))} />
-                        {dbSlugStatus === "available" && <p className="text-[10px] text-green-600 mt-0.5">@{editDbForm.slug} is available</p>}
-                        {dbSlugStatus === "taken"     && <p className="text-[10px] text-red-500 mt-0.5">@{editDbForm.slug} is already taken</p>}
-                        {dbSlugStatus === "checking"  && <p className="text-[10px] text-gray-400 mt-0.5">Checking…</p>}
-                      </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Name</label>
+                      <input className="input text-sm py-1.5 font-mono" value={editDbForm.name}
+                        onChange={e => { const v = toSlug(e.target.value); setEditDbForm(f => ({ ...f, name: v, slug: v })); }} />
                     </div>
                     {CONNECTOR_TYPES.find(t => t.id === editDbForm.type)?.fields.map(f => (
                       <div key={f.key}>
@@ -1342,34 +1333,13 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
           {showForm && (
             <div className="border border-indigo/30 rounded-xl p-4 space-y-3 bg-indigo/5">
               <p className="text-sm font-semibold text-gray-800">New {selectedType?.label} Connection</p>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Name</label>
-                  <input className="input text-sm py-1.5" placeholder="e.g. Production DB" value={form.name}
-                    onChange={e => {
-                      const name = e.target.value;
-                      setForm(f => ({
-                        ...f,
-                        name,
-                        slug: (!f.slug || f.slug === f.name.toLowerCase().replace(/[^a-z0-9]/g, ""))
-                          ? name.toLowerCase().replace(/[^a-z0-9]/g, "")
-                          : f.slug,
-                      }));
-                    }} />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Connection ID <span className="font-normal text-[10px] text-gray-400">— @id</span>
-                  </label>
-                  <input
-                    className={`input text-sm py-1.5 font-mono ${createSlugStatus === "taken" ? "border-red-400 focus:ring-red-300" : createSlugStatus === "available" ? "border-green-400 focus:ring-green-300" : ""}`}
-                    placeholder="auto from name"
-                    value={form.slug || ""}
-                    onChange={e => setForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, "") }))} />
-                  {createSlugStatus === "available" && <p className="text-[10px] text-green-600 mt-0.5">@{form.slug} is available</p>}
-                  {createSlugStatus === "taken"     && <p className="text-[10px] text-red-500 mt-0.5">@{form.slug} is already taken</p>}
-                  {createSlugStatus === "checking"  && <p className="text-[10px] text-gray-400 mt-0.5">Checking…</p>}
-                </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Name</label>
+                <input className="input text-sm py-1.5 font-mono w-full" placeholder="e.g. production-db" value={form.name}
+                  onChange={e => {
+                    const name = toSlug(e.target.value);
+                    setForm(f => ({ ...f, name, slug: name }));
+                  }} />
               </div>
               {selectedType?.fields.map(f => (
                 <div key={f.key}>
@@ -1483,25 +1453,26 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
                     <p className="text-xs font-semibold text-gray-700">{intg.label}</p>
                     <p className="text-[10px] text-gray-400 leading-relaxed">{intg.desc}</p>
                   </div>
-                  {intg.live && !setupOpen && (
+                  {!!mastersMap[intg.id]?.fields && !setupOpen && (
                     atLimit
                       ? <span className="text-[10px] font-semibold text-amber-500 shrink-0">Limit reached</span>
                       : <button onClick={() => {
+                          const dn = toSlug(intg.label || intg.id);
                           if (isGoogle) {
-                            setGmailCreds({ clientId: "", clientSecret: "", _for: intg.id });
+                            setGmailCreds({ clientId: "", clientSecret: "", _for: intg.id, _name: dn, _slug: dn });
                             setShowGmailSetup(true);
                           } else if (isCloudOAuth) {
-                            setOauthSetupId(intg.id); setOauthSetupCreds({});
-                          } else { setApiKeySetup(intg.id); setApiKeyFields({}); setApiKeyError(""); }
+                            setOauthSetupId(intg.id); setOauthSetupCreds({ _name: dn, _slug: dn });
+                          } else { setApiKeySetup(intg.id); setApiKeyFields({ _name: dn, _slug: dn }); setApiKeyError(""); }
                         }} className="text-[10px] font-semibold text-white bg-indigo px-3 py-1 rounded-lg shrink-0 hover:bg-indigo/90 transition-colors">
                           Connect
                         </button>
                   )}
-                  {intg.live && setupOpen && (
+                  {!!mastersMap[intg.id]?.fields && setupOpen && (
                     <button onClick={() => { setShowGmailSetup(false); setOauthSetupId(null); setOauthSetupCreds({}); setApiKeySetup(null); setApiKeyFields({}); setApiKeySlugStatus(null); setOauthSetupSlugStatus(null); }}
                       className="text-[10px] text-gray-400 hover:text-gray-600 shrink-0">Cancel</button>
                   )}
-                  {!intg.live && <span className="text-[10px] font-semibold text-gray-300 shrink-0">Soon</span>}
+                  {!mastersMap[intg.id]?.fields && <span className="text-[10px] font-semibold text-gray-300 shrink-0">Soon</span>}
                 </div>}
 
                 {/* Gmail OAuth form */}
@@ -1534,30 +1505,11 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
                         );
                       })}
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Connection Name</label>
-                        <input className="input text-xs py-1.5 w-full" placeholder={intg.label}
-                          value={gmailCreds._name || ""}
-                          onChange={e => {
-                            const name = e.target.value;
-                            setGmailCreds(c => ({
-                              ...c, _name: name,
-                              _slug: (!c._slug || c._slug === (c._name || "").toLowerCase().replace(/[^a-z0-9]/g, ""))
-                                ? name.toLowerCase().replace(/[^a-z0-9]/g, "") : c._slug,
-                            }));
-                          }} />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Connection ID <span className="text-gray-400">— @id</span></label>
-                        <input className={`input text-xs py-1.5 w-full font-mono ${oauthSetupSlugStatus === "taken" ? "border-red-400 focus:ring-red-300" : oauthSetupSlugStatus === "available" ? "border-green-400 focus:ring-green-300" : ""}`}
-                          placeholder="auto from name"
-                          value={gmailCreds._slug || ""}
-                          onChange={e => setGmailCreds(c => ({ ...c, _slug: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, "") }))} />
-                        {oauthSetupSlugStatus === "available" && <p className="text-[10px] text-green-600 mt-0.5">@{gmailCreds._slug} is available</p>}
-                        {oauthSetupSlugStatus === "taken"     && <p className="text-[10px] text-red-500 mt-0.5">@{gmailCreds._slug} is already taken</p>}
-                        {oauthSetupSlugStatus === "checking"  && <p className="text-[10px] text-gray-400 mt-0.5">Checking…</p>}
-                      </div>
+                    <div>
+                      <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Connection Name</label>
+                      <input className="input text-xs py-1.5 w-full font-mono" placeholder={toSlug(intg.label)}
+                        value={gmailCreds._name || ""}
+                        onChange={e => { const v = toSlug(e.target.value); setGmailCreds(c => ({ ...c, _name: v, _slug: v })); }} />
                     </div>
                     <div>
                       <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Client ID</label>
@@ -1610,30 +1562,11 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
                         );
                       })()}
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Connection Name</label>
-                        <input className="input text-xs py-1.5 w-full" placeholder={intg.label}
-                          value={oauthSetupCreds._name || ""}
-                          onChange={e => {
-                            const name = e.target.value;
-                            setOauthSetupCreds(v => ({
-                              ...v, _name: name,
-                              _slug: (!v._slug || v._slug === (v._name || "").toLowerCase().replace(/[^a-z0-9]/g, ""))
-                                ? name.toLowerCase().replace(/[^a-z0-9]/g, "") : v._slug,
-                            }));
-                          }} />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Connection ID <span className="text-gray-400">— @id</span></label>
-                        <input className={`input text-xs py-1.5 w-full font-mono ${oauthSetupSlugStatus === "taken" ? "border-red-400 focus:ring-red-300" : oauthSetupSlugStatus === "available" ? "border-green-400 focus:ring-green-300" : ""}`}
-                          placeholder="auto from name"
-                          value={oauthSetupCreds._slug || ""}
-                          onChange={e => setOauthSetupCreds(v => ({ ...v, _slug: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, "") }))} />
-                        {oauthSetupSlugStatus === "available" && <p className="text-[10px] text-green-600 mt-0.5">@{oauthSetupCreds._slug} is available</p>}
-                        {oauthSetupSlugStatus === "taken"     && <p className="text-[10px] text-red-500 mt-0.5">@{oauthSetupCreds._slug} is already taken</p>}
-                        {oauthSetupSlugStatus === "checking"  && <p className="text-[10px] text-gray-400 mt-0.5">Checking…</p>}
-                      </div>
+                    <div>
+                      <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Connection Name</label>
+                      <input className="input text-xs py-1.5 w-full font-mono" placeholder={toSlug(intg.label)}
+                        value={oauthSetupCreds._name || ""}
+                        onChange={e => { const v = toSlug(e.target.value); setOauthSetupCreds(c => ({ ...c, _name: v, _slug: v })); }} />
                     </div>
                     {intg.oauthSetup.fields.map(f => (
                       <div key={f.key}>
@@ -1666,34 +1599,11 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
                 {/* API key form */}
                 {isApiKey && setupOpen && (
                   <div className="px-3 py-3 border-t border-gray-200 bg-white space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Connection Name</label>
-                        <input className="input text-xs py-1.5 w-full" placeholder={intg.label}
-                          value={apiKeyFields._name || ""}
-                          onChange={e => {
-                            const name = e.target.value;
-                            setApiKeyFields(v => ({
-                              ...v,
-                              _name: name,
-                              _slug: (!v._slug || v._slug === (v._name || "").toLowerCase().replace(/[^a-z0-9]/g, ""))
-                                ? name.toLowerCase().replace(/[^a-z0-9]/g, "")
-                                : v._slug,
-                            }));
-                          }} />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-medium text-gray-500 mb-0.5">
-                          Connection ID <span className="text-gray-400">— @id</span>
-                        </label>
-                        <input className={`input text-xs py-1.5 w-full font-mono ${apiKeySlugStatus === "taken" ? "border-red-400 focus:ring-red-300" : apiKeySlugStatus === "available" ? "border-green-400 focus:ring-green-300" : ""}`}
-                          placeholder="auto from name"
-                          value={apiKeyFields._slug || ""}
-                          onChange={e => setApiKeyFields(v => ({ ...v, _slug: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, "") }))} />
-                        {apiKeySlugStatus === "available" && <p className="text-[10px] text-green-600 mt-0.5">@{apiKeyFields._slug} is available</p>}
-                        {apiKeySlugStatus === "taken"     && <p className="text-[10px] text-red-500 mt-0.5">@{apiKeyFields._slug} is already taken</p>}
-                        {apiKeySlugStatus === "checking"  && <p className="text-[10px] text-gray-400 mt-0.5">Checking…</p>}
-                      </div>
+                    <div>
+                      <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Connection Name</label>
+                      <input className="input text-xs py-1.5 w-full font-mono" placeholder={toSlug(intg.label)}
+                        value={apiKeyFields._name || ""}
+                        onChange={e => { const v = toSlug(e.target.value); setApiKeyFields(c => ({ ...c, _name: v, _slug: v })); }} />
                     </div>
                     {fields.filter(f => f.key !== "name" && f.key !== "connectorName").map(f => (
                       <div key={f.key}>
@@ -1748,16 +1658,8 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
                   <div key={c.id}>
                     {!isFocused && <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border-t border-green-100">
                       <span className="text-green-500 text-[10px] shrink-0">✓</span>
-                      <span className="text-[10px] text-green-700 font-medium flex-1 flex items-center gap-1.5">
+                      <span className="text-[10px] text-green-700 font-medium flex-1">
                         {c.name}
-                        {c.slug && (
-                          <button type="button"
-                            onClick={e => { e.stopPropagation(); onInsertMention?.("@" + c.slug); }}
-                            title="Click to use @mention in chat"
-                            className="font-mono text-indigo bg-indigo/10 hover:bg-indigo/20 px-1 py-0 rounded cursor-pointer not-italic text-[10px]">
-                            @{c.slug}
-                          </button>
-                        )}
                       </span>
                       <button onClick={() => { if (editIntgConnId === c.id) { setEditIntgConnId(null); setEditIntgType(null); } else { startIntgEdit(c, intg.id); } }}
                         title={editIntgConnId === c.id ? "Cancel edit" : "Edit"}
@@ -1813,25 +1715,11 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
                       <div className="border-t border-gray-100 px-3 py-3 bg-white space-y-2">
                         <p className="text-[10px] font-semibold text-gray-600">{isApiKey ? "Edit Credentials" : "Edit Connection"}</p>
                         {isApiKey && <p className="text-[10px] text-amber-600">Sensitive fields are not pre-filled — enter new values to update, leave blank to keep existing.</p>}
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Name</label>
-                            <input className="input text-xs py-1.5 w-full"
-                              value={editIntgFields.name || ""}
-                              onChange={e => setEditIntgFields(v => ({ ...v, name: e.target.value }))} />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-medium text-gray-500 mb-0.5">
-                              Connection ID <span className="text-gray-400">— @id</span>
-                            </label>
-                            <input className={`input text-xs py-1.5 w-full font-mono ${intgSlugStatus === "taken" ? "border-red-400 focus:ring-red-300" : intgSlugStatus === "available" ? "border-green-400 focus:ring-green-300" : ""}`}
-                              placeholder="e.g. myslack"
-                              value={editIntgFields.slug || ""}
-                              onChange={e => setEditIntgFields(v => ({ ...v, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, "") }))} />
-                            {intgSlugStatus === "available" && <p className="text-[10px] text-green-600 mt-0.5">@{editIntgFields.slug} is available</p>}
-                            {intgSlugStatus === "taken"     && <p className="text-[10px] text-red-500 mt-0.5">@{editIntgFields.slug} is already taken</p>}
-                            {intgSlugStatus === "checking"  && <p className="text-[10px] text-gray-400 mt-0.5">Checking…</p>}
-                          </div>
+                        <div>
+                          <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Name</label>
+                          <input className="input text-xs py-1.5 w-full font-mono"
+                            value={editIntgFields.name || ""}
+                            onChange={e => { const v = toSlug(e.target.value); setEditIntgFields(f => ({ ...f, name: v, slug: v })); }} />
                         </div>
                         {isApiKey && (API_KEY_FIELDS[editIntgType] || []).filter(f => f.key !== "name" && f.key !== "connectorName").map(f => (
                           <div key={f.key}>

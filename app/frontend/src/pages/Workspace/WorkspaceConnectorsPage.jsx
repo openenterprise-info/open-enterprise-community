@@ -2747,6 +2747,7 @@ export default function WorkspaceConnectorsPage() {
   const [loading,     setLoading]     = useState(true);
   const [error,       setError]       = useState("");
   const [search,      setSearch]      = useState("");
+  const [selectedCat, setSelectedCat] = useState(null);
   const [showPanel,   setShowPanel]   = useState(false);
   const [panelType,   setPanelType]   = useState(null);
   const [panelEditConnector, setPanelEditConnector] = useState(null);
@@ -2760,6 +2761,10 @@ export default function WorkspaceConnectorsPage() {
   const [sharePickerConnId, setSharePickerConnId] = useState(null);
   const [peerWorkspaces,    setPeerWorkspaces]    = useState([]);
   const [sharingTo,         setSharingTo]         = useState(null);
+  const [mastersMap,        setMastersMap]        = useState({});
+  const [dynForm,           setDynForm]           = useState({ name: "" });
+  const [dynSaving,         setDynSaving]         = useState(false);
+  const [dynError,          setDynError]          = useState("");
 
   useEffect(() => {
     if (!slug) return;
@@ -2767,6 +2772,13 @@ export default function WorkspaceConnectorsPage() {
       .then(r => setWorkspace(r.data.workspace))
       .catch(() => setError("Workspace not found"))
       .finally(() => setLoading(false));
+    api.get("/admin/connection-masters")
+      .then(r => {
+        const map = {};
+        (r.data.masters || []).forEach(m => { map[m.key] = m; });
+        setMastersMap(map);
+      })
+      .catch(() => {});
   }, [slug]);
 
   useEffect(() => {
@@ -2873,9 +2885,54 @@ export default function WorkspaceConnectorsPage() {
 
   const canManage = user?.role === "admin" || user?.role === "manager";
   const activeConnectors = connectors;
-  const filtered = ALL_TYPES.filter(t =>
-    !search.trim() || t.label.toLowerCase().includes(search.toLowerCase()) || t.cat.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = ALL_TYPES.filter(t => {
+    const matchSearch = !search.trim() || t.label.toLowerCase().includes(search.toLowerCase()) || t.cat.toLowerCase().includes(search.toLowerCase());
+    const matchCat = !selectedCat || t.cat === selectedCat;
+    return matchSearch && matchCat;
+  });
+
+  const CATEGORIES = [
+    { key: "Database",              label: "Databases"              },
+    { key: "CRM & Sales",           label: "CRM & Sales"            },
+    { key: "Email & Communication", label: "Email & Comms"          },
+    { key: "Cloud Storage",         label: "Cloud Storage"          },
+    { key: "Developer Tools",       label: "Developer Tools"        },
+    { key: "Project Management",    label: "Project Mgmt"           },
+    { key: "Marketing",             label: "Marketing"              },
+    { key: "HR & Payroll",          label: "HR & Payroll"           },
+    { key: "Finance & Accounting",  label: "Finance"                },
+    { key: "E-commerce",            label: "E-commerce"             },
+    { key: "Analytics",             label: "Analytics"              },
+    { key: "Observability",         label: "Observability"          },
+    { key: "AI & ML",               label: "AI & ML"                },
+    { key: "Security & Identity",   label: "Security"               },
+    { key: "Social Media",          label: "Social Media"           },
+    { key: "Data Integration",      label: "Data Integration"       },
+    { key: "Survey & Feedback",     label: "Survey"                 },
+    { key: "E-Signature",           label: "E-Signature"            },
+    { key: "Video & Webinar",       label: "Video"                  },
+    { key: "Scheduling",            label: "Scheduling"             },
+    { key: "Customer Success",      label: "Customer Success"       },
+    { key: "CMS",                   label: "CMS"                    },
+    { key: "Search",                label: "Search"                 },
+    { key: "Messaging",             label: "Messaging"              },
+    { key: "Healthcare",            label: "Healthcare"             },
+    { key: "ERP",                   label: "ERP"                    },
+    { key: "IoT",                   label: "IoT"                    },
+    { key: "Blockchain",            label: "Blockchain"             },
+    { key: "Media & DAM",           label: "Media & DAM"            },
+    { key: "Low Code",              label: "Low Code"               },
+    { key: "Cloud Services",        label: "Cloud Services"         },
+    { key: "Collaboration",         label: "Collaboration"          },
+    { key: "DevOps",               label: "DevOps"                  },
+    { key: "Automation",           label: "Automation"              },
+    { key: "BI",                   label: "BI"                      },
+    { key: "Education",            label: "Education"               },
+    { key: "Legal",                label: "Legal"                   },
+    { key: "Real Estate",          label: "Real Estate"             },
+    { key: "Operations",           label: "Operations"              },
+    { key: "MCP",                  label: "MCP Servers"             },
+  ];
 
   return (
     <div className="flex h-screen bg-white overflow-hidden">
@@ -2969,7 +3026,6 @@ export default function WorkspaceConnectorsPage() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-semibold text-gray-900 truncate">{c.name}</p>
-                          {c.slug && <p className="text-[10px] font-mono text-indigo truncate">@{c.slug}</p>}
                         </div>
                         <div className="w-2 h-2 rounded-full bg-green-400 shrink-0 mt-1" />
                       </div>
@@ -3064,49 +3120,28 @@ export default function WorkspaceConnectorsPage() {
             />
           </div>
 
-          {/* Row 4: All Connector Types — grouped by category */}
-          {[
-            { key: "Database",              label: "Databases"              },
-            { key: "CRM & Sales",           label: "CRM & Sales"            },
-            { key: "Email & Communication", label: "Email & Communication"  },
-            { key: "Cloud Storage",         label: "Cloud Storage"          },
-            { key: "Developer Tools",       label: "Developer Tools"        },
-            { key: "Project Management",    label: "Project Management"     },
-            { key: "Marketing",             label: "Marketing"              },
-            { key: "HR & Payroll",          label: "HR & Payroll"           },
-            { key: "Finance & Accounting",  label: "Finance & Accounting"   },
-            { key: "E-commerce",            label: "E-commerce"             },
-            { key: "Analytics",             label: "Analytics"              },
-            { key: "Observability",         label: "Observability & ITSM"   },
-            { key: "AI & ML",               label: "AI & ML"                },
-            { key: "Security & Identity",   label: "Security & Identity"    },
-            { key: "Social Media",          label: "Social Media"           },
-            { key: "Data Integration",      label: "Data Integration & ETL" },
-            { key: "Survey & Feedback",     label: "Survey & Feedback"      },
-            { key: "E-Signature",           label: "E-Signature & Docs"     },
-            { key: "Video & Webinar",       label: "Video & Webinar"        },
-            { key: "Scheduling",            label: "Scheduling"             },
-            { key: "Customer Success",      label: "Customer Success"       },
-            { key: "CMS",                   label: "CMS & Content"          },
-            { key: "Search",                label: "Search"                 },
-            { key: "Messaging",             label: "Messaging & Streaming"  },
-            { key: "Healthcare",            label: "Healthcare"             },
-            { key: "ERP",                   label: "ERP & Nonprofit"        },
-            { key: "IoT",                   label: "IoT & Edge"             },
-            { key: "Blockchain",            label: "Blockchain & Crypto"    },
-            { key: "Media & DAM",           label: "Media & DAM"            },
-            { key: "Low Code",              label: "Low Code & No Code"     },
-            { key: "Cloud Services",        label: "Cloud Services"         },
-            { key: "Collaboration",         label: "Collaboration & Design" },
-            { key: "DevOps",               label: "DevOps"                 },
-            { key: "Automation",           label: "Automation"             },
-            { key: "BI",                   label: "BI & Reporting"         },
-            { key: "Education",            label: "Education & LMS"        },
-            { key: "Legal",                label: "Legal Tech"             },
-            { key: "Real Estate",          label: "Real Estate & Hospitality" },
-            { key: "Operations",           label: "Operations & Logistics" },
-            { key: "MCP",                  label: "MCP Servers"            },
-          ].map(cat => {
+          {/* Row 4: Category filter pills */}
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              onClick={() => setSelectedCat(null)}
+              className={`px-3 py-1 rounded-full text-xs font-semibold border transition-colors whitespace-nowrap ${
+                !selectedCat ? "bg-indigo text-white border-indigo" : "bg-white text-gray-500 border-gray-200 hover:border-indigo hover:text-indigo"
+              }`}>
+              All
+            </button>
+            {CATEGORIES.map(cat => (
+              <button key={cat.key}
+                onClick={() => setSelectedCat(selectedCat === cat.key ? null : cat.key)}
+                className={`px-3 py-1 rounded-full text-xs font-semibold border transition-colors whitespace-nowrap ${
+                  selectedCat === cat.key ? "bg-indigo text-white border-indigo" : "bg-white text-gray-500 border-gray-200 hover:border-indigo hover:text-indigo"
+                }`}>
+                {cat.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Row 5: All Connector Types — grouped by category */}
+          {CATEGORIES.map(cat => {
             const items = filtered.filter(t => t.cat === cat.key);
             if (!items.length) return null;
             return (
@@ -3119,12 +3154,15 @@ export default function WorkspaceConnectorsPage() {
                 <div className="grid grid-cols-3 gap-2">
                   {items.map(t => {
                     const isConnected = connectors.some(c => c.type === t.id);
+                    const isLive = !!mastersMap[t.id];
                     return (
                       <div key={t.id}
                         className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all duration-150 ${
                           isConnected
                             ? "border-green-200 bg-green-50/50"
-                            : "border-gray-100 bg-gray-50/50 hover:border-indigo/25 hover:bg-white hover:shadow-sm"
+                            : isLive
+                              ? "border-gray-100 bg-gray-50/50 hover:border-indigo/25 hover:bg-white hover:shadow-sm"
+                              : "border-gray-100 bg-gray-50/30 opacity-60"
                         }`}>
                         <div className={`w-7 h-7 rounded-lg ${t.color} flex items-center justify-center shrink-0`}>
                           <span className="text-white text-[9px] font-bold leading-none">{t.initial}</span>
@@ -3132,9 +3170,12 @@ export default function WorkspaceConnectorsPage() {
                         <span className="flex-1 text-sm font-medium text-gray-700 truncate min-w-0">{t.label}</span>
                         <div className="flex items-center gap-1.5 shrink-0">
                           {isConnected && <span className="w-2 h-2 rounded-full bg-green-400" />}
-                          {canManage && (
+                          {!isLive && (
+                            <span className="text-[10px] font-semibold text-gray-300">Soon</span>
+                          )}
+                          {isLive && canManage && (
                             <button
-                              onClick={() => { setPanelEditConnector(null); setPanelType(t.id); setShowPanel(true); }}
+                              onClick={() => { setDynError(""); const defaults = { name: t.id }; (JSON.parse(mastersMap[t.id]?.fields || "[]")).forEach(f => { defaults[f.key] = ""; }); setDynForm(defaults); setPanelEditConnector(null); setPanelType(t.id); setShowPanel(true); }}
                               className="text-[11px] font-semibold text-indigo opacity-0 group-hover:opacity-100 hover:text-indigo/70 whitespace-nowrap transition-all">
                               Connect →
                             </button>
@@ -3195,15 +3236,85 @@ export default function WorkspaceConnectorsPage() {
               <button onClick={() => { setShowPanel(false); setPanelType(null); setPanelEditConnector(null); loadConnectors(); }} className="text-gray-400 hover:text-gray-700 text-xl leading-none">×</button>
             </div>
             <div className="flex-1 overflow-y-auto">
-              <EnterpriseConnectorsPanel
-                workspaceId={workspace?.id}
-                workspaceSlug={slug}
-                onIngestionStarted={() => {}}
-                section="both"
-                focusType={panelType}
-                focusEditConnector={panelEditConnector}
-                onConnected={() => { setShowPanel(false); setPanelType(null); setPanelEditConnector(null); loadConnectors(); }}
-              />
+              {(() => {
+                const ENTERPRISE_TYPES = new Set(["mongodb","redis","elasticsearch","ssh","gmail","gdrive","github","slack","zoho-mail","jira","confluence","notion","hubspot","freshdesk","zendesk","onedrive","dropbox","box","postgresql","mysql","mssql","oracle"]);
+                const useDynForm = panelType && !panelEditConnector && mastersMap[panelType]?.fields && !ENTERPRISE_TYPES.has(panelType);
+
+                if (useDynForm) {
+                  const fields = JSON.parse(mastersMap[panelType].fields);
+                  const firstRequired = fields.find(f => f.required)?.key;
+                  return (
+                    <div className="p-5 space-y-4">
+                      <div>
+                        <label className="text-xs font-semibold text-gray-700 block mb-1">Connection Name</label>
+                        <input value={dynForm.name || ""}
+                          onChange={e => setDynForm(f => ({ ...f, name: e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-") }))}
+                          className="w-full px-3 py-2 text-sm font-mono border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo/20 focus:border-indigo" />
+                      </div>
+                      {fields.map(f => (
+                        <div key={f.key}>
+                          <label className="text-xs font-semibold text-gray-700 block mb-1">
+                            {f.label}{f.required && <span className="text-red-400 ml-0.5">*</span>}
+                          </label>
+                          {f.type === "textarea" || f.type === "json" ? (
+                            <textarea rows={4} value={dynForm[f.key] || ""} placeholder={f.placeholder || ""}
+                              onChange={e => setDynForm(v => ({ ...v, [f.key]: e.target.value }))}
+                              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo/20 focus:border-indigo font-mono resize-none" />
+                          ) : f.type === "boolean" ? (
+                            <select value={dynForm[f.key] || "false"}
+                              onChange={e => setDynForm(v => ({ ...v, [f.key]: e.target.value }))}
+                              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo/20 focus:border-indigo">
+                              <option value="false">No</option>
+                              <option value="true">Yes</option>
+                            </select>
+                          ) : (
+                            <input
+                              type={f.type === "password" ? "password" : f.type === "number" ? "number" : "text"}
+                              value={dynForm[f.key] || ""} placeholder={f.placeholder || ""}
+                              onChange={e => setDynForm(v => ({ ...v, [f.key]: e.target.value }))}
+                              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo/20 focus:border-indigo" />
+                          )}
+                        </div>
+                      ))}
+                      {dynError && <p className="text-xs text-red-500">{dynError}</p>}
+                      <button
+                        disabled={dynSaving || !!(firstRequired && !dynForm[firstRequired]?.trim())}
+                        onClick={async () => {
+                          setDynSaving(true); setDynError("");
+                          try {
+                            const { name, ...rest } = dynForm;
+                            const authConfig = {};
+                            fields.forEach(f => { if (dynForm[f.key] !== undefined && dynForm[f.key] !== "") authConfig[f.key] = dynForm[f.key]; });
+                            await api.post(`/admin/workspaces/${workspace.id}/connectors`, {
+                              name: name || ALL_TYPES.find(t => t.id === panelType)?.label || panelType,
+                              type: panelType,
+                              config: {},
+                              authConfig,
+                            });
+                            setShowPanel(false); setPanelType(null); loadConnectors();
+                          } catch (err) {
+                            setDynError(err?.response?.data?.error || err.message || "Failed to save");
+                          } finally { setDynSaving(false); }
+                        }}
+                        className="w-full py-2.5 text-sm font-semibold text-white bg-indigo rounded-lg hover:bg-indigo/90 disabled:opacity-50 transition-colors">
+                        {dynSaving ? "Connecting…" : "Connect"}
+                      </button>
+                    </div>
+                  );
+                }
+
+                return (
+                  <EnterpriseConnectorsPanel
+                    workspaceId={workspace?.id}
+                    workspaceSlug={slug}
+                    onIngestionStarted={() => {}}
+                    section="both"
+                    focusType={panelType}
+                    focusEditConnector={panelEditConnector}
+                    onConnected={() => { setShowPanel(false); setPanelType(null); setPanelEditConnector(null); loadConnectors(); }}
+                  />
+                );
+              })()}
             </div>
           </div>
         </div>

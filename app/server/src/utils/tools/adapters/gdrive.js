@@ -2,7 +2,10 @@ const { google } = require("googleapis");
 const { makeOAuth2Client } = require("./gmail");
 
 async function buildDriveClient(authConfig, db, workspaceId) {
-  const oauth2 = await makeOAuth2Client(db, workspaceId);
+  const oauth2 = await makeOAuth2Client(db, workspaceId, "/api/oauth/gmail/callback", {
+    clientId:     authConfig.clientId,
+    clientSecret: authConfig.clientSecret,
+  });
   oauth2.setCredentials({
     access_token:  authConfig.accessToken,
     refresh_token: authConfig.refreshToken,

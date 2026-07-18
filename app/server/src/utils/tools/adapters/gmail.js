@@ -18,8 +18,10 @@ async function getGoogleCredentials(db, workspaceId) {
   return { clientId, clientSecret };
 }
 
-async function makeOAuth2Client(db, workspaceId, callbackPath = "/api/oauth/gmail/callback") {
-  const { clientId, clientSecret } = await getGoogleCredentials(db, workspaceId);
+async function makeOAuth2Client(db, workspaceId, callbackPath = "/api/oauth/gmail/callback", overrides = {}) {
+  const { clientId: dbId, clientSecret: dbSecret } = await getGoogleCredentials(db, workspaceId);
+  const clientId     = overrides.clientId     || dbId;
+  const clientSecret = overrides.clientSecret || dbSecret;
   const callbackBase = process.env.OAUTH_CALLBACK_BASE || "http://localhost:3001";
   return new google.auth.OAuth2(clientId, clientSecret, `${callbackBase}${callbackPath}`);
 }
@@ -91,7 +93,10 @@ function getAnthropicToolDefinitions(connector) {
 }
 
 async function buildGmailClient(authConfig, db, workspaceId) {
-  const oauth2 = await makeOAuth2Client(db, workspaceId);
+  const oauth2 = await makeOAuth2Client(db, workspaceId, "/api/oauth/gmail/callback", {
+    clientId:     authConfig.clientId,
+    clientSecret: authConfig.clientSecret,
+  });
   oauth2.setCredentials({
     access_token:  authConfig.accessToken,
     refresh_token: authConfig.refreshToken,
