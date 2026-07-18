@@ -63,15 +63,24 @@ const config    = JSON.parse(fs.readFileSync(configFile, "utf8"));
 
 function prepareConnectors(yamlConnectors, configConnectors) {
   return (yamlConnectors || []).map((yc, i) => {
-    const cc = (configConnectors || []).find(c => c.name === yc.name)
-            || (configConnectors || []).find(c => c.type === yc.type);
+    // Normalise YAML connector fields — accept both new (connection_*) and legacy (name/type)
+    const ycName = yc.connection_name || yc.name;
+    const ycType = yc.connection_type || yc.type;
+    const ycId   = yc.connection_id;
+
+    // Match priority: connection_id → connection_name → connection_type
+    const cc = (ycId && (configConnectors || []).find(c => (c.connection_id || c.id) === ycId))
+            || (configConnectors || []).find(c => (c.connection_name || c.name) === ycName)
+            || (configConnectors || []).find(c => (c.connection_type || c.type) === ycType);
 
     if (!cc) {
-      console.warn(`  ⚠  No config entry for connector "${yc.name}" (${yc.type}) — tool calls will fail`);
-      return { id: i + 1, name: yc.name, type: yc.type, status: "active", authConfig: "{}", config: "{}" };
+      console.warn(`  ⚠  No config entry for connector "${ycName}" (${ycType}) — tool calls will fail`);
+      return { id: i + 1, name: ycName, type: ycType, status: "active", authConfig: "{}", config: "{}" };
     }
 
-    const { name, type, ...creds } = cc;
+    const { connection_name, connection_type, connection_id, name, type, ...creds } = cc;
+    const resolvedName = connection_name || name || ycName;
+    const resolvedType = connection_type || type || ycType;
 
     // Support privateKeyPath so users don't have to embed raw keys in JSON.
     // Normalize line endings — Windows \r\n breaks ssh2 key parsing.
@@ -87,8 +96,8 @@ function prepareConnectors(yamlConnectors, configConnectors) {
 
     return {
       id:         i + 1,
-      name:       cc.name || yc.name,
-      type:       cc.type || yc.type,
+      name:       resolvedName,
+      type:       resolvedType,
       status:     "active",
       authConfig: JSON.stringify(creds),
       config:     JSON.stringify(creds),

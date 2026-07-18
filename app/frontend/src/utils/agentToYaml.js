@@ -39,8 +39,8 @@ export function agentToYaml(a) {
   if (conns.length) {
     lines.push(`connectors:`);
     conns.forEach(c => {
-      lines.push(`  - name: "${c.name}"`);
-      lines.push(`    type: ${c.type}`);
+      lines.push(`  - connection_name: "${c.name}"`);
+      lines.push(`    connection_type: ${c.type}`);
       if (c.connection_id) lines.push(`    connection_id: "${c.connection_id}"`);
     });
   }

@@ -9,18 +9,16 @@
     // ── Native adapters (non-HTTP protocols) ─────────────────────────────────
 
     {
-      "_type": "ssh",
-      "name": "My Server",
-      "type": "ssh",
+      "connection_name": "My Server",
+      "connection_type": "ssh",
       "host": "YOUR_SERVER_IP",
       "port": 22,
       "username": "ubuntu",
       "privateKeyPath": "~/.ssh/id_rsa"
     },
     {
-      "_type": "mysql",
-      "name": "MySQL DB",
-      "type": "mysql",
+      "connection_name": "MySQL DB",
+      "connection_type": "mysql",
       "host": "localhost",
       "port": 3306,
       "user": "root",
@@ -28,9 +26,8 @@
       "database": "your_db"
     },
     {
-      "_type": "postgres",
-      "name": "Postgres DB",
-      "type": "postgres",
+      "connection_name": "Postgres DB",
+      "connection_type": "postgres",
       "host": "localhost",
       "port": 5432,
       "user": "postgres",
@@ -38,23 +35,20 @@
       "database": "your_db"
     },
     {
-      "_type": "mongodb",
-      "name": "MongoDB",
-      "type": "mongodb",
+      "connection_name": "MongoDB",
+      "connection_type": "mongodb",
       "connectionString": "mongodb://localhost:27017/your_db"
     },
     {
-      "_type": "redis",
-      "name": "Redis",
-      "type": "redis",
+      "connection_name": "Redis",
+      "connection_type": "redis",
       "host": "localhost",
       "port": 6379,
       "password": "YOUR_PASSWORD"
     },
     {
-      "_type": "smtp",
-      "name": "Zoho Mail",
-      "type": "smtp",
+      "connection_name": "Zoho Mail",
+      "connection_type": "smtp",
       "host": "smtp.zoho.com",
       "port": 465,
       "secure": true,
@@ -62,9 +56,8 @@
       "pass": "YOUR_APP_PASSWORD"
     },
     {
-      "_type": "imap",
-      "name": "Zoho Inbox",
-      "type": "imap",
+      "connection_name": "Zoho Inbox",
+      "connection_type": "imap",
       "host": "imap.zoho.com",
       "port": 993,
       "secure": true,
@@ -72,17 +65,15 @@
       "pass": "YOUR_APP_PASSWORD"
     },
     {
-      "_type": "gdrive",
-      "name": "Google Drive",
-      "type": "gdrive",
+      "connection_name": "Google Drive",
+      "connection_type": "gdrive",
       "accessToken": "YOUR_GOOGLE_ACCESS_TOKEN",
       "refreshToken": "YOUR_GOOGLE_REFRESH_TOKEN",
       "expiresAt": 0
     },
     {
-      "_type": "github",
-      "name": "GitHub",
-      "type": "github",
+      "connection_name": "GitHub",
+      "connection_type": "github",
       "token": "ghp_YOUR_TOKEN",
       "owner": "your-org",
       "repo": "your-repo"
@@ -91,36 +82,31 @@
     // ── HTTP connectors — LLM knows the API, just provide base URL + auth ────
 
     {
-      "_type": "http — Telegram Bot",
-      "name": "Telegram",
-      "type": "http",
+      "connection_name": "Telegram",
+      "connection_type": "http",
       "baseUrl": "https://api.telegram.org/botYOUR_BOT_TOKEN"
     },
     {
-      "_type": "http — Slack",
-      "name": "Slack",
-      "type": "http",
+      "connection_name": "Slack",
+      "connection_type": "http",
       "baseUrl": "https://slack.com/api",
       "headers": { "Authorization": "Bearer xoxb-YOUR_BOT_TOKEN" }
     },
     {
-      "_type": "http — Discord",
-      "name": "Discord",
-      "type": "http",
+      "connection_name": "Discord",
+      "connection_type": "http",
       "baseUrl": "https://discord.com/api/v10",
       "headers": { "Authorization": "Bot YOUR_BOT_TOKEN" }
     },
     {
-      "_type": "http — WhatsApp (Meta Cloud API)",
-      "name": "WhatsApp",
-      "type": "http",
+      "connection_name": "WhatsApp",
+      "connection_type": "http",
       "baseUrl": "https://graph.facebook.com/v19.0/YOUR_PHONE_NUMBER_ID",
       "headers": { "Authorization": "Bearer YOUR_ACCESS_TOKEN" }
     },
     {
-      "_type": "http — Notion",
-      "name": "Notion",
-      "type": "http",
+      "connection_name": "Notion",
+      "connection_type": "http",
       "baseUrl": "https://api.notion.com/v1",
       "headers": {
         "Authorization": "Bearer secret_YOUR_TOKEN",
@@ -128,58 +114,50 @@
       }
     },
     {
-      "_type": "http — Airtable",
-      "name": "Airtable",
-      "type": "http",
+      "connection_name": "Airtable",
+      "connection_type": "http",
       "baseUrl": "https://api.airtable.com/v0/YOUR_BASE_ID",
       "headers": { "Authorization": "Bearer YOUR_API_KEY" }
     },
     {
-      "_type": "http — HubSpot",
-      "name": "HubSpot",
-      "type": "http",
+      "connection_name": "HubSpot",
+      "connection_type": "http",
       "baseUrl": "https://api.hubapi.com",
       "headers": { "Authorization": "Bearer YOUR_PRIVATE_APP_TOKEN" }
     },
     {
-      "_type": "http — Salesforce",
-      "name": "Salesforce",
-      "type": "http",
+      "connection_name": "Salesforce",
+      "connection_type": "http",
       "baseUrl": "https://YOUR_INSTANCE.salesforce.com/services/data/v59.0",
       "headers": { "Authorization": "Bearer YOUR_ACCESS_TOKEN" }
     },
     {
-      "_type": "http — Stripe",
-      "name": "Stripe",
-      "type": "http",
+      "connection_name": "Stripe",
+      "connection_type": "http",
       "baseUrl": "https://api.stripe.com/v1",
       "headers": { "Authorization": "Bearer sk_live_YOUR_SECRET_KEY" }
     },
     {
-      "_type": "http — Twilio (SMS)",
-      "name": "Twilio",
-      "type": "http",
+      "connection_name": "Twilio",
+      "connection_type": "http",
       "baseUrl": "https://api.twilio.com/2010-04-01/Accounts/YOUR_ACCOUNT_SID",
       "headers": { "Authorization": "Basic BASE64_OF_ACCOUNTSID:AUTHTOKEN" }
     },
     {
-      "_type": "http — SendGrid",
-      "name": "SendGrid",
-      "type": "http",
+      "connection_name": "SendGrid",
+      "connection_type": "http",
       "baseUrl": "https://api.sendgrid.com/v3",
       "headers": { "Authorization": "Bearer SG.YOUR_API_KEY" }
     },
     {
-      "_type": "http — Mailchimp",
-      "name": "Mailchimp",
-      "type": "http",
+      "connection_name": "Mailchimp",
+      "connection_type": "http",
       "baseUrl": "https://usX.api.mailchimp.com/3.0",
       "headers": { "Authorization": "Bearer YOUR_API_KEY" }
     },
     {
-      "_type": "http — Shopify",
-      "name": "Shopify",
-      "type": "http",
+      "connection_name": "Shopify",
+      "connection_type": "http",
       "baseUrl": "https://YOUR_STORE.myshopify.com/admin/api/2024-01",
       "headers": {
         "X-Shopify-Access-Token": "YOUR_ACCESS_TOKEN",
@@ -187,16 +165,14 @@
       }
     },
     {
-      "_type": "http — WooCommerce",
-      "name": "WooCommerce",
-      "type": "http",
+      "connection_name": "WooCommerce",
+      "connection_type": "http",
       "baseUrl": "https://your-store.com/wp-json/wc/v3",
       "headers": { "Authorization": "Basic BASE64_OF_CONSUMER_KEY:CONSUMER_SECRET" }
     },
     {
-      "_type": "http — Jira",
-      "name": "Jira",
-      "type": "http",
+      "connection_name": "Jira",
+      "connection_type": "http",
       "baseUrl": "https://your-org.atlassian.net/rest/api/3",
       "headers": {
         "Authorization": "Basic BASE64_OF_EMAIL:API_TOKEN",
@@ -204,9 +180,8 @@
       }
     },
     {
-      "_type": "http — Confluence",
-      "name": "Confluence",
-      "type": "http",
+      "connection_name": "Confluence",
+      "connection_type": "http",
       "baseUrl": "https://your-org.atlassian.net/wiki/rest/api",
       "headers": {
         "Authorization": "Basic BASE64_OF_EMAIL:API_TOKEN",
@@ -214,51 +189,44 @@
       }
     },
     {
-      "_type": "http — Linear",
-      "name": "Linear",
-      "type": "http",
+      "connection_name": "Linear",
+      "connection_type": "http",
       "baseUrl": "https://api.linear.app/graphql",
       "headers": { "Authorization": "YOUR_API_KEY" }
     },
     {
-      "_type": "http — Asana",
-      "name": "Asana",
-      "type": "http",
+      "connection_name": "Asana",
+      "connection_type": "http",
       "baseUrl": "https://app.asana.com/api/1.0",
       "headers": { "Authorization": "Bearer YOUR_PERSONAL_ACCESS_TOKEN" }
     },
     {
-      "_type": "http — Trello",
-      "name": "Trello",
-      "type": "http",
+      "connection_name": "Trello",
+      "connection_type": "http",
       "baseUrl": "https://api.trello.com/1",
       "headers": { "Authorization": "OAuth oauth_consumer_key=\"YOUR_KEY\", oauth_token=\"YOUR_TOKEN\"" }
     },
     {
-      "_type": "http — Monday.com",
-      "name": "Monday",
-      "type": "http",
+      "connection_name": "Monday",
+      "connection_type": "http",
       "baseUrl": "https://api.monday.com/v2",
       "headers": { "Authorization": "YOUR_API_KEY" }
     },
     {
-      "_type": "http — Zendesk",
-      "name": "Zendesk",
-      "type": "http",
+      "connection_name": "Zendesk",
+      "connection_type": "http",
       "baseUrl": "https://YOUR_SUBDOMAIN.zendesk.com/api/v2",
       "headers": { "Authorization": "Basic BASE64_OF_EMAIL/token:API_TOKEN" }
     },
     {
-      "_type": "http — Freshdesk",
-      "name": "Freshdesk",
-      "type": "http",
+      "connection_name": "Freshdesk",
+      "connection_type": "http",
       "baseUrl": "https://YOUR_SUBDOMAIN.freshdesk.com/api/v2",
       "headers": { "Authorization": "Basic BASE64_OF_API_KEY:X" }
     },
     {
-      "_type": "http — Intercom",
-      "name": "Intercom",
-      "type": "http",
+      "connection_name": "Intercom",
+      "connection_type": "http",
       "baseUrl": "https://api.intercom.io",
       "headers": {
         "Authorization": "Bearer YOUR_ACCESS_TOKEN",
@@ -266,16 +234,14 @@
       }
     },
     {
-      "_type": "http — Pipedrive",
-      "name": "Pipedrive",
-      "type": "http",
+      "connection_name": "Pipedrive",
+      "connection_type": "http",
       "baseUrl": "https://api.pipedrive.com/v1",
       "headers": { "x-api-token": "YOUR_API_KEY" }
     },
     {
-      "_type": "http — Apollo.io",
-      "name": "Apollo",
-      "type": "http",
+      "connection_name": "Apollo",
+      "connection_type": "http",
       "baseUrl": "https://api.apollo.io/v1",
       "headers": {
         "x-api-key": "YOUR_API_KEY",
@@ -283,23 +249,20 @@
       }
     },
     {
-      "_type": "http — Zoho CRM",
-      "name": "Zoho CRM",
-      "type": "http",
+      "connection_name": "Zoho CRM",
+      "connection_type": "http",
       "baseUrl": "https://www.zohoapis.com/crm/v3",
       "headers": { "Authorization": "Zoho-oauthtoken YOUR_ACCESS_TOKEN" }
     },
     {
-      "_type": "http — Quickbooks",
-      "name": "QuickBooks",
-      "type": "http",
+      "connection_name": "QuickBooks",
+      "connection_type": "http",
       "baseUrl": "https://quickbooks.api.intuit.com/v3/company/YOUR_COMPANY_ID",
       "headers": { "Authorization": "Bearer YOUR_ACCESS_TOKEN" }
     },
     {
-      "_type": "http — Xero",
-      "name": "Xero",
-      "type": "http",
+      "connection_name": "Xero",
+      "connection_type": "http",
       "baseUrl": "https://api.xero.com/api.xro/2.0",
       "headers": {
         "Authorization": "Bearer YOUR_ACCESS_TOKEN",
@@ -307,16 +270,14 @@
       }
     },
     {
-      "_type": "http — OpenAI (as tool target)",
-      "name": "OpenAI",
-      "type": "http",
+      "connection_name": "OpenAI",
+      "connection_type": "http",
       "baseUrl": "https://api.openai.com/v1",
       "headers": { "Authorization": "Bearer sk-YOUR_KEY" }
     },
     {
-      "_type": "http — Custom / internal API",
-      "name": "My API",
-      "type": "http",
+      "connection_name": "My API",
+      "connection_type": "http",
       "baseUrl": "https://your-api.example.com/v1",
       "headers": {
         "Authorization": "Bearer YOUR_TOKEN",

@@ -96,8 +96,8 @@ function toYaml(form, connectors) {
   if (selected.length) {
     lines.push(`connectors:`);
     selected.forEach(c => {
-      lines.push(`  - name: "${c.name}"`);
-      lines.push(`    type: ${c.type}`);
+      lines.push(`  - connection_name: "${c.name}"`);
+      lines.push(`    connection_type: ${c.type}`);
       if (c.slug) lines.push(`    connection_id: "${c.slug}"`);
     });
   }

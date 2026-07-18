@@ -24,7 +24,7 @@ function yamlToAgentJson(y) {
     triggerType:        y.trigger?.type || "manual",
     cronExpression:     y.trigger?.cron || "",
     enabled:            y.enabled !== false,
-    connectors:         (y.connectors || []).map(c => ({ name: c.name, type: c.type, connection_id: c.connection_id || "" })),
+    connectors:         (y.connectors || []).map(c => ({ name: c.connection_name || c.name, type: c.connection_type || c.type, connection_id: c.connection_id || "" })),
     params:             (y.params || []).map(p => ({ name: p.name, label: p.label || "", default: p.default || "" })),
   };
 }
