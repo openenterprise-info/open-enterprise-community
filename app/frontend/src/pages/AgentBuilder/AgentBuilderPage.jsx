@@ -94,6 +94,13 @@ function loadPersistedMessages() {
 
 export default function AgentBuilderPage() {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    fetch("/api/instance").then(r => r.json()).then(d => {
+      if ((d.licenseType || "community") !== "enterprise") navigate("/marketplace", { replace: true });
+    }).catch(() => {});
+  }, []);
+
   const [messages, setMessages] = useState(loadPersistedMessages);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
