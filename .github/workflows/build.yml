@@ -22,7 +22,7 @@ jobs:
           if [[ "${{ github.repository }}" == *"commercial"* ]]; then
             echo "IMAGE=open-enterprise-commercial" >> $GITHUB_OUTPUT
           else
-            echo "IMAGE=open-enterprise" >> $GITHUB_OUTPUT
+            echo "IMAGE=open-enterprise-community" >> $GITHUB_OUTPUT
           fi
 
       - name: Login to Docker Hub
