@@ -61,7 +61,7 @@ router.get("/workspaces/:workspaceId/connectors", async (req, res) => {
   }
 });
 
-// Check slug availability
+// Check slug availability (legacy — kept for backward compat)
 router.get("/connectors/check-slug", async (req, res) => {
   const { slug, excludeId } = req.query;
   if (!slug) return res.json({ available: false });
@@ -70,6 +70,22 @@ router.get("/connectors/check-slug", async (req, res) => {
   const existing = await req.db.connector.findUnique({ where: { slug: clean }, select: { id: true } });
   const available = !existing || (excludeId && existing.id === parseInt(excludeId));
   res.json({ available });
+});
+
+// Check name availability (globally unique across all workspaces)
+router.get("/connectors/check-name", async (req, res) => {
+  const { name, excludeId } = req.query;
+  const clean = name?.trim();
+  if (!clean) return res.json({ available: false, suggestion: null });
+  const existing = await req.db.connector.findFirst({ where: { name: clean }, select: { id: true } });
+  const available = !existing || (excludeId && existing.id === parseInt(excludeId));
+  let suggestion = null;
+  if (!available) {
+    let suffix = 1;
+    while (await req.db.connector.findFirst({ where: { name: `${clean}-${suffix}` } })) suffix++;
+    suggestion = `${clean}-${suffix}`;
+  }
+  res.json({ available, suggestion });
 });
 
 // Create connector
@@ -91,19 +107,19 @@ router.post("/workspaces/:workspaceId/connectors", async (req, res) => {
     return res.status(403).json({ error: `Tier limit reached. Max ${tier.maxConnectors} connector(s) allowed across the instance.` });
   }
 
-  // Auto-generate unique slug from name (same rules as agent slugs)
-  let baseSlug = providedSlug ? providedSlug.toLowerCase().replace(/[^a-z0-9]/g, "") : generateSlug(name.trim());
-  if (!baseSlug) baseSlug = "connector";
-  let slug = baseSlug;
-  let suffix = 2;
-  while (await req.db.connector.findUnique({ where: { slug } })) {
-    slug = `${baseSlug}${suffix++}`;
+  // Auto-suffix name to keep it globally unique (mysql → mysql-1 → mysql-2 …)
+  let finalName = name.trim();
+  const baseName = finalName;
+  let nameSuffix = 1;
+  while (await req.db.connector.findFirst({ where: { name: finalName } })) {
+    finalName = `${baseName}-${nameSuffix++}`;
   }
+  const slug = finalName; // slug mirrors name
 
   const connector = await req.db.connector.create({
     data: {
       workspaceId,
-      name:       name.trim(),
+      name:       finalName,
       slug,
       type,
       config:     config     ? JSON.stringify(config)     : null,

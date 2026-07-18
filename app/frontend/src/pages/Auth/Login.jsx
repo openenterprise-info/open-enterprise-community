@@ -51,7 +51,7 @@ const FEATURES = [
       </svg>
     ),
     label: "Phase 5",
-    title: "AI OS",
+    title: "AI Platform",
     desc: "Run your entire enterprise on AI — memory, marketplace, and beyond.",
   },
 ];
@@ -77,6 +77,15 @@ export default function Login() {
   const [loading, setLoading]   = useState(false);
   const [sso, setSso]           = useState({ enabled: false, provider: null });
   const [ssoLoading, setSsoLoading] = useState(false);
+  const [branding, setBranding] = useState(null);
+
+  useEffect(() => {
+    fetch("/api/instance").then(r => r.json()).then(d => {
+      if (d.licenseType === "enterprise" && d.brandingName) {
+        setBranding({ name: d.brandingName, logo: d.brandingLogo || null, url: d.brandingUrl || null });
+      }
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => { if (user) navigate("/"); }, [user]);
 
@@ -208,18 +217,21 @@ export default function Login() {
 
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-16">
-              <div className="w-11 h-11 rounded-xl flex items-center justify-center"
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center overflow-hidden"
                 style={{ background: "rgba(255,255,255,0.12)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.15)" }}>
-                <span className="text-white font-black text-xl">E</span>
+                {branding?.logo
+                  ? <img src={branding.logo} alt="logo" className="w-full h-full object-contain" />
+                  : <span className="text-white font-black text-xl">{branding ? branding.name[0].toUpperCase() : "E"}</span>
+                }
               </div>
-              <span className="text-white font-bold text-xl tracking-tight">Open Enterprise</span>
+              <span className="text-white font-bold text-xl tracking-tight">{branding?.name || "Open Enterprise"}</span>
             </div>
 
             <h2 className="text-shimmer text-4xl font-black leading-tight mb-4" style={{ letterSpacing: "-0.02em" }}>
               Your Enterprise AI Platform
             </h2>
             <p className="text-indigo-200 text-base leading-relaxed mb-8" style={{ color: "rgba(199,210,254,0.8)" }}>
-              From AI assistants to a full enterprise AI OS — deploy, automate, and govern AI across your entire organisation.
+              From AI assistants to a full enterprise AI Platform — deploy, automate, and govern AI across your entire organisation.
             </p>
 
             <div className="space-y-3.5">
@@ -251,10 +263,13 @@ export default function Login() {
         <div className="flex-1 flex flex-col items-center justify-center bg-slate-50 px-8 py-12">
 
           <div className="lg:hidden flex items-center gap-2 mb-10">
-            <div className="w-9 h-9 bg-indigo rounded-xl flex items-center justify-center">
-              <span className="text-white font-black text-lg">E</span>
+            <div className="w-9 h-9 bg-indigo rounded-xl flex items-center justify-center overflow-hidden">
+              {branding?.logo
+                ? <img src={branding.logo} alt="logo" className="w-full h-full object-contain" />
+                : <span className="text-white font-black text-lg">{branding ? branding.name[0].toUpperCase() : "E"}</span>
+              }
             </div>
-            <span className="text-navy font-bold text-lg">Open Enterprise</span>
+            <span className="text-navy font-bold text-lg">{branding?.name || "Open Enterprise"}</span>
           </div>
 
           <div className="w-full max-w-[380px]">
@@ -361,7 +376,7 @@ export default function Login() {
             </div>
 
             <p className="text-center text-slate-400 text-xs mt-8">
-              Open Enterprise v{__APP_VERSION__} &mdash; Enterprise AI Platform
+              {branding?.name || "Open Enterprise"} v{__APP_VERSION__} &mdash; Your Enterprise AI Platform
             </p>
           </div>
         </div>

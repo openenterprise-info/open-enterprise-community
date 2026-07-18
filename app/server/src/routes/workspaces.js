@@ -993,7 +993,7 @@ router.delete("/:slug/chain-approvals", authenticate, requireManagerOrAdmin, asy
 
 // ── Knowledge Base Sharing ────────────────────────────────────────────────────
 
-router.get("/:slug/kb-shares", authenticate, async (req, res) => {
+router.get("/:slug/kb-shares", authenticate, requireCommercial, async (req, res) => {
   try {
     const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.slug } });
     if (!workspace) return res.status(404).json({ error: "Not found" });
@@ -1013,7 +1013,7 @@ router.get("/:slug/kb-shares", authenticate, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.post("/:slug/kb-shares", authenticate, async (req, res) => {
+router.post("/:slug/kb-shares", authenticate, requireCommercial, async (req, res) => {
   try {
     const featureSetting = await req.db.setting.findUnique({ where: { key: "feature.kbSharing" } });
     if (featureSetting?.value !== "true") return res.status(403).json({ error: "Knowledge Base Sharing is disabled on this installation." });
@@ -1035,7 +1035,7 @@ router.post("/:slug/kb-shares", authenticate, async (req, res) => {
   }
 });
 
-router.delete("/:slug/kb-shares/:id", authenticate, async (req, res) => {
+router.delete("/:slug/kb-shares/:id", authenticate, requireCommercial, async (req, res) => {
   try {
     const workspace = await req.db.workspace.findUnique({ where: { slug: req.params.slug } });
     if (!workspace) return res.status(404).json({ error: "Not found" });

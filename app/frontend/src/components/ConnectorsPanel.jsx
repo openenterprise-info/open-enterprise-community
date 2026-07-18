@@ -767,45 +767,48 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
   const oauthSetupSlugDebounce = useRef(null);
 
   useEffect(() => {
-    const slug = editDbForm.slug?.trim();
-    if (!slug) { setDbSlugStatus(null); return; }
+    const name = editDbForm.name?.trim();
+    if (!name) { setDbSlugStatus(null); return; }
     setDbSlugStatus("checking");
     clearTimeout(dbSlugDebounce.current);
     dbSlugDebounce.current = setTimeout(async () => {
       try {
-        const params = new URLSearchParams({ slug });
+        const params = new URLSearchParams({ name });
         if (editingDbId) params.set("excludeId", editingDbId);
-        const { data } = await api.get(`/admin/connectors/check-slug?${params}`);
+        const { data } = await api.get(`/admin/connectors/check-name?${params}`);
         setDbSlugStatus(data.available ? "available" : "taken");
       } catch { setDbSlugStatus(null); }
     }, 400);
     return () => clearTimeout(dbSlugDebounce.current);
-  }, [editDbForm.slug, editingDbId]);
+  }, [editDbForm.name, editingDbId]);
 
   useEffect(() => {
-    const slug = form.slug?.trim();
-    if (!slug) { setCreateSlugStatus(null); return; }
+    const name = form.name?.trim();
+    if (!name) { setCreateSlugStatus(null); return; }
     setCreateSlugStatus("checking");
     clearTimeout(createSlugDebounce.current);
     createSlugDebounce.current = setTimeout(async () => {
       try {
-        const { data } = await api.get(`/admin/connectors/check-slug?slug=${encodeURIComponent(slug)}`);
+        const { data } = await api.get(`/admin/connectors/check-name?name=${encodeURIComponent(name)}`);
         setCreateSlugStatus(data.available ? "available" : "taken");
+        if (!data.available && data.suggestion) {
+          setForm(f => ({ ...f, name: data.suggestion, slug: data.suggestion }));
+        }
       } catch { setCreateSlugStatus(null); }
     }, 400);
     return () => clearTimeout(createSlugDebounce.current);
-  }, [form.slug]);
+  }, [form.name]);
 
   useEffect(() => {
-    const slug = editIntgFields.slug?.trim();
-    if (!slug) { setIntgSlugStatus(null); return; }
+    const name = editIntgFields.slug?.trim();
+    if (!name) { setIntgSlugStatus(null); return; }
     setIntgSlugStatus("checking");
     clearTimeout(intgSlugDebounce.current);
     intgSlugDebounce.current = setTimeout(async () => {
       try {
-        const params = new URLSearchParams({ slug });
+        const params = new URLSearchParams({ name });
         if (editIntgConnId) params.set("excludeId", editIntgConnId);
-        const { data } = await api.get(`/admin/connectors/check-slug?${params}`);
+        const { data } = await api.get(`/admin/connectors/check-name?${params}`);
         setIntgSlugStatus(data.available ? "available" : "taken");
       } catch { setIntgSlugStatus(null); }
     }, 400);
@@ -813,33 +816,40 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
   }, [editIntgFields.slug, editIntgConnId]);
 
   useEffect(() => {
-    const slug = apiKeyFields._slug?.trim();
-    if (!slug) { setApiKeySlugStatus(null); return; }
+    const name = apiKeyFields._name?.trim();
+    if (!name) { setApiKeySlugStatus(null); return; }
     setApiKeySlugStatus("checking");
     clearTimeout(apiKeySlugDebounce.current);
     apiKeySlugDebounce.current = setTimeout(async () => {
       try {
-        const { data } = await api.get(`/admin/connectors/check-slug?slug=${encodeURIComponent(slug)}`);
+        const { data } = await api.get(`/admin/connectors/check-name?name=${encodeURIComponent(name)}`);
         setApiKeySlugStatus(data.available ? "available" : "taken");
+        if (!data.available && data.suggestion) {
+          setApiKeyFields(c => ({ ...c, _name: data.suggestion, _slug: data.suggestion }));
+        }
       } catch { setApiKeySlugStatus(null); }
     }, 400);
     return () => clearTimeout(apiKeySlugDebounce.current);
-  }, [apiKeyFields._slug]);
+  }, [apiKeyFields._name]);
 
-  const _oauthSlug = gmailCreds._slug || oauthSetupCreds._slug;
+  const _oauthName = gmailCreds._name || oauthSetupCreds._name;
   useEffect(() => {
-    const slug = _oauthSlug?.trim();
-    if (!slug) { setOauthSetupSlugStatus(null); return; }
+    const name = _oauthName?.trim();
+    if (!name) { setOauthSetupSlugStatus(null); return; }
     setOauthSetupSlugStatus("checking");
     clearTimeout(oauthSetupSlugDebounce.current);
     oauthSetupSlugDebounce.current = setTimeout(async () => {
       try {
-        const { data } = await api.get(`/admin/connectors/check-slug?slug=${encodeURIComponent(slug)}`);
+        const { data } = await api.get(`/admin/connectors/check-name?name=${encodeURIComponent(name)}`);
         setOauthSetupSlugStatus(data.available ? "available" : "taken");
+        if (!data.available && data.suggestion) {
+          if (gmailCreds._name) setGmailCreds(c => ({ ...c, _name: data.suggestion, _slug: data.suggestion }));
+          else setOauthSetupCreds(c => ({ ...c, _name: data.suggestion, _slug: data.suggestion }));
+        }
       } catch { setOauthSetupSlugStatus(null); }
     }, 400);
     return () => clearTimeout(oauthSetupSlugDebounce.current);
-  }, [_oauthSlug]);
+  }, [_oauthName]);
 
   const isFocused = !!focusType || !!focusEditConnector;
 
@@ -1073,7 +1083,6 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
     try {
       const { data } = await api.post(`/admin/workspaces/${workspaceId}/connectors`, {
         name: form.name.trim(),
-        slug: form.slug?.trim() || undefined,
         type: form.type,
         config:     { ...(Object.keys(form.config).length ? form.config : {}), allowedOps: form.allowedOps },
         authConfig: Object.keys(form.auth).length ? form.auth : undefined,
@@ -1390,7 +1399,7 @@ export function EnterpriseConnectorsPanel({ workspaceId, workspaceSlug, onIngest
               <div className="flex gap-2 pt-1">
                 {!isFocused && <button onClick={() => { setShowForm(false); setForm({ name: "", slug: "", type: "postgresql", config: {}, auth: {}, allowedOps: ["SELECT"] }); setCreateSlugStatus(null); }}
                   className="btn-secondary px-4 py-1.5 text-xs flex-1">Cancel</button>}
-                <button onClick={handleAdd} disabled={saving || !form.name.trim() || createSlugStatus === "taken"}
+                <button onClick={handleAdd} disabled={saving || !form.name.trim()}
                   className="btn-primary px-4 py-1.5 text-xs flex-1 disabled:opacity-50">
                   {saving ? "Adding…" : "Add Connector"}
                 </button>

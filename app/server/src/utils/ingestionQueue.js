@@ -14,7 +14,7 @@ const OCR_PROMPT =
   "Preserve headings, bullet points, numbered lists, tables, and paragraph structure. " +
   "Return only the extracted text — no commentary, no explanation, nothing else.";
 
-const PROCESSOR_URL = `http://localhost:${process.env.PROCESSOR_PORT || 3002}`;
+const PROCESSOR_URL = `http://localhost:${process.env.PROCESSOR_PORT || 5002}`;
 const EMBED_BATCH_SIZE = 10;
 
 async function getChunkSettings(db) {

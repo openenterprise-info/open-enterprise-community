@@ -87,7 +87,7 @@ model Workspace {
 model Connector {
   id           Int       @id @default(autoincrement())
   workspaceId  Int
-  name         String
+  name         String    @unique
   slug         String?   @unique
   type         String
   config       String?

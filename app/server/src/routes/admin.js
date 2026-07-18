@@ -329,7 +329,7 @@ function computeEmbeddingCost(tokens, model) {
   return (tokens / 1_000_000) * EMBEDDING_PRICING[key];
 }
 
-router.get("/token-usage", requireAdmin, async (req, res) => {
+router.get("/token-usage", requireAdmin, requireCommercial, async (req, res) => {
   const { period = "all" } = req.query;
   const days = { "7d": 7, "30d": 30 }[period];
   const createdAt = days ? { gte: new Date(Date.now() - days * 86400000) } : undefined;
@@ -466,7 +466,7 @@ router.delete("/agent-runs/:id", requireAdmin, async (req, res) => {
 
 // ── Activity Log (admin only) ─────────────────────────────────────────────────
 
-router.get("/activity", requireAdmin, async (req, res) => {
+router.get("/activity", requireAdmin, requireCommercial, async (req, res) => {
   const logs = await req.db.activityLog.findMany({
     orderBy: { createdAt: "desc" },
     take: 500
@@ -657,12 +657,12 @@ router.post("/vectors/:tableName/assign", requireAdmin, async (req, res) => {
 
 // ── DLP Policies ──────────────────────────────────────────────────────────────
 
-router.get("/dlp/policies", requireAdmin, async (req, res) => {
+router.get("/dlp/policies", requireAdmin, requireCommercial, async (req, res) => {
   const policies = await req.db.dlpPolicy.findMany({ orderBy: { createdAt: "asc" } });
   res.json({ policies });
 });
 
-router.post("/dlp/policies", requireAdmin, async (req, res) => {
+router.post("/dlp/policies", requireAdmin, requireCommercial, async (req, res) => {
   const { name, category, pattern, action } = req.body;
   if (!name || !category) return res.status(400).json({ error: "name and category are required" });
   const policy = await req.db.dlpPolicy.create({
@@ -671,7 +671,7 @@ router.post("/dlp/policies", requireAdmin, async (req, res) => {
   res.json({ policy });
 });
 
-router.put("/dlp/policies/:id", requireAdmin, async (req, res) => {
+router.put("/dlp/policies/:id", requireAdmin, requireCommercial, async (req, res) => {
   const { name, category, pattern, action, enabled } = req.body;
   const policy = await req.db.dlpPolicy.update({
     where: { id: parseInt(req.params.id) },
@@ -680,12 +680,12 @@ router.put("/dlp/policies/:id", requireAdmin, async (req, res) => {
   res.json({ policy });
 });
 
-router.delete("/dlp/policies/:id", requireAdmin, async (req, res) => {
+router.delete("/dlp/policies/:id", requireAdmin, requireCommercial, async (req, res) => {
   await req.db.dlpPolicy.delete({ where: { id: parseInt(req.params.id) } });
   res.json({ success: true });
 });
 
-router.get("/dlp/violations", requireAdmin, async (req, res) => {
+router.get("/dlp/violations", requireAdmin, requireCommercial, async (req, res) => {
   const violations = await req.db.dlpViolation.findMany({
     orderBy: { createdAt: "desc" },
     take: 100,

@@ -209,7 +209,7 @@ export default function SourcesPanel({ workspaceSlug, workspaceId, refreshTrigge
   const [showSharePicker, setShowSharePicker] = useState(false);
   const [sharingTo, setSharingTo]     = useState(null);
   const [confirmRemoveShare, setConfirmRemoveShare] = useState(null);
-  const [kbSharingEnabled, setKbSharingEnabled] = useState(true);
+  const [kbSharingEnabled, setKbSharingEnabled] = useState(false);
 
   function getGroupLabel(group) {
     if (groupNames[group.key]) return groupNames[group.key];

@@ -115,7 +115,7 @@ const NAV_GROUPS = [
         icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />,
       },
       {
-        id: "tier-limits", label: "Tier Limits", path: "/settings/tier-limits", superAdminOnly: true,
+        id: "tier-limits", label: "Tier Limits", path: "/settings/tier-limits", superAdminOnly: true, enterpriseOnly: true,
         icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />,
       },
     ],
@@ -212,8 +212,8 @@ export default function AppLayout() {
                   {isOpen && (
                     <div className="mt-0.5 mb-3">
                       {group.items.filter(item => {
-                        if (item.superAdminOnly) return user?.id === 0;
                         if (item.enterpriseOnly && licenseType !== "enterprise") return false;
+                        if (item.superAdminOnly) return user?.id === 0;
                         if (item.adminOnly) return user?.role === "admin";
                         if (item.managerOnly) return user?.role === "admin" || user?.role === "manager";
                         return true;

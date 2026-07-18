@@ -59,16 +59,23 @@ router.post("/workspaces/:workspaceId/agents", async (req, res) => {
 router.put("/workspaces/:workspaceId/agents/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { name, description, systemPrompt, connectorIds, triggerType, cronExpression, enabled, visualize } = req.body;
+    const { name, slug, description, group, nextAgent, nextAgentCondition, chains, systemPrompt, workflow, connectorIds, triggerType, cronExpression, enabled, params, visualize } = req.body;
     const data = {};
-    if (name           !== undefined) data.name           = name.trim();
-    if (description    !== undefined) data.description    = description?.trim() || null;
-    if (systemPrompt   !== undefined) data.systemPrompt   = systemPrompt?.trim() || null;
-    if (connectorIds   !== undefined) data.connectorIds   = JSON.stringify(connectorIds);
-    if (triggerType    !== undefined) data.triggerType    = triggerType;
-    if (cronExpression !== undefined) data.cronExpression = cronExpression || null;
-    if (enabled        !== undefined) data.enabled        = enabled;
-    if (visualize      !== undefined) data.visualize      = visualize === true;
+    if (name                !== undefined) data.name                = name.trim();
+    if (slug                !== undefined) data.slug                = slug?.trim() || null;
+    if (description         !== undefined) data.description         = description?.trim() || null;
+    if (group               !== undefined) data.group               = group?.trim() || null;
+    if (nextAgent           !== undefined) data.nextAgent           = nextAgent?.trim() || null;
+    if (nextAgentCondition  !== undefined) data.nextAgentCondition  = nextAgentCondition?.trim() || null;
+    if (chains              !== undefined) data.chains              = typeof chains === "string" ? chains : JSON.stringify(chains || []);
+    if (systemPrompt        !== undefined) data.systemPrompt        = systemPrompt?.trim() || null;
+    if (workflow            !== undefined) data.workflow            = typeof workflow === "string" ? workflow : JSON.stringify(workflow || []);
+    if (connectorIds        !== undefined) data.connectorIds        = JSON.stringify(connectorIds);
+    if (triggerType         !== undefined) data.triggerType         = triggerType;
+    if (cronExpression      !== undefined) data.cronExpression      = cronExpression || null;
+    if (enabled             !== undefined) data.enabled             = enabled;
+    if (params              !== undefined) data.params              = typeof params === "string" ? params : JSON.stringify(params || []);
+    if (visualize           !== undefined) data.visualize           = visualize === true;
     const agent = await req.db.agent.update({ where: { id }, data });
     scheduler.scheduleAgent(agent, req.db);
     res.json({ agent });

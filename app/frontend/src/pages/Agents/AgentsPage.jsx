@@ -314,7 +314,7 @@ export default function AgentsPage() {
         setAgents(prev => prev.map(a => a.id === studioAgent.id ? { ...a, ...data.agent } : a));
       }
       setStudioAgent(null);
-    } catch { /* silent */ }
+    } catch (e) { alert(e.response?.data?.error || e.message || "Failed to save agent"); }
     setSaving(false);
   }
 

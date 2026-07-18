@@ -13,7 +13,8 @@ const GDRIVE_SCOPES = [
   "https://www.googleapis.com/auth/userinfo.email",
 ];
 
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+const FRONTEND_URL  = process.env.FRONTEND_URL        || "http://localhost:5000";
+const CALLBACK_BASE = process.env.OAUTH_CALLBACK_BASE || "http://localhost:5001";
 
 function generateSlug(name) {
   return (name || "").toLowerCase().replace(/[^a-z0-9]/g, "") || "connector";
@@ -24,6 +25,13 @@ async function uniqueSlug(db, base) {
   let slug = base, suffix = 2;
   while (await db.connector.findUnique({ where: { slug } })) slug = `${base}${suffix++}`;
   return slug;
+}
+
+async function uniqueName(db, base) {
+  if (!base) base = "connector";
+  let name = base, suffix = 1;
+  while (await db.connector.findFirst({ where: { name } })) name = `${base}-${suffix++}`;
+  return name;
 }
 
 async function workspaceRedirect(db, workspaceId, type, success) {
@@ -147,14 +155,13 @@ router.get("/gmail/callback", async (req, res) => {
         data:  { authConfig, status: "active", lastTestedAt: new Date() }
       });
     } else {
-      const baseSlug = connectionSlug?.trim().toLowerCase().replace(/[^a-z0-9]/g, "") || generateSlug("gmail" + email);
-      const slug = await uniqueSlug(db, baseSlug);
+      const finalName = await uniqueName(db, connName);
       await db.connector.create({
         data: {
           workspaceId,
-          name:       connName,
+          name:       finalName,
           type:       "gmail",
-          slug,
+          slug:       finalName,
           config:     JSON.stringify({ email }),
           authConfig,
           status:     "active",
@@ -232,13 +239,13 @@ router.get("/gdrive/callback", async (req, res) => {
         data:  { authConfig, status: "active", lastTestedAt: new Date() }
       });
     } else {
-      const baseSlug = connectionSlug?.trim().toLowerCase().replace(/[^a-z0-9]/g, "") || generateSlug("gdrive" + email);
-      const slug = await uniqueSlug(db, baseSlug);
+      const finalName = await uniqueName(db, connName);
       await db.connector.create({
         data: {
           workspaceId,
-          name:       connName,
+          name:       finalName,
           type:       "gdrive",
+          slug:       finalName,
           slug,
           config:     JSON.stringify({ email }),
           authConfig,
@@ -273,7 +280,6 @@ router.get("/onedrive/start", authenticate, requireManagerOrAdmin, async (req, r
   const clientId = await get(`oauth.onedrive.clientId.ws.${wsId}`);
   const tenantId = (await get(`oauth.onedrive.tenantId.ws.${wsId}`)) || "common";
   if (!clientId) return res.status(400).json({ error: "OneDrive not configured. Add credentials in Integrations." });
-  const CALLBACK_BASE = process.env.OAUTH_CALLBACK_BASE || "http://localhost:3001";
   const { connectionName = "", connectionSlug = "" } = req.query;
   const state = Buffer.from(JSON.stringify({ workspaceId: wsId, connectionName, connectionSlug })).toString("base64url");
   const params = new URLSearchParams({ client_id: clientId, response_type: "code", redirect_uri: `${CALLBACK_BASE}/api/oauth/onedrive/callback`, scope: "Files.Read.All offline_access User.Read", state });
@@ -292,8 +298,7 @@ router.get("/onedrive/callback", async (req, res) => {
     const clientId     = await get(`oauth.onedrive.clientId.ws.${workspaceId}`);
     const clientSecret = await get(`oauth.onedrive.clientSecret.ws.${workspaceId}`);
     const tenantId     = (await get(`oauth.onedrive.tenantId.ws.${workspaceId}`)) || "common";
-    const CALLBACK_BASE = process.env.OAUTH_CALLBACK_BASE || "http://localhost:3001";
-    const axios = require("axios");
+      const axios = require("axios");
     const { data: tokens } = await axios.post(`https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`,
       new URLSearchParams({ grant_type: "authorization_code", code, client_id: clientId, client_secret: clientSecret, redirect_uri: `${CALLBACK_BASE}/api/oauth/onedrive/callback`, scope: "Files.Read.All offline_access User.Read" }),
       { headers: { "Content-Type": "application/x-www-form-urlencoded" } });
@@ -304,9 +309,8 @@ router.get("/onedrive/callback", async (req, res) => {
     const existing = await db.connector.findFirst({ where: { workspaceId, type: "onedrive", name: email } });
     if (existing) await db.connector.update({ where: { id: existing.id }, data: { authConfig, config, status: "active", lastTestedAt: new Date() } });
     else {
-      const baseSlug = connectionSlug?.trim().toLowerCase().replace(/[^a-z0-9]/g, "") || generateSlug("onedrive" + email);
-      const slug = await uniqueSlug(db, baseSlug);
-      await db.connector.create({ data: { workspaceId, name: connectionName?.trim() || email, type: "onedrive", slug, config, authConfig, status: "active" } });
+      const finalName = await uniqueName(db, connectionName?.trim() || email);
+      await db.connector.create({ data: { workspaceId, name: finalName, type: "onedrive", slug: finalName, config, authConfig, status: "active" } });
     }
     res.redirect(await workspaceRedirect(req.db, workspaceId, "onedrive", true));
   } catch (err) { res.redirect(`${FRONTEND_URL}?oauth_error=${encodeURIComponent(err.message)}`); }
@@ -329,7 +333,6 @@ router.get("/dropbox/start", authenticate, requireManagerOrAdmin, async (req, re
   const get = async key => (await req.db.setting.findUnique({ where: { key } }))?.value;
   const appKey = await get(`oauth.dropbox.appKey.ws.${wsId}`);
   if (!appKey) return res.status(400).json({ error: "Dropbox not configured. Add credentials in Integrations." });
-  const CALLBACK_BASE = process.env.OAUTH_CALLBACK_BASE || "http://localhost:3001";
   const { connectionName = "", connectionSlug = "" } = req.query;
   const state = Buffer.from(JSON.stringify({ workspaceId: wsId, connectionName, connectionSlug })).toString("base64url");
   const params = new URLSearchParams({ client_id: appKey, response_type: "code", redirect_uri: `${CALLBACK_BASE}/api/oauth/dropbox/callback`, token_access_type: "offline", state });
@@ -347,8 +350,7 @@ router.get("/dropbox/callback", async (req, res) => {
     const get = async key => (await db.setting.findUnique({ where: { key } }))?.value;
     const appKey    = await get(`oauth.dropbox.appKey.ws.${workspaceId}`);
     const appSecret = await get(`oauth.dropbox.appSecret.ws.${workspaceId}`);
-    const CALLBACK_BASE = process.env.OAUTH_CALLBACK_BASE || "http://localhost:3001";
-    const axios = require("axios");
+      const axios = require("axios");
     const { data: tokens } = await axios.post("https://api.dropboxapi.com/oauth2/token",
       new URLSearchParams({ grant_type: "authorization_code", code, client_id: appKey, client_secret: appSecret, redirect_uri: `${CALLBACK_BASE}/api/oauth/dropbox/callback` }),
       { headers: { "Content-Type": "application/x-www-form-urlencoded" } });
@@ -359,9 +361,8 @@ router.get("/dropbox/callback", async (req, res) => {
     const existing = await db.connector.findFirst({ where: { workspaceId, type: "dropbox", name: email } });
     if (existing) await db.connector.update({ where: { id: existing.id }, data: { authConfig, config, status: "active", lastTestedAt: new Date() } });
     else {
-      const baseSlug = connectionSlug?.trim().toLowerCase().replace(/[^a-z0-9]/g, "") || generateSlug("dropbox" + email);
-      const slug = await uniqueSlug(db, baseSlug);
-      await db.connector.create({ data: { workspaceId, name: connectionName?.trim() || email, type: "dropbox", slug, config, authConfig, status: "active" } });
+      const finalName = await uniqueName(db, connectionName?.trim() || email);
+      await db.connector.create({ data: { workspaceId, name: finalName, type: "dropbox", slug: finalName, config, authConfig, status: "active" } });
     }
     res.redirect(await workspaceRedirect(req.db, workspaceId, "dropbox", true));
   } catch (err) { res.redirect(`${FRONTEND_URL}?oauth_error=${encodeURIComponent(err.message)}`); }
@@ -384,7 +385,6 @@ router.get("/box/start", authenticate, requireManagerOrAdmin, async (req, res) =
   const get = async key => (await req.db.setting.findUnique({ where: { key } }))?.value;
   const clientId = await get(`oauth.box.clientId.ws.${wsId}`);
   if (!clientId) return res.status(400).json({ error: "Box not configured. Add credentials in Integrations." });
-  const CALLBACK_BASE = process.env.OAUTH_CALLBACK_BASE || "http://localhost:3001";
   const { connectionName = "", connectionSlug = "" } = req.query;
   const state = Buffer.from(JSON.stringify({ workspaceId: wsId, connectionName, connectionSlug })).toString("base64url");
   const params = new URLSearchParams({ client_id: clientId, response_type: "code", redirect_uri: `${CALLBACK_BASE}/api/oauth/box/callback`, state });
@@ -402,8 +402,7 @@ router.get("/box/callback", async (req, res) => {
     const get = async key => (await db.setting.findUnique({ where: { key } }))?.value;
     const clientId     = await get(`oauth.box.clientId.ws.${workspaceId}`);
     const clientSecret = await get(`oauth.box.clientSecret.ws.${workspaceId}`);
-    const CALLBACK_BASE = process.env.OAUTH_CALLBACK_BASE || "http://localhost:3001";
-    const axios = require("axios");
+      const axios = require("axios");
     const { data: tokens } = await axios.post("https://api.box.com/oauth2/token",
       new URLSearchParams({ grant_type: "authorization_code", code, client_id: clientId, client_secret: clientSecret, redirect_uri: `${CALLBACK_BASE}/api/oauth/box/callback` }),
       { headers: { "Content-Type": "application/x-www-form-urlencoded" } });
@@ -414,9 +413,8 @@ router.get("/box/callback", async (req, res) => {
     const existing = await db.connector.findFirst({ where: { workspaceId, type: "box", name: email } });
     if (existing) await db.connector.update({ where: { id: existing.id }, data: { authConfig, config, status: "active", lastTestedAt: new Date() } });
     else {
-      const baseSlug = connectionSlug?.trim().toLowerCase().replace(/[^a-z0-9]/g, "") || generateSlug("box" + email);
-      const slug = await uniqueSlug(db, baseSlug);
-      await db.connector.create({ data: { workspaceId, name: connectionName?.trim() || email, type: "box", slug, config, authConfig, status: "active" } });
+      const finalName = await uniqueName(db, connectionName?.trim() || email);
+      await db.connector.create({ data: { workspaceId, name: finalName, type: "box", slug: finalName, config, authConfig, status: "active" } });
     }
     res.redirect(await workspaceRedirect(req.db, workspaceId, "box", true));
   } catch (err) { res.redirect(`${FRONTEND_URL}?oauth_error=${encodeURIComponent(err.message)}`); }

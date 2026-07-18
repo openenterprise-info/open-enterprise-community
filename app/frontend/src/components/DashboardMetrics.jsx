@@ -171,7 +171,7 @@ function UsageBar({ label, used, limit, formatUsed, formatLimit }) {
 function InstanceUsageSection({ usage }) {
   if (!usage) return null;
   return (
-    <div className="w-1/2">
+    <div className="w-full">
       <SectionTitle>Instance Usage</SectionTitle>
       <div className="bg-white rounded-xl border border-indigo/20 overflow-hidden">
         <div className="px-5 py-3 bg-indigo/5 border-b border-indigo/10 flex items-center justify-between">

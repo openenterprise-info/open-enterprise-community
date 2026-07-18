@@ -22,7 +22,7 @@ async function makeOAuth2Client(db, workspaceId, callbackPath = "/api/oauth/gmai
   const { clientId: dbId, clientSecret: dbSecret } = await getGoogleCredentials(db, workspaceId);
   const clientId     = overrides.clientId     || dbId;
   const clientSecret = overrides.clientSecret || dbSecret;
-  const callbackBase = process.env.OAUTH_CALLBACK_BASE || "http://localhost:3001";
+  const callbackBase = process.env.OAUTH_CALLBACK_BASE || "http://localhost:5001";
   return new google.auth.OAuth2(clientId, clientSecret, `${callbackBase}${callbackPath}`);
 }
 

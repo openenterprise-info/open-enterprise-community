@@ -180,7 +180,7 @@ export default function AgentStudio({ initialAgent, connectors = [], agents = []
   function set(key, val) { setForm(f => ({ ...f, [key]: val })); }
 
   const [slugTaken, setSlugTaken] = useState(false);
-  const canSave = form.name.trim() && form.slug.trim() && form.systemPrompt.trim() &&
+  const canSave = form.name.trim() && form.slug.trim() &&
                   (form.triggerType !== "scheduled" || form.cronExpression.trim()) && !slugTaken;
 
   return (

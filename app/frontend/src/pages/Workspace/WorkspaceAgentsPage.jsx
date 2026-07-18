@@ -8,7 +8,6 @@ import AgentStudio from "../../components/AgentStudio";
 import { Spinner, EmptyState } from "../../components/ui";
 import { useAuth } from "../../context/AuthContext";
 import { TEMPLATES } from "../../utils/agentTemplates";
-import { AgentSharingSection } from "../../components/WorkspaceDrawer";
 
 function yamlToAgentJson(y) {
   return {
@@ -383,7 +382,6 @@ export default function WorkspaceAgentsPage() {
   const [importWarning, setImportWarning] = useState("");
   const [pendingApprovals, setPendingApprovals] = useState(0);
   const [showTemplates, setShowTemplates] = useState(false);
-  const [agentSharingEnabled, setAgentSharingEnabled] = useState(false);
   const uploadRef                       = useRef(null);
 
   useEffect(() => {
@@ -397,9 +395,6 @@ export default function WorkspaceAgentsPage() {
     return () => clearInterval(id);
   }, [slug]);
 
-  useEffect(() => {
-    api.get("/features").then(r => setAgentSharingEnabled(r.data.agentSharing !== false)).catch(() => {});
-  }, []);
 
   useEffect(() => {
     if (!slug) return;
@@ -488,7 +483,7 @@ export default function WorkspaceAgentsPage() {
     setStudioAgent({
       isNew:          true,
       name:           tpl.name,
-      slug:           tpl.slug || "",
+      slug:           tpl.slug || tpl.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
       description:    tpl.description,
       systemPrompt:   tpl.systemPrompt,
       connectorIds:   "[]",
@@ -534,17 +529,21 @@ export default function WorkspaceAgentsPage() {
     setSaving(true);
     try {
       const payload = {
-        name:           form.name,
-        description:    form.description || null,
-        systemPrompt:   form.systemPrompt || null,
-        connectorIds:   form.connectorIds || [],
-        triggerType:    form.triggerType,
-        cronExpression: form.cronExpression || null,
-        enabled:        form.enabled,
-        visualize:      form.visualize || false,
-        workflow:       form.steps || [],
-        params:         form.params || [],
-        chains:         form.chains || [],
+        name:               form.name,
+        slug:               form.slug || null,
+        description:        form.description || null,
+        group:              form.group || null,
+        systemPrompt:       form.systemPrompt || null,
+        connectorIds:       form.connectorIds || [],
+        triggerType:        form.triggerType,
+        cronExpression:     form.cronExpression || null,
+        enabled:            form.enabled,
+        visualize:          form.visualize || false,
+        workflow:           form.steps || [],
+        params:             form.params || [],
+        chains:             form.chains || [],
+        nextAgent:          form.nextAgent || null,
+        nextAgentCondition: form.nextAgentCondition || null,
       };
       if (studioAgent.isNew) {
         const { data } = await api.post(`/workspaces/${slug}/agents`, payload);
@@ -554,7 +553,7 @@ export default function WorkspaceAgentsPage() {
         setAgents(prev => prev.map(a => a.id === studioAgent.id ? { ...a, ...data.agent } : a));
       }
       setStudioAgent(null);
-    } catch { /* silent */ }
+    } catch (e) { alert(e.response?.data?.error || e.message || "Failed to save agent"); }
     setSaving(false);
   }
 
@@ -823,11 +822,6 @@ export default function WorkspaceAgentsPage() {
             </div>
           )}
 
-          {agentSharingEnabled && workspace && (
-            <div className="border border-gray-200 rounded-xl p-5">
-              <AgentSharingSection ws={workspace} />
-            </div>
-          )}
         </div>
       </div>
 

@@ -552,7 +552,7 @@ function ChatSettingsTab({ ws, setWs, setError, onUpdated }) {
 
 // ── Agents tab ────────────────────────────────────────────────────────────────
 
-function AgentsTab({ ws, setWs, setError, onUpdated, agentSharingEnabled = true }) {
+function AgentsTab({ ws, setWs, setError, onUpdated, agentSharingEnabled = false }) {
   const [maxRounds, setMaxRounds]         = useState(ws.defaultAgentMaxRounds ?? 25);
   const [maxChainDepth, setMaxChainDepth] = useState(ws.maxChainDepth ?? 5);
   const [memoryEnabled, setMemoryEnabled] = useState(ws.agentMemoryEnabled ?? false);
@@ -1193,7 +1193,7 @@ export default function WorkspaceDrawer({ workspaceId, mode = "chat", initialTab
   const [loading, setLoading]   = useState(true);
   const [tab, setTab]           = useState(defaultTab);
   const [error, setError]       = useState("");
-  const [features, setFeatures] = useState({ kbSharing: true, agentSharing: true });
+  const [features, setFeatures] = useState({ kbSharing: false, agentSharing: false });
 
   useEffect(() => {
     Promise.all([
