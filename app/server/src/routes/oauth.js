@@ -13,8 +13,8 @@ const GDRIVE_SCOPES = [
   "https://www.googleapis.com/auth/userinfo.email",
 ];
 
-const FRONTEND_URL  = process.env.FRONTEND_URL        || "http://localhost:5000";
-const CALLBACK_BASE = process.env.OAUTH_CALLBACK_BASE || "http://localhost:5001";
+const FRONTEND_URL  = process.env.FRONTEND_URL        || "http://localhost:3000";
+const CALLBACK_BASE = process.env.OAUTH_CALLBACK_BASE || "http://localhost:3001";
 
 function generateSlug(name) {
   return (name || "").toLowerCase().replace(/[^a-z0-9]/g, "") || "connector";

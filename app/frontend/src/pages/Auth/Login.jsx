@@ -51,8 +51,8 @@ const FEATURES = [
       </svg>
     ),
     label: "Phase 5",
-    title: "AI Platform",
-    desc: "Run your entire enterprise on AI — memory, marketplace, and beyond.",
+    title: "AI Ecosystem",
+    desc: "Connect memory, marketplace, governance, integrations, and everything that powers enterprise AI.",
   },
 ];
 

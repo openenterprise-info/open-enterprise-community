@@ -3,8 +3,8 @@ const jwt    = require("jsonwebtoken");
 const axios  = require("axios");
 const { authenticate, requireAdmin } = require("../middleware/auth");
 
-const FRONTEND_URL  = process.env.FRONTEND_URL        || "http://localhost:5000";
-const CALLBACK_BASE = process.env.OAUTH_CALLBACK_BASE || "http://localhost:5001";
+const FRONTEND_URL  = process.env.FRONTEND_URL        || "http://localhost:3000";
+const CALLBACK_BASE = process.env.OAUTH_CALLBACK_BASE || "http://localhost:3001";
 const CALLBACK_URL  = `${CALLBACK_BASE}/api/sso/callback`;
 
 const PROVIDERS = {
