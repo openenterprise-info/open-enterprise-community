@@ -2,6 +2,8 @@
 
 Lightweight, open-source enterprise AI platform. Workspaces, Agents, Connectors and RAG, self-hosted. Single Docker deploy.
 
+[![Discord](https://img.shields.io/badge/Discord-Join%20Community-5865F2?logo=discord&logoColor=white)](https://discord.gg/vWsZ24Msn)
+
 Licensed under **[Apache-2.0](LICENSE)** — free to use, modify, and deploy for any purpose, including commercial. No usage limits, no telemetry, no call-home. Self-host it on your own infrastructure and own your data completely.
 
 

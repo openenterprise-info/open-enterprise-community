@@ -248,4 +248,5 @@ app.listen(PORT, async () => {
   console.log(`Open Enterprise server running on port ${PORT}`);
   await recoverPendingJobs();
   await scheduler.init(prisma);
+  try { await require("./telemetry/bootstrap")(prisma); } catch {}
 });
