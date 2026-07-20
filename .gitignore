@@ -1,8 +1,6 @@
 # Commercial edition (never committed to community repo)
 app/commercial/
 
-# Telemetry (local only, never committed)
-app/server/src/telemetry/
 
 # Scripts (local only)
 release.sh
