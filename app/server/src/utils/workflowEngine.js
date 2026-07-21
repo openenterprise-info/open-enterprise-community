@@ -1,3 +1,12 @@
+function applyParams(template, paramDefs, paramValues) {
+  let result = template || "";
+  for (const p of (paramDefs || [])) {
+    const val = String(paramValues?.[p.name] ?? p.default ?? "");
+    result = result.split(`{{${p.name}}}`).join(val);
+  }
+  return result;
+}
+
 // Builds the full system prompt by combining the preamble (systemPrompt)
 // with step_1 / step_2 / step_3 sections from the workflow steps field.
 // If no steps are defined, returns the raw systemPrompt unchanged.
@@ -22,4 +31,4 @@ function buildSystemPrompt(agent) {
   return parts.join("\n\n");
 }
 
-module.exports = { buildSystemPrompt };
+module.exports = { buildSystemPrompt, applyParams };

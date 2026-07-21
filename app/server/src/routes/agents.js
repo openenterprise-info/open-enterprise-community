@@ -66,7 +66,7 @@ router.put("/workspaces/:workspaceId/agents/:id", async (req, res) => {
     if (description         !== undefined) data.description         = description?.trim() || null;
     if (group               !== undefined) data.group               = group?.trim() || null;
     if (nextAgent           !== undefined) data.nextAgent           = nextAgent?.trim() || null;
-    if (nextAgentCondition  !== undefined) data.nextAgentCondition  = nextAgentCondition?.trim() || null;
+    if (nextAgentCondition  !== undefined) data.nextAgentCondition  = data.nextAgent ? (nextAgentCondition?.trim() || null) : null;
     if (chains              !== undefined) data.chains              = typeof chains === "string" ? chains : JSON.stringify(chains || []);
     if (systemPrompt        !== undefined) data.systemPrompt        = systemPrompt?.trim() || null;
     if (workflow            !== undefined) data.workflow            = typeof workflow === "string" ? workflow : JSON.stringify(workflow || []);

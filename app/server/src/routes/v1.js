@@ -9,7 +9,7 @@ const { similaritySearch, deleteDocumentChunks }      = require("../utils/vector
 const { getLLMClient, getSetting }                    = require("../providers/llm");
 const { getAnthropicToolDefinitions, getToolDefinitions, executeTool } = require("../utils/tools/registry");
 const { canRunAgent, incrementAgentRun, getTierFromDB } = require("../utils/tier");
-const { buildSystemPrompt }                           = require("../utils/workflowEngine");
+const { buildSystemPrompt, applyParams }              = require("../utils/workflowEngine");
 const { maybeChain }                                  = require("../utils/agentChain");
 const ingestionQueue                                  = require("../utils/ingestionQueue");
 
@@ -114,6 +114,7 @@ router.get("/agents", async (req, res) => {
   res.json({
     agents: agents.map(a => ({
       ...a,
+      nextAgentCondition: a.nextAgent ? a.nextAgentCondition : null,
       chains:       a.chains       ? JSON.parse(a.chains)       : [],
       connectorIds: a.connectorIds ? JSON.parse(a.connectorIds) : [],
       params:       a.params       ? JSON.parse(a.params)       : [],
@@ -526,6 +527,7 @@ router.get("/workspaces/:workspaceSlug/agents", async (req, res) => {
   res.json({
     agents: agents.map(a => ({
       ...a,
+      nextAgentCondition: a.nextAgent ? a.nextAgentCondition : null,
       chains:       a.chains       ? JSON.parse(a.chains)       : [],
       connectorIds: a.connectorIds ? JSON.parse(a.connectorIds) : [],
       params:       a.params       ? JSON.parse(a.params)       : [],
@@ -567,8 +569,10 @@ router.post("/workspaces/:workspaceSlug/agents/:agentSlug/run", async (req, res)
   }
   await incrementAgentRun(req.db);
 
+  const { input, params: runParams } = req.body;
+
   const run = await req.db.agentRun.create({
-    data: { agentId: agent.id, status: "running", triggerType: "api", input: req.body.input || null },
+    data: { agentId: agent.id, status: "running", triggerType: "api", input: input || null },
   });
 
   res.setHeader("Content-Type", "text/event-stream");
@@ -581,8 +585,10 @@ router.post("/workspaces/:workspaceSlug/agents/:agentSlug/run", async (req, res)
       ? await req.db.connector.findMany({ where: { id: { in: connectorIds }, status: "active" } })
       : [];
 
-    const systemPrompt = buildSystemPrompt(agent) || "You are a helpful AI agent. Complete the task using the available tools.";
-    const userMessage  = req.body.input?.trim() || "Execute the agent task now using the available tools. Do not ask for clarification.";
+    const paramDefs    = JSON.parse(agent.params || "[]");
+    const basePrompt   = buildSystemPrompt(agent) || "You are a helpful AI agent. Complete the task using the available tools.";
+    const systemPrompt = applyParams(basePrompt, paramDefs, runParams || {});
+    const userMessage  = input?.trim() || "Execute the agent task now using the available tools. Do not ask for clarification.";
 
     const { provider, client } = await getLLMClient();
     const model = (await getSetting("llm_model")) || process.env.OPENAI_MODEL || "gpt-4o";

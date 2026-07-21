@@ -513,7 +513,7 @@ export default function AgentsChatPanel({ slug, isManager, onClose, onApprovalDe
       description:        y.description || "",
       group:              y.group || "",
       nextAgent:          y.next_agent || "",
-      nextAgentCondition: y.next_agent_condition || "on_critical",
+      nextAgentCondition: y.next_agent_condition || null,
       chains:             (y.chains || []).map(c => ({ condition: c.condition || "always", nextAgent: c.next_agent || "", triggerType: c.trigger_type || "automatic" })),
       systemPrompt:       y.instructions || "",
       steps:              y.steps || [],

@@ -394,7 +394,15 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "input": { "type": "string", "description": "Optional instruction to the agent", "example": "Run" }
+                  "input": { "type": "string", "description": "Optional instruction or task for the agent" },
+                  "params": { "type": "object", "description": "Parameter values to inject into {{placeholder}} fields in the agent's system prompt", "additionalProperties": { "type": "string" } }
+                },
+                "example": {
+                  "input": "Run",
+                  "params": {
+                    "customer": "Demo Corp",
+                    "date": "2026-07-21"
+                  }
                 }
               }
             }

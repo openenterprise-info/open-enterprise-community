@@ -452,7 +452,7 @@ router.post("/:slug/agents", authenticate, async (req, res) => {
         workflow:           workflow ? JSON.stringify(workflow) : null,
         group:              group?.trim() || null,
         nextAgent:          nextAgent?.trim() || null,
-        nextAgentCondition: nextAgentCondition?.trim() || null,
+        nextAgentCondition: nextAgent?.trim() ? (nextAgentCondition?.trim() || null) : null,
         chains:             chains?.length ? JSON.stringify(chains) : null,
         params:         JSON.stringify(params || []),
         connectorIds:   JSON.stringify(connectorIds || []),
@@ -489,7 +489,7 @@ router.put("/:slug/agents/:id", authenticate, async (req, res) => {
     if (workflow            !== undefined) data.workflow            = workflow ? JSON.stringify(workflow) : null;
     if (group               !== undefined) data.group               = group?.trim() || null;
     if (nextAgent           !== undefined) data.nextAgent           = nextAgent?.trim() || null;
-    if (nextAgentCondition  !== undefined) data.nextAgentCondition  = nextAgentCondition?.trim() || null;
+    if (nextAgentCondition  !== undefined) data.nextAgentCondition  = data.nextAgent ? (nextAgentCondition?.trim() || null) : null;
     if (chains              !== undefined) data.chains              = chains?.length ? JSON.stringify(chains) : null;
     if (params         !== undefined) data.params         = JSON.stringify(params);
     if (connectorIds   !== undefined) data.connectorIds   = JSON.stringify(connectorIds);

@@ -172,7 +172,7 @@ export default function AgentStudio({ initialAgent, connectors = [], agents = []
     enabled:            initialAgent?.enabled !== false,
     params:             safeArray(initialAgent?.params),
     nextAgent:          initialAgent?.nextAgent          || "",
-    nextAgentCondition: initialAgent?.nextAgentCondition || "on_critical",
+    nextAgentCondition: initialAgent?.nextAgentCondition || null,
     chains:             safeArray(initialAgent?.chains),
     visualize:          initialAgent?.visualize          || false,
   });
