@@ -9,6 +9,18 @@ const SUPPORTED_TYPES = [
   "rest-api", "gmail", "slack", "jira", "confluence", "notion", "hubspot",
   "freshdesk", "zendesk", "github", "zoho-mail", "gdrive", "ssh",
   "onedrive", "dropbox", "box",
+  // Search
+  "perplexity-search", "google-search", "bing-search",
+  // OCR
+  "azure-vision", "google-vision", "aws-textract", "tesseract-ocr",
+  // Image generation
+  "openai-image", "flux", "stable-diffusion", "ideogram",
+  // Speech & audio
+  "elevenlabs", "openai-tts", "azure-speech", "google-tts",
+  // Video generation
+  "runway", "kling", "pika",
+  // Music generation
+  "suno", "udio",
 ];
 
 function generateSlug(name) {

@@ -42,6 +42,12 @@ const CATEGORIES = [
   { key: "Real Estate",           label: "Real Estate"      },
   { key: "Operations",            label: "Operations"       },
   { key: "MCP",                   label: "MCP Servers"      },
+  { key: "Search",                label: "Search"           },
+  { key: "OCR",                   label: "OCR"              },
+  { key: "Image Generation",      label: "Image Gen"        },
+  { key: "Speech & Audio",        label: "Speech & Audio"   },
+  { key: "Video Generation",      label: "Video Gen"        },
+  { key: "Music Generation",      label: "Music Gen"        },
 ];
 
 function fieldPlaceholder(f) {

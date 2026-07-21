@@ -119,6 +119,7 @@ async function run(agentSpec, llmConfig, connectors, hooks = {}) {
         const toolResults = [];
         for (const tb of toolUseBlocks) {
           const result = await execTool(tb.name, tb.input, connectors);
+          hooks.onToolResult?.(friendlyToolName(tb.name, connectors), String(result));
           toolResults.push({ type: "tool_result", tool_use_id: tb.id, content: String(result) });
         }
         msgs.push({ role: "user", content: toolResults });
@@ -166,6 +167,7 @@ async function run(agentSpec, llmConfig, connectors, hooks = {}) {
           allToolCalls.push(name);
           onToolCall?.(name);
           const result = await execTool(tc.function.name, args, connectors);
+          hooks.onToolResult?.(name, String(result));
           messages.push({ role: "tool", tool_call_id: tc.id, content: String(result) });
         }
 

@@ -64,6 +64,101 @@ const SMTP = JSON.stringify([
   { key: "pass",   label: "App Password", type: "password", required: true },
 ]);
 
+// ── Field templates — new capability categories ──────────────────────────────
+
+const APIKEY = JSON.stringify([
+  { key: "apiKey", label: "API Key", type: "password", required: true },
+]);
+
+const PERPLEXITY_SEARCH = JSON.stringify([
+  { key: "apiKey", label: "API Key", type: "password", required: true, placeholder: "pplx-..." },
+]);
+
+const GOOGLE_SEARCH = JSON.stringify([
+  { key: "apiKey",          label: "API Key",           type: "password", required: true },
+  { key: "searchEngineId",  label: "Search Engine ID (cx)", type: "text", required: true },
+]);
+
+const BING_SEARCH = JSON.stringify([
+  { key: "apiKey", label: "Ocp-Apim-Subscription-Key", type: "password", required: true },
+]);
+
+const AZURE_VISION = JSON.stringify([
+  { key: "endpoint", label: "Endpoint", type: "text",     required: true, placeholder: "https://YOUR_RESOURCE.cognitiveservices.azure.com" },
+  { key: "apiKey",   label: "API Key",  type: "password", required: true },
+]);
+
+const GOOGLE_VISION = JSON.stringify([
+  { key: "apiKey", label: "API Key", type: "password", required: true },
+]);
+
+const AWS_TEXTRACT = JSON.stringify([
+  { key: "accessKeyId",     label: "Access Key ID",     type: "text",     required: true },
+  { key: "secretAccessKey", label: "Secret Access Key", type: "password", required: true },
+  { key: "region",          label: "Region",            type: "text",     required: true, placeholder: "us-east-1" },
+]);
+
+const TESSERACT_OCR = JSON.stringify([
+  { key: "baseUrl", label: "Service URL", type: "text", required: true, placeholder: "http://localhost:8884" },
+]);
+
+const OPENAI_IMAGE = JSON.stringify([
+  { key: "apiKey", label: "OpenAI API Key", type: "password", required: true },
+  { key: "model",  label: "Model",          type: "text",     required: false, placeholder: "dall-e-3" },
+]);
+
+const FLUX_IMAGE = JSON.stringify([
+  { key: "apiKey", label: "Together AI API Key", type: "password", required: true },
+  { key: "model",  label: "Model",               type: "text",     required: false, placeholder: "black-forest-labs/FLUX.1-schnell-Free" },
+]);
+
+const STABILITY_IMAGE = JSON.stringify([
+  { key: "apiKey", label: "Stability AI API Key", type: "password", required: true },
+]);
+
+const IDEOGRAM_IMAGE = JSON.stringify([
+  { key: "apiKey", label: "Ideogram API Key", type: "password", required: true },
+]);
+
+const ELEVENLABS = JSON.stringify([
+  { key: "apiKey",  label: "API Key",          type: "password", required: true },
+  { key: "voiceId", label: "Default Voice ID", type: "text",     required: false, placeholder: "EXAVITQu4vr4xnSDxMaL" },
+]);
+
+const OPENAI_TTS = JSON.stringify([
+  { key: "apiKey", label: "OpenAI API Key",  type: "password", required: true },
+  { key: "voice",  label: "Default Voice",   type: "text",     required: false, placeholder: "alloy" },
+]);
+
+const AZURE_SPEECH = JSON.stringify([
+  { key: "subscriptionKey", label: "Subscription Key", type: "password", required: true },
+  { key: "region",          label: "Region",           type: "text",     required: true, placeholder: "eastus" },
+]);
+
+const GOOGLE_TTS = JSON.stringify([
+  { key: "apiKey", label: "API Key", type: "password", required: true },
+]);
+
+const RUNWAY_FIELDS = JSON.stringify([
+  { key: "apiKey", label: "Runway API Key", type: "password", required: true },
+]);
+
+const KLING_FIELDS = JSON.stringify([
+  { key: "apiKey", label: "Kling API Key", type: "password", required: true },
+]);
+
+const PIKA_FIELDS = JSON.stringify([
+  { key: "apiKey", label: "Pika API Key", type: "password", required: true },
+]);
+
+const SUNO_FIELDS = JSON.stringify([
+  { key: "apiKey", label: "Suno API Key", type: "password", required: true },
+]);
+
+const UDIO_FIELDS = JSON.stringify([
+  { key: "apiKey", label: "Udio API Key", type: "password", required: true },
+]);
+
 // ── Adapter type overrides ───────────────────────────────────────────────────
 
 const DB_KEYS = new Set([
@@ -102,6 +197,32 @@ const adapterMap = {
   notion: ["notion", HTTP], hubspot: ["hubspot", HTTP],
   freshdesk: ["freshdesk", HTTP], zendesk: ["zendesk", HTTP],
   onedrive: ["onedrive", HTTP], dropbox: ["dropbox", HTTP], box: ["box", HTTP],
+  // Search
+  "perplexity-search": ["perplexity-search", PERPLEXITY_SEARCH],
+  "google-search":     ["google-search",     GOOGLE_SEARCH],
+  "bing-search":       ["bing-search",       BING_SEARCH],
+  // OCR
+  "azure-vision":  ["azure-vision",  AZURE_VISION],
+  "google-vision": ["google-vision", GOOGLE_VISION],
+  "aws-textract":  ["aws-textract",  AWS_TEXTRACT],
+  "tesseract-ocr": ["tesseract-ocr", TESSERACT_OCR],
+  // Image generation
+  "openai-image":     ["openai-image",     OPENAI_IMAGE],
+  "flux":             ["flux",             FLUX_IMAGE],
+  "stable-diffusion": ["stable-diffusion", STABILITY_IMAGE],
+  "ideogram":         ["ideogram",         IDEOGRAM_IMAGE],
+  // Speech
+  "elevenlabs":   ["elevenlabs",   ELEVENLABS],
+  "openai-tts":   ["openai-tts",   OPENAI_TTS],
+  "azure-speech": ["azure-speech", AZURE_SPEECH],
+  "google-tts":   ["google-tts",   GOOGLE_TTS],
+  // Video generation
+  "runway": ["runway", RUNWAY_FIELDS],
+  "kling":  ["kling",  KLING_FIELDS],
+  "pika":   ["pika",   PIKA_FIELDS],
+  // Music generation
+  "suno": ["suno", SUNO_FIELDS],
+  "udio": ["udio", UDIO_FIELDS],
 };
 
 // ── All 2654 connector types ─────────────────────────────────────────────────
@@ -747,6 +868,32 @@ const ALL = [
   { key: "apache-airflow",    label: "Apache Airflow",      color: "bg-green-600",   initial: "AF",  cat: "Data Integration" },
   { key: "prefect-io",        label: "Prefect",             color: "bg-blue-600",    initial: "PF",  cat: "Data Integration" },
   { key: "dagster",           label: "Dagster",             color: "bg-purple-600",  initial: "DG",  cat: "Data Integration" },
+  // Search
+  { key: "perplexity-search", label: "Perplexity Search",  color: "bg-blue-700",    initial: "PS",  cat: "Search" },
+  { key: "google-search",     label: "Google Search",      color: "bg-blue-500",    initial: "GS",  cat: "Search" },
+  { key: "bing-search",       label: "Bing Search",        color: "bg-teal-600",    initial: "BS",  cat: "Search" },
+  // OCR
+  { key: "azure-vision",  label: "Azure Computer Vision", color: "bg-blue-600",    initial: "AV",  cat: "OCR" },
+  { key: "google-vision", label: "Google Cloud Vision",   color: "bg-blue-500",    initial: "GV",  cat: "OCR" },
+  { key: "aws-textract",  label: "AWS Textract",          color: "bg-orange-600",  initial: "TX",  cat: "OCR" },
+  { key: "tesseract-ocr", label: "Tesseract OCR",         color: "bg-gray-700",    initial: "TS",  cat: "OCR" },
+  // Image Generation
+  { key: "openai-image",     label: "OpenAI Image (DALL-E)", color: "bg-gray-900",   initial: "OI",  cat: "Image Generation" },
+  { key: "flux",             label: "FLUX",                  color: "bg-gray-800",   initial: "FX",  cat: "Image Generation" },
+  { key: "stable-diffusion", label: "Stable Diffusion",      color: "bg-purple-700", initial: "SD",  cat: "Image Generation" },
+  { key: "ideogram",         label: "Ideogram",              color: "bg-blue-600",   initial: "IG",  cat: "Image Generation" },
+  // Speech & Audio
+  { key: "elevenlabs",   label: "ElevenLabs",        color: "bg-gray-900",    initial: "EL",  cat: "Speech & Audio" },
+  { key: "openai-tts",   label: "OpenAI TTS",        color: "bg-green-700",   initial: "OT",  cat: "Speech & Audio" },
+  { key: "azure-speech", label: "Azure Speech",      color: "bg-blue-600",    initial: "AZ",  cat: "Speech & Audio" },
+  { key: "google-tts",   label: "Google Text-to-Speech", color: "bg-blue-500", initial: "GT",  cat: "Speech & Audio" },
+  // Video Generation
+  { key: "runway", label: "Runway",  color: "bg-gray-900",    initial: "RW",  cat: "Video Generation" },
+  { key: "kling",  label: "Kling",   color: "bg-purple-700",  initial: "KL",  cat: "Video Generation" },
+  { key: "pika",   label: "Pika",    color: "bg-blue-600",    initial: "PK",  cat: "Video Generation" },
+  // Music Generation
+  { key: "suno", label: "Suno", color: "bg-gray-900",    initial: "SN",  cat: "Music Generation" },
+  { key: "udio", label: "Udio", color: "bg-purple-600",  initial: "UD",  cat: "Music Generation" },
 ];
 
 // ── Seed ─────────────────────────────────────────────────────────────────────
@@ -769,7 +916,8 @@ async function main() {
     });
   }
 
-  console.log(`Done. Live: ${live}, Soon: ${soon}, Total: ${ALL.length}`);
+  const dbTotal = await db.connectionMaster.count();
+  console.log(`Done. Upserted: ${ALL.length}, DB total: ${dbTotal}`);
 }
 
 main().catch(console.error).finally(() => db.$disconnect());

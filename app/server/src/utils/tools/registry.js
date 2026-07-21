@@ -26,6 +26,12 @@ const ldap           = require("./adapters/ldap");
 const graphql        = require("./adapters/graphql");
 const web3           = require("./adapters/web3");
 const mcpClient      = require("./adapters/mcp-client");
+const search         = require("./adapters/search");
+const ocr            = require("./adapters/ocr");
+const imageGen       = require("./adapters/image-gen");
+const speech         = require("./adapters/speech");
+const videoGen       = require("./adapters/video-gen");
+const musicGen       = require("./adapters/music-gen");
 
 const ADAPTERS = {
   // SQL databases
@@ -130,6 +136,32 @@ const ADAPTERS = {
   github:        github,
   "zoho-mail":   zohoMail,
   ssh:           ssh,
+  // Search
+  "perplexity-search": search,
+  "google-search":     search,
+  "bing-search":       search,
+  // OCR
+  "azure-vision":   ocr,
+  "google-vision":  ocr,
+  "aws-textract":   ocr,
+  "tesseract-ocr":  ocr,
+  // Image generation
+  "openai-image":      imageGen,
+  "flux":              imageGen,
+  "stable-diffusion":  imageGen,
+  "ideogram":          imageGen,
+  // Speech & audio
+  "elevenlabs":    speech,
+  "openai-tts":    speech,
+  "azure-speech":  speech,
+  "google-tts":    speech,
+  // Video generation
+  "runway": videoGen,
+  "kling":  videoGen,
+  "pika":   videoGen,
+  // Music generation
+  "suno":  musicGen,
+  "udio":  musicGen,
 };
 
 function getToolDefinitions(connectors) {

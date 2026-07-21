@@ -291,6 +291,133 @@
         "Authorization": "Bearer YOUR_TOKEN",
         "Content-Type": "application/json"
       }
+    },
+
+    // ── Search ───────────────────────────────────────────────────────────────
+
+    {
+      "connection_name": "Perplexity Search",
+      "connection_type": "perplexity-search",
+      "apiKey": "pplx-YOUR_KEY"
+    },
+    {
+      "connection_name": "Google Search",
+      "connection_type": "google-search",
+      "apiKey": "YOUR_GOOGLE_API_KEY",
+      "searchEngineId": "YOUR_CX_ID"
+    },
+    {
+      "connection_name": "Bing Search",
+      "connection_type": "bing-search",
+      "apiKey": "YOUR_BING_SUBSCRIPTION_KEY"
+    },
+
+    // ── OCR ──────────────────────────────────────────────────────────────────
+
+    {
+      "connection_name": "Azure Vision",
+      "connection_type": "azure-vision",
+      "endpoint": "https://YOUR_RESOURCE.cognitiveservices.azure.com",
+      "apiKey": "YOUR_AZURE_KEY"
+    },
+    {
+      "connection_name": "Google Vision",
+      "connection_type": "google-vision",
+      "apiKey": "YOUR_GOOGLE_API_KEY"
+    },
+    {
+      "connection_name": "AWS Textract",
+      "connection_type": "aws-textract",
+      "accessKeyId": "YOUR_ACCESS_KEY_ID",
+      "secretAccessKey": "YOUR_SECRET_KEY",
+      "region": "us-east-1"
+    },
+    {
+      "connection_name": "Tesseract OCR",
+      "connection_type": "tesseract-ocr",
+      "baseUrl": "http://localhost:8884"
+    },
+
+    // ── Image Generation ──────────────────────────────────────────────────────
+
+    {
+      "connection_name": "OpenAI Image",
+      "connection_type": "openai-image",
+      "apiKey": "sk-YOUR_OPENAI_KEY",
+      "model": "gpt-image-1"
+    },
+    {
+      "connection_name": "FLUX",
+      "connection_type": "flux",
+      "apiKey": "YOUR_TOGETHER_AI_KEY",
+      "model": "black-forest-labs/FLUX.1-schnell-Free"
+    },
+    {
+      "connection_name": "Stable Diffusion",
+      "connection_type": "stable-diffusion",
+      "apiKey": "YOUR_STABILITY_AI_KEY"
+    },
+    {
+      "connection_name": "Ideogram",
+      "connection_type": "ideogram",
+      "apiKey": "YOUR_IDEOGRAM_KEY"
+    },
+
+    // ── Speech & Audio ────────────────────────────────────────────────────────
+
+    {
+      "connection_name": "ElevenLabs",
+      "connection_type": "elevenlabs",
+      "apiKey": "YOUR_ELEVENLABS_KEY",
+      "voiceId": "EXAVITQu4vr4xnSDxMaL"
+    },
+    {
+      "connection_name": "OpenAI TTS",
+      "connection_type": "openai-tts",
+      "apiKey": "sk-YOUR_OPENAI_KEY",
+      "voice": "alloy"
+    },
+    {
+      "connection_name": "Azure Speech",
+      "connection_type": "azure-speech",
+      "subscriptionKey": "YOUR_AZURE_SPEECH_KEY",
+      "region": "eastus"
+    },
+    {
+      "connection_name": "Google TTS",
+      "connection_type": "google-tts",
+      "apiKey": "YOUR_GOOGLE_API_KEY"
+    },
+
+    // ── Video Generation ──────────────────────────────────────────────────────
+
+    {
+      "connection_name": "Runway",
+      "connection_type": "runway",
+      "apiKey": "YOUR_RUNWAY_KEY"
+    },
+    {
+      "connection_name": "Kling",
+      "connection_type": "kling",
+      "apiKey": "YOUR_KLING_KEY"
+    },
+    {
+      "connection_name": "Pika",
+      "connection_type": "pika",
+      "apiKey": "YOUR_PIKA_KEY"
+    },
+
+    // ── Music Generation ──────────────────────────────────────────────────────
+
+    {
+      "connection_name": "Suno",
+      "connection_type": "suno",
+      "apiKey": "YOUR_SUNO_KEY"
+    },
+    {
+      "connection_name": "Udio",
+      "connection_type": "udio",
+      "apiKey": "YOUR_UDIO_KEY"
     }
 
   ]

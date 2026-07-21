@@ -19,27 +19,36 @@ Usage:
   oe-runtime <agent.yaml> [options]
 
 Options:
-  --config <file>   Config file with LLM keys + connector creds  (default: oe-config.json)
-  --input  <text>   User message / context to pass to the agent
-  --help            Show this help
+  --config <file>      Config file with LLM keys + connector creds  (default: oe-config.json)
+  --input  <text>      User message / context to pass to the agent
+  --param  key=value   Set a param value (repeatable); substitutes {{key}} in the agent prompt
+  --help               Show this help
 
 Examples:
   oe-runtime security-monitor.yaml
   oe-runtime outbound-sales.yaml --config ~/my-config.json
   oe-runtime blog-publisher.yaml --input "publish topic: AI trends 2025"
+  oe-runtime logo-generator.yaml --param company_name="TechFlow" --param style="minimalist"
 `);
   process.exit(0);
 }
 
 if (!args.length || args.includes("--help") || args.includes("-h")) usage();
 
-const agentFile = args[0];
-let configFile  = "oe-config.json";
-let inputMsg    = null;
+const agentFile  = args[0];
+let configFile   = "oe-config.json";
+let inputMsg     = null;
+const paramValues = {};
 
 for (let i = 1; i < args.length; i++) {
   if (args[i] === "--config" && args[i + 1]) { configFile = args[++i]; continue; }
   if (args[i] === "--input"  && args[i + 1]) { inputMsg   = args[++i]; continue; }
+  if (args[i] === "--param"  && args[i + 1]) {
+    const pair = args[++i];
+    const eq   = pair.indexOf("=");
+    if (eq > 0) paramValues[pair.slice(0, eq)] = pair.slice(eq + 1);
+    continue;
+  }
 }
 
 // ── load files ───────────────────────────────────────────────────────────────
@@ -118,6 +127,7 @@ const agentSpec = {
   systemPrompt: agentYaml.systemPrompt || agentYaml.system_prompt || agentYaml.instructions || "",
   workflow:     agentYaml.steps        || agentYaml.workflow       || [],
   params:       agentYaml.params       || [],
+  paramValues:  paramValues,
   maxRounds:    agentYaml.maxRounds    || 25,
   input:        inputMsg,
 };
@@ -135,7 +145,8 @@ if (connectors.length) {
 console.log(`\n${line}\n`);
 
 engine.run(agentSpec, llmConfig, connectors, {
-  onToolCall: (name) => console.log(`  🔧  ${name}`),
+  onToolCall:   (name)         => console.log(`  🔧  ${name}`),
+  onToolResult: (name, result) => console.log(`      ↳ ${result.slice(0, 300)}${result.length > 300 ? "…" : ""}`),
   onDone: (output) => {
     console.log(`\n${line}\n`);
     console.log(output);
