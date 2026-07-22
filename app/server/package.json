@@ -10,10 +10,10 @@
     "db:push": "prisma db push",
     "db:seed-masters": "node scripts/seed-connection-masters.js",
     "build:bundle": "ncc build cli/index.js --out cli/bundle --external oracledb --external better-sqlite3 --external snowflake-sdk --external mssql",
-    "build:win":   "npm run build:bundle && node --experimental-sea-config sea-config.json && node scripts/inject-sea.js",
-    "build:linux": "npm run build:bundle && node --experimental-sea-config sea-config.json && node scripts/inject-sea.js",
-    "build:macos": "npm run build:bundle && node --experimental-sea-config sea-config.json && node scripts/inject-sea.js",
-    "build:all":   "npm run build:bundle && node --experimental-sea-config sea-config.json && node scripts/inject-sea.js"
+    "build:win":   "ncc build cli/index.js --out cli/bundle --external oracledb --external better-sqlite3 --external snowflake-sdk --external mssql && node --experimental-sea-config sea-config.json && node scripts/inject-sea.js",
+    "build:linux": "ncc build cli/index.js --out cli/bundle --external oracledb --external better-sqlite3 --external snowflake-sdk --external mssql && node --experimental-sea-config sea-config.json && node scripts/inject-sea.js",
+    "build:macos": "ncc build cli/index.js --out cli/bundle --external oracledb --external better-sqlite3 --external snowflake-sdk --external mssql && node --experimental-sea-config sea-config.json && node scripts/inject-sea.js",
+    "build:all":   "ncc build cli/index.js --out cli/bundle --external oracledb --external better-sqlite3 --external snowflake-sdk --external mssql && node --experimental-sea-config sea-config.json && node scripts/inject-sea.js"
   },
   "pkg": {
     "scripts": [

@@ -19,12 +19,12 @@ jobs:
           node-version: "22"
 
       - name: Install dependencies
-        working-directory: app/server
-        run: npm ci --ignore-scripts
+        working-directory: app
+        run: yarn install --frozen-lockfile --ignore-scripts
 
       - name: Build Windows runtime
         working-directory: app/server
-        run: npm run build:win
+        run: yarn build:win
 
       - name: Upload oe-runtime-win.exe
         uses: softprops/action-gh-release@v2
@@ -44,12 +44,12 @@ jobs:
           node-version: "22"
 
       - name: Install dependencies
-        working-directory: app/server
-        run: npm ci --ignore-scripts
+        working-directory: app
+        run: yarn install --frozen-lockfile --ignore-scripts
 
       - name: Build Linux runtime
         working-directory: app/server
-        run: npm run build:linux
+        run: yarn build:linux
 
       - name: Upload oe-runtime-linux and config example
         uses: softprops/action-gh-release@v2
@@ -71,12 +71,12 @@ jobs:
           node-version: "22"
 
       - name: Install dependencies
-        working-directory: app/server
-        run: npm ci --ignore-scripts
+        working-directory: app
+        run: yarn install --frozen-lockfile --ignore-scripts
 
       - name: Build macOS runtime
         working-directory: app/server
-        run: npm run build:macos
+        run: yarn build:macos
 
       - name: Upload oe-runtime-macos
         uses: softprops/action-gh-release@v2
