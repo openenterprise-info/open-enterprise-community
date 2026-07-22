@@ -1,6 +1,6 @@
 # Open Enterprise — Community Edition
 
-Lightweight, open-source enterprise AI platform. Workspaces, Agents, Connectors and RAG, self-hosted. Single Docker deploy.
+A **self-hosted AI agent runtime** built on **declarative YAML agents** — no LangChain, no LangGraph, no code. Define multi-step agent workflows in plain YAML, connect 2,500+ enterprise tools, and run agents anywhere with a single binary. Includes human approval gates, RAG, multi-LLM support, and a full agent marketplace. Apache-2.0.
 
 <a href="https://discord.gg/vWsZ24Msn"><img src="https://img.shields.io/badge/Discord-Join%20the%20Community-5865F2?style=for-the-badge&logo=discord&logoColor=white" height="50" /></a>
 
