@@ -1,0 +1,85 @@
+name: Build Runtime Binaries
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+
+  build-windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        working-directory: app/server
+        run: npm ci --ignore-scripts
+
+      - name: Build Windows runtime
+        working-directory: app/server
+        run: npm run build:win
+
+      - name: Upload oe-runtime-win.exe
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: app/server/cli/oe-runtime-win.exe
+
+  build-linux:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        working-directory: app/server
+        run: npm ci --ignore-scripts
+
+      - name: Build Linux runtime
+        working-directory: app/server
+        run: npm run build:linux
+
+      - name: Upload oe-runtime-linux and config example
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: |
+            app/server/cli/oe-runtime-linux
+            app/server/cli/oe-config.example.json
+
+  build-macos:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        working-directory: app/server
+        run: npm ci --ignore-scripts
+
+      - name: Build macOS runtime
+        working-directory: app/server
+        run: npm run build:macos
+
+      - name: Upload oe-runtime-macos
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: app/server/cli/oe-runtime-macos
