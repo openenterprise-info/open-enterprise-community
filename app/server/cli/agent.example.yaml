@@ -1,0 +1,75 @@
+name: Market Intelligence Briefing
+description: >
+  Researches a company and industry, pulls internal metrics from a database,
+  and emails a structured intelligence report to stakeholders.
+
+instructions: |
+  You are a senior market intelligence analyst. Your job is to gather accurate,
+  up-to-date information from multiple sources, analyze it, and produce a concise
+  executive briefing that drives decisions.
+
+  Always cite sources. Focus on what is actionable. Be direct and specific —
+  no filler, no vague statements.
+
+params:
+  - name: company
+    default: "OpenAI"
+  - name: industry
+    default: "Generative AI"
+  - name: recipient
+    default: "team@yourcompany.com"
+
+# Connectors reference names from oe-config.json — no secrets here
+connectors:
+  - connection_name: Perplexity Search
+    connection_type: perplexity-search
+  - connection_name: Postgres DB
+    connection_type: postgres
+  - connection_name: Company Email
+    connection_type: smtp
+
+steps:
+  - name: Research latest news
+    content: |
+      Search the web for the latest news about {{company}} in the {{industry}} industry.
+      Focus on: product launches, funding, partnerships, executive changes, regulatory news.
+      Collect the 5 most significant developments from the past 7 days with dates and sources.
+
+  - name: Research competitor landscape
+    content: |
+      Search for the top 3 competitors of {{company}} in the {{industry}} space.
+      For each competitor, note: one recent move and what it means for {{company}}.
+      Identify any market gaps or emerging threats.
+
+  - name: Pull internal performance data
+    content: |
+      Query the database for internal metrics from the last 30 days:
+        SELECT metric_name, value, recorded_at
+        FROM metrics
+        WHERE recorded_at >= NOW() - INTERVAL '30 days'
+        ORDER BY recorded_at DESC
+        LIMIT 20;
+      Identify the 3 most notable trends in the results.
+
+  - name: Compose and send briefing
+    content: |
+      Write a Market Intelligence Briefing email and send it.
+
+      To: {{recipient}}
+      Subject: Market Intelligence — {{company}} — TODAY'S DATE
+
+      Format:
+      ## Executive Summary
+      3 sentences covering the most important things happening with {{company}}.
+
+      ## Key Developments (past 7 days)
+      5 bullet points — each with: what happened, why it matters, source URL.
+
+      ## Competitor Watch
+      One paragraph per competitor (3 total) with their recent move and implication.
+
+      ## Internal Performance Highlights
+      3 bullet points from the database query results.
+
+      ## Recommended Actions
+      3 specific, actionable next steps based on all findings.

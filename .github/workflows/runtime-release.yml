@@ -51,13 +51,14 @@ jobs:
         working-directory: app/server
         run: yarn build:linux
 
-      - name: Upload oe-runtime-linux and config example
+      - name: Upload oe-runtime-linux and starter files
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           files: |
             app/server/cli/oe-runtime-linux
             app/server/cli/oe-config.example.json
+            app/server/cli/agent.example.yaml
 
   build-macos:
     runs-on: macos-latest

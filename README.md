@@ -177,6 +177,7 @@ Run any agent YAML file locally — no server, no database, no UI required. OE R
 | Linux    | [oe-runtime-linux](https://github.com/openenterprise-info/open-enterprise-community/releases/download/v1.3.2/oe-runtime-linux) |
 | macOS    | [oe-runtime-macos](https://github.com/openenterprise-info/open-enterprise-community/releases/download/v1.3.2/oe-runtime-macos) |
 | Config template | [oe-config.example.json](https://github.com/openenterprise-info/open-enterprise-community/releases/download/v1.3.2/oe-config.example.json) |
+| Sample agent    | [agent.example.yaml](https://github.com/openenterprise-info/open-enterprise-community/releases/download/v1.3.2/agent.example.yaml) |
 
 **Usage**
 
