@@ -31,6 +31,7 @@ All connectors are browsable from the **Connectors** tab inside your workspace.
 - **Workflow** — Chains, Conditional Branches, Multi-step Pipelines, Loops, Routers, State Management
 - **Agents** — Agents, Agent Planning, Multi-agent Collaboration, Reflection / Self-Critique
 - **Execution** — Automation, Event-driven Workflows, Human Approval, Runtime / Execution Engine
+- **OE Runtime** — Standalone binary, run any agent YAML locally on Windows / Linux / macOS — no server required
 - **Governance** — Guardrails / DLP *(Enterprise)*
 - **Operations** — Observability: Token Usage, Activity Log, Dashboard *(Enterprise)*
 - **Ecosystem** — Marketplace, Agent Templates
