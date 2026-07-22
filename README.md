@@ -22,24 +22,6 @@ All connectors are browsable from the **Connectors** tab inside your workspace.
 
 ---
 
-## Tech Stack
-
-| Component | Technology |
-|-----------|------------|
-| Frontend | React + Vite |
-| Backend | Node.js + Express |
-| Database | SQLite / PostgreSQL |
-| File Storage | Local filesystem |
-| Queue | In-memory |
-| Vector DB | LanceDB (default) + 7 others |
-| LLM | 17+ providers (OpenAI, Ollama, Anthropic, etc.) |
-| Embedding | Any provider (OpenAI, Ollama, etc.) |
-| Deployment | Single Docker container |
-| Process Manager | PM2 |
-| Connectors | 2,500+ across 39 categories |
-
----
-
 ## Feature Capabilities
 
 - **Foundation** — Multiple LLMs, Embeddings, Vector Databases
@@ -182,98 +164,28 @@ docker run -d \
 
 ---
 
-## Testing Your Installation
+## OE Runtime
 
-Once the app is running, follow these steps to verify everything works end to end:
+Run any agent YAML file locally — no server, no database, no UI required. OE Runtime is a single binary that executes Open Enterprise agents on the command line.
 
-1. **Log in** with your `SUPER_ADMIN_EMAIL` and `SUPER_ADMIN_PASSWORD`
-2. **Configure LLM & Embedding** — go to **Settings → Instance Settings** and set your LLM provider and Embedding provider API keys
-3. **Create a workspace** from the **Workspaces** page
-4. **Ingest data** — open the workspace, go to **Settings → Knowledge Base** and upload some documents
-5. **Test RAG** — ask questions in the workspace chat related to the ingested data
-6. **Add connectors** — connect databases or enterprise tools (GitHub, Notion, Slack, etc.) from the Connectors panel
-7. **Build & test agents** — create an agent from scratch or pick a template (green **Templates** button), attach connectors, and run it
-8. **Browse the Marketplace** — explore ready-to-use agent templates across Security, Sales, Marketing, Integrations, and Analytics
+**Download — v1.3.2**
 
-Thank you for testing Open Enterprise! If you run into issues, please [open an issue](https://github.com/openenterprise-info/open-enterprise-community/issues).
+| Platform | Binary |
+|----------|--------|
+| Windows  | [oe-runtime-win.exe](https://github.com/openenterprise-info/open-enterprise-community/releases/download/v1.3.2/oe-runtime-win.exe) |
+| Linux    | [oe-runtime-linux](https://github.com/openenterprise-info/open-enterprise-community/releases/download/v1.3.2/oe-runtime-linux) |
+| macOS    | [oe-runtime-macos](https://github.com/openenterprise-info/open-enterprise-community/releases/download/v1.3.2/oe-runtime-macos) |
 
----
+**Usage**
 
-## No Code. Just YAML.
+```bash
+# Run an agent with parameters
+oe-runtime my-agent.yaml --config oe-config.json --param company="Acme" --input "Summarise Q3 results"
+```
 
-Most AI agent frameworks require you to write Python, wire up LangGraph nodes, or manage complex orchestration code. Open Enterprise is different — define any agent workflow in a simple YAML file. Steps, connectors, schedules, and logic are all declared, not coded.
+`oe-config.json` holds your LLM API key and connector credentials. A starter template is included in every release as `oe-config.example.json`.
 
-- No LangGraph, no LangChain, no custom Python
-- Multi-step workflows with conditional logic in plain YAML
-- Import, export, and share agents as single files
-- Any complexity — from a simple Q&A bot to a 10-step automated pipeline
-
----
-
-## Open Enterprise Commercial
-
-The Community Edition is free forever — but when your organization needs more than self-service, **Open Enterprise Commercial** is built for you.
-
-Whether you're deploying AI across 50 employees or 5,000, running regulated workloads, or building AI-powered products on top of Open Enterprise — the Commercial edition gives you the enterprise controls, white-label flexibility, and dedicated support that production demands.
-
-**No compromises. No workarounds. Just a deployment your team can rely on.**
-
----
-
-### Enterprise Features
-
-- **SSO / SAML** — Single sign-on via Okta, Azure AD, Google Workspace, and any SAML 2.0 provider. One login, zero friction.
-- **Security & Compliance** — Data Loss Prevention (DLP), content policy enforcement, audit-ready violation logs. Stay compliant without slowing down your teams.
-- **Observability** — Per-user and per-workspace token usage, cost dashboards, and full activity logs. Know exactly what's running and what it costs.
-- **White-label** — Ship it as your own product. Replace every logo, name, and link with your brand. Your customers never need to know what's running under the hood.
-- **Custom Connectors** — Need a connector that doesn't exist yet? We build it. Your internal systems, your proprietary APIs, your data sources — all connected.
-- **Advanced Agent Workflows** — Multi-agent orchestration, approval gates, event-driven pipelines, and enterprise-grade scheduling built for complex automation at scale.
-
-### Dedicated Services
-
-- **Guided implementation** — We don't hand you docs and wish you luck. Our team works alongside yours to design, deploy, and validate your setup from day one.
-- **Dedicated success manager** — A named person who knows your environment, your team, and your goals — available when you need them.
-- **SLA-backed support** — Contractual response and resolution times. Critical issues get immediate attention, not a queue.
-- **Custom training** — Hands-on workshops for your admins, developers, and end users — tailored to how your organization actually works.
-- **Roadmap access** — Commercial customers shape our roadmap. If you need a capability, tell us — we build it.
-- **Flexible deployment** — Kubernetes, Docker Swarm, bare metal, VPC, air-gapped, and on-premise installs all fully supported. We'll help you deploy the way your infrastructure demands.
-
-### Infrastructure & Deployment
-
-Run Open Enterprise anywhere your organization requires — no compromises on where your data lives:
-
-- **Kubernetes** — Helm charts, horizontal pod autoscaling, and production-grade manifests
-- **Docker Swarm** — Multi-node deployments with built-in load balancing
-- **Bare metal / VM** — Optimised for self-managed servers in your own data center
-- **AWS / Azure / GCP** — Deployment guides and Terraform templates for all major clouds
-- **Air-gapped environments** — Fully offline deployments with no outbound connectivity required
-- **High availability** — Active-active clustering, failover, and disaster recovery configurations
-- **Multi-region** — Replicated deployments across regions for latency and compliance requirements
-
-Our team handles the architecture review, deployment runbooks, and production readiness checks.
-
----
-
-### Who It's For
-
-**You've proven the concept. Now you need to scale it.**
-
-If you're running Open Enterprise in production, managing multiple teams, handling sensitive data, or building AI into a product you sell — the Community Edition will eventually hit a wall. Not because it's limited, but because enterprise environments demand enterprise controls.
-
-**You're the right fit if:**
-
-- Your organization is deploying AI across departments and needs centralized visibility into usage, cost, and compliance
-- You're an ISV or SaaS company that wants to ship AI features under your own brand — without building the platform from scratch
-- You operate in finance, healthcare, legal, or any regulated industry where data governance, audit trails, and policy enforcement aren't optional
-- Your IT or security team is asking for SSO, role-based access, and DLP before they'll approve a wider rollout
-- You need a vendor you can actually call — not just a GitHub issue and a prayer
-- You're tired of patching together open-source tools and want a platform your team can own, extend, and rely on
-
-**Open Enterprise Commercial is for organizations that take AI seriously.**
-
----
-
-Ready to talk? Reach out to [team@openenterprise.info](mailto:team@openenterprise.info) — we'll scope your requirements and get you a proposal within 24 hours.
+**20 capability categories** — Databases, REST APIs, SSH, S3 storage, Email, Slack, GitHub, Kafka, MQTT/IoT, LDAP, GraphQL, Web3, Web Search, OCR, Image Generation, Speech, Video Generation, Music Generation, and more. Full details at [openenterprise.info/runtime](https://www.openenterprise.info/runtime.html).
 
 ---
 
