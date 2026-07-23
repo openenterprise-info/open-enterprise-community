@@ -12,7 +12,9 @@ No LangChain. No LangGraph. No code. Run agents anywhere with a single binary.
 [![Windows](https://img.shields.io/badge/Windows-Download-0078D4?logo=windows&logoColor=white)](https://github.com/openenterprise-info/open-enterprise-community/releases/latest/download/oe-runtime-win.exe)
 [![Linux](https://img.shields.io/badge/Linux-Download-E95420?logo=linux&logoColor=white)](https://github.com/openenterprise-info/open-enterprise-community/releases/latest/download/oe-runtime-linux)
 [![macOS](https://img.shields.io/badge/macOS-Download-000000?logo=apple&logoColor=white)](https://github.com/openenterprise-info/open-enterprise-community/releases/latest/download/oe-runtime-macos)
-[Website](https://www.openenterprise.info) · [OE Runtime](https://www.openenterprise.info/runtime.html) · [Docker Hub](https://hub.docker.com/r/openenterprise/open-enterprise-community)
+[![Website](https://img.shields.io/badge/Website-openenterprise.info-4f46e5)](https://www.openenterprise.info)
+[![OE Runtime](https://img.shields.io/badge/OE%20Runtime-Docs-f97316)](https://www.openenterprise.info/runtime.html)
+[![Docker Hub](https://img.shields.io/badge/Docker%20Hub-openenterprise-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/openenterprise/open-enterprise-community)
 
 </div>
 
