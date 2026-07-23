@@ -8,12 +8,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [v1.3.5] — 2026-07-23
 
 ### Added
-- **Sample library** — `cli/samples/` folder with 20 capability-specific starter kits, each containing a ready-to-run `agent.yaml` and `oe-config.json` (SQL, NoSQL, S3, Cloud Drives, Email, Slack, SSH, REST API, GraphQL, GitHub, Kafka, Web Search, OCR, Image Generation, Speech, Video, Music, Blockchain, LDAP, MQTT)
+- **Sample library** — `cli/samples/` folder with 20 capability-specific starter kits, each containing a ready-to-run `agent.yaml` + `oe-config.json` (SQL, NoSQL, S3, Cloud Drives, Email, Slack, SSH, REST API, GraphQL, GitHub, Kafka, Web Search, OCR, Image Generation, Speech, Video, Music, Blockchain, LDAP, MQTT)
 - **`oe-runtime-samples.zip`** — all 20 sample kits bundled and uploaded automatically on every release tag; always downloadable from `/releases/latest/download/oe-runtime-samples.zip`
-- **Per-capability download buttons** on runtime website — each capability card now has a "Download starter kit" button that generates and downloads the matching `agent.yaml` + `oe-config.json` in the browser
+- **`server.enabled` config flag** — set `server.enabled: true` in `oe-config.json` to activate HTTP server mode without the `--serve` CLI flag; `--serve` still works as a quick override
+- **Per-capability "Download starter kit" buttons** on runtime website — each of the 20 capability cards generates and downloads the matching `agent.yaml` + `oe-config.json` directly in the browser
+- **Platform-coloured download buttons** on runtime website — Windows (blue), Linux (orange), macOS (dark)
+
+### Changed
+- `server.js` banner version now reads from `package.json` instead of a hardcoded string — always accurate after a version bump
+- README download table and quickstart updated to reference the sample library instead of the generic example files
+- Website and app "Sample Library" button replaces the old "Config Template" + "Sample Agent" buttons everywhere
 
 ### Removed
-- Generic "Config Template" (`oe-config.example.json`) and "Sample Agent" (`agent.example.yaml`) download buttons from website hero and bottom CTA — replaced by the sample library
+- `oe-config.example.json` and `agent.example.yaml` — superseded by the sample library; all 20 starters provide capability-specific configs
 
 ---
 
