@@ -1,0 +1,12 @@
+name: Document Reader
+description: Extract and analyze text from images using OCR
+instructions: |
+  You are a document analysis agent. Extract text from images using OCR,
+  then analyze, summarize, or answer questions about the extracted content.
+connectors:
+  - connection_name: Azure Vision
+    connection_type: azure-vision
+steps:
+  - name: Extract and analyze
+    content: |
+      Extract all text from the provided image, then: {{input}}

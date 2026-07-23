@@ -1,0 +1,15 @@
+{
+  "llm": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "apiKey": "YOUR_OPENAI_API_KEY"
+  },
+  "connectors": {
+    "ElevenLabs": {
+      "type": "elevenlabs",
+      "apiKey": "YOUR_ELEVENLABS_API_KEY",
+      "voiceId": "21m00Tcm4TlvDq8ikWAM",
+      "modelId": "eleven_multilingual_v2"
+    }
+  }
+}

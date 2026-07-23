@@ -1,0 +1,15 @@
+{
+  "llm": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "apiKey": "YOUR_OPENAI_API_KEY"
+  },
+  "connectors": {
+    "My Google Drive": {
+      "type": "google-drive",
+      "clientId": "YOUR_GOOGLE_CLIENT_ID",
+      "clientSecret": "YOUR_GOOGLE_CLIENT_SECRET",
+      "refreshToken": "YOUR_GOOGLE_REFRESH_TOKEN"
+    }
+  }
+}

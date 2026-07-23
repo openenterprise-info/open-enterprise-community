@@ -1,0 +1,14 @@
+{
+  "llm": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "apiKey": "YOUR_OPENAI_API_KEY"
+  },
+  "connectors": {
+    "My MongoDB": {
+      "type": "mongodb",
+      "uri": "mongodb://localhost:27017",
+      "database": "mydb"
+    }
+  }
+}

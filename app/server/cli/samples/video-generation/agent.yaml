@@ -1,0 +1,14 @@
+name: Video Creator
+description: Generate short video clips from text or image prompts
+instructions: |
+  You are a video generation agent. Create short video clips using Runway.
+  Describe the motion, style, and scene clearly in your prompts.
+  Videos are generated asynchronously — poll for completion and return the URL.
+connectors:
+  - connection_name: Runway
+    connection_type: runway
+steps:
+  - name: Generate video
+    content: |
+      Generate a video clip based on: {{input}}
+      Wait for generation to complete and return the video URL.

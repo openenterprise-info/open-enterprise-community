@@ -1,0 +1,11 @@
+name: Queue Publisher
+description: Publish messages to Kafka topics
+instructions: |
+  You are a message queue agent. Publish events to Kafka topics
+  and consume messages as instructed. Format all payloads as JSON.
+connectors:
+  - connection_name: My Kafka
+    connection_type: kafka
+steps:
+  - name: Handle queue operation
+    content: "{{input}}"

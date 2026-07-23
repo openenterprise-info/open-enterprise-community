@@ -1,0 +1,12 @@
+name: GraphQL Agent
+description: Run GraphQL queries and mutations
+instructions: |
+  You are a GraphQL API agent. Run queries to fetch data
+  and mutations to create or update records.
+  Always use variables for dynamic values — never interpolate directly into queries.
+connectors:
+  - connection_name: My GraphQL API
+    connection_type: graphql
+steps:
+  - name: Handle GraphQL request
+    content: "{{input}}"

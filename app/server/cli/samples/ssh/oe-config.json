@@ -1,0 +1,16 @@
+{
+  "llm": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "apiKey": "YOUR_OPENAI_API_KEY"
+  },
+  "connectors": {
+    "My Server": {
+      "type": "ssh",
+      "host": "192.168.1.100",
+      "port": 22,
+      "username": "ubuntu",
+      "privateKey": "/path/to/id_rsa"
+    }
+  }
+}

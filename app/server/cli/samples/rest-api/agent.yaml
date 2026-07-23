@@ -1,0 +1,12 @@
+name: API Caller
+description: Make HTTP requests to any REST API and summarize responses
+instructions: |
+  You are an API integration agent. Make GET, POST, PUT, or DELETE
+  requests to external APIs and process the responses.
+  Return structured summaries of API responses.
+connectors:
+  - connection_name: Target API
+    connection_type: http
+steps:
+  - name: Call API
+    content: "{{input}}"

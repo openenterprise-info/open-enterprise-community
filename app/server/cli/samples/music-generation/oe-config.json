@@ -1,0 +1,14 @@
+{
+  "llm": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "apiKey": "YOUR_OPENAI_API_KEY"
+  },
+  "connectors": {
+    "Suno": {
+      "type": "suno",
+      "apiKey": "YOUR_SUNO_API_KEY",
+      "model": "chirp-v3-5"
+    }
+  }
+}

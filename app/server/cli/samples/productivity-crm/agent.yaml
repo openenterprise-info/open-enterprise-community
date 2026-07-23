@@ -1,0 +1,12 @@
+name: GitHub Assistant
+description: Manage issues, PRs, and repositories on GitHub
+instructions: |
+  You are a GitHub assistant. Create and update issues,
+  comment on PRs, check CI status, and summarize repository activity.
+  Use the GitHub API for all operations.
+connectors:
+  - connection_name: GitHub
+    connection_type: github
+steps:
+  - name: Handle request
+    content: "{{input}}"

@@ -51,6 +51,9 @@ jobs:
         working-directory: app/server
         run: yarn build:linux
 
+      - name: Zip sample library
+        run: cd app/server/cli && zip -r oe-runtime-samples.zip samples/
+
       - name: Upload oe-runtime-linux and starter files
         uses: softprops/action-gh-release@v2
         with:
@@ -60,6 +63,7 @@ jobs:
             app/server/cli/oe-config.example.json
             app/server/cli/agent.example.yaml
             app/server/cli/oe-runtime.postman_collection.json
+            app/server/cli/oe-runtime-samples.zip
 
   build-macos:
     runs-on: macos-latest

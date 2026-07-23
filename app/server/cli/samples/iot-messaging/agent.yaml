@@ -1,0 +1,11 @@
+name: IoT Agent
+description: Publish commands and read sensor data via MQTT
+instructions: |
+  You are an IoT agent. Publish commands to devices via MQTT topics
+  and subscribe to sensor data feeds. Format all messages as JSON.
+connectors:
+  - connection_name: MQTT Broker
+    connection_type: mqtt
+steps:
+  - name: Handle IoT request
+    content: "{{input}}"

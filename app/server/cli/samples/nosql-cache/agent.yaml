@@ -1,0 +1,12 @@
+name: NoSQL Data Agent
+description: Read and write MongoDB documents
+instructions: |
+  You are a data agent with access to a MongoDB database.
+  Help the user query, insert, or analyze documents.
+  Always confirm before making write operations.
+connectors:
+  - connection_name: My MongoDB
+    connection_type: mongodb
+steps:
+  - name: Handle request
+    content: "{{input}}"

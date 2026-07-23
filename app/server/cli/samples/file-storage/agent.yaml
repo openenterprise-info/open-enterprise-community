@@ -1,0 +1,11 @@
+name: File Storage Agent
+description: Upload, list, download, and manage files in S3-compatible storage
+instructions: |
+  You are a file management agent with access to S3-compatible storage.
+  Help the user upload, list, download, or delete files and folders.
+connectors:
+  - connection_name: My S3 Bucket
+    connection_type: s3
+steps:
+  - name: Handle file request
+    content: "{{input}}"

@@ -1,0 +1,12 @@
+name: Directory Agent
+description: Search and manage users in LDAP or Active Directory
+instructions: |
+  You are a directory services agent. Search for users, list groups,
+  retrieve account details, and manage entries in LDAP or Active Directory.
+  Always confirm before making any changes.
+connectors:
+  - connection_name: Active Directory
+    connection_type: ldap
+steps:
+  - name: Handle directory query
+    content: "{{input}}"

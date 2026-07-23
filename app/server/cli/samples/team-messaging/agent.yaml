@@ -1,0 +1,11 @@
+name: Slack Notifier
+description: Post messages and read channels in Slack
+instructions: |
+  You are a Slack assistant. Post messages to channels,
+  reply to threads, and summarize channel activity.
+connectors:
+  - connection_name: My Slack
+    connection_type: slack
+steps:
+  - name: Handle Slack request
+    content: "{{input}}"

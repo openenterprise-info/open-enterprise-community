@@ -1,0 +1,17 @@
+{
+  "llm": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "apiKey": "YOUR_OPENAI_API_KEY"
+  },
+  "connectors": {
+    "My Email": {
+      "type": "smtp",
+      "host": "smtp.gmail.com",
+      "port": 587,
+      "user": "you@gmail.com",
+      "password": "YOUR_APP_PASSWORD",
+      "from": "you@gmail.com"
+    }
+  }
+}

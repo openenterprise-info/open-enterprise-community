@@ -1,0 +1,14 @@
+{
+  "llm": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "apiKey": "YOUR_OPENAI_API_KEY"
+  },
+  "connectors": {
+    "Azure Vision": {
+      "type": "azure-vision",
+      "endpoint": "https://YOUR_RESOURCE.cognitiveservices.azure.com",
+      "apiKey": "YOUR_AZURE_VISION_KEY"
+    }
+  }
+}

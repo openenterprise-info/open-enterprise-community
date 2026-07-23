@@ -1,0 +1,14 @@
+name: Image Creator
+description: Generate images from text descriptions using AI
+instructions: |
+  You are a creative image generation agent. Take the user's description
+  and generate a high-quality image. If the description is vague,
+  enhance it with artistic details before generating.
+connectors:
+  - connection_name: OpenAI Image
+    connection_type: openai-image
+steps:
+  - name: Generate image
+    content: |
+      Generate an image based on this description: {{input}}
+      After generating, describe what was created and provide the image URL.

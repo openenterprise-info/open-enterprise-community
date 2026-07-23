@@ -1,0 +1,15 @@
+{
+  "llm": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "apiKey": "YOUR_OPENAI_API_KEY"
+  },
+  "connectors": {
+    "Runway": {
+      "type": "runway",
+      "apiKey": "YOUR_RUNWAY_API_KEY",
+      "model": "gen3a_turbo",
+      "duration": 5
+    }
+  }
+}

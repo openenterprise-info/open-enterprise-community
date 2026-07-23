@@ -1,0 +1,17 @@
+{
+  "llm": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "apiKey": "YOUR_OPENAI_API_KEY"
+  },
+  "connectors": {
+    "Target API": {
+      "type": "http",
+      "baseUrl": "https://api.example.com",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_TOKEN",
+        "Content-Type": "application/json"
+      }
+    }
+  }
+}

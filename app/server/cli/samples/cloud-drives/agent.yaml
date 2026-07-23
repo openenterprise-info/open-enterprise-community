@@ -1,0 +1,11 @@
+name: Drive Manager
+description: Read, write, and organize files in Google Drive
+instructions: |
+  You are a file organization agent with access to Google Drive.
+  Help the user find, upload, download, share, or organize files and folders.
+connectors:
+  - connection_name: My Google Drive
+    connection_type: google-drive
+steps:
+  - name: Handle request
+    content: "{{input}}"

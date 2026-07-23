@@ -1,0 +1,14 @@
+name: Music Creator
+description: Generate original music tracks from text descriptions
+instructions: |
+  You are a music generation agent. Create original music using Suno.
+  Describe the genre, mood, tempo, and instruments clearly.
+  Music is generated asynchronously — wait for completion and return the audio URL.
+connectors:
+  - connection_name: Suno
+    connection_type: suno
+steps:
+  - name: Generate music
+    content: |
+      Generate a music track based on: {{input}}
+      Wait for generation to complete and return the audio URL.

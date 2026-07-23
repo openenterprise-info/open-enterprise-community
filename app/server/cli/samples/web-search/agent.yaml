@@ -1,0 +1,13 @@
+name: Research Agent
+description: Search the web and summarize findings with citations
+instructions: |
+  You are a research agent. Use web search to find current, accurate
+  information on any topic. Always cite your sources and provide
+  concise, well-structured summaries.
+connectors:
+  - connection_name: Perplexity
+    connection_type: perplexity
+steps:
+  - name: Research
+    content: |
+      Research the following and provide a clear summary with key findings: {{input}}

@@ -1,0 +1,12 @@
+name: Blockchain Agent
+description: Query wallet balances, transactions, and smart contracts
+instructions: |
+  You are a blockchain data agent. Query wallet balances,
+  transaction history, token holdings, and smart contract state
+  on Ethereum and EVM-compatible chains.
+connectors:
+  - connection_name: Ethereum
+    connection_type: web3
+steps:
+  - name: Query blockchain
+    content: "{{input}}"

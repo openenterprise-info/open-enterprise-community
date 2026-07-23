@@ -1,0 +1,16 @@
+{
+  "llm": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "apiKey": "YOUR_OPENAI_API_KEY"
+  },
+  "connectors": {
+    "Active Directory": {
+      "type": "ldap",
+      "url": "ldap://192.168.1.10:389",
+      "bindDN": "cn=admin,dc=example,dc=com",
+      "bindPassword": "YOUR_LDAP_PASSWORD",
+      "baseDN": "dc=example,dc=com"
+    }
+  }
+}

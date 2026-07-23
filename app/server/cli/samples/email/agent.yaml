@@ -1,0 +1,12 @@
+name: Email Assistant
+description: Send emails and summarize inbox contents
+instructions: |
+  You are an email assistant. You can send emails via SMTP
+  and read emails via IMAP. Draft professional, concise messages.
+  Always confirm the recipient and subject before sending.
+connectors:
+  - connection_name: My Email
+    connection_type: smtp
+steps:
+  - name: Handle email request
+    content: "{{input}}"

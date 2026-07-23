@@ -5,6 +5,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [v1.3.5] — 2026-07-23
+
+### Added
+- **Sample library** — `cli/samples/` folder with 20 capability-specific starter kits, each containing a ready-to-run `agent.yaml` and `oe-config.json` (SQL, NoSQL, S3, Cloud Drives, Email, Slack, SSH, REST API, GraphQL, GitHub, Kafka, Web Search, OCR, Image Generation, Speech, Video, Music, Blockchain, LDAP, MQTT)
+- **`oe-runtime-samples.zip`** — all 20 sample kits bundled and uploaded automatically on every release tag; always downloadable from `/releases/latest/download/oe-runtime-samples.zip`
+- **Per-capability download buttons** on runtime website — each capability card now has a "Download starter kit" button that generates and downloads the matching `agent.yaml` + `oe-config.json` in the browser
+
+### Removed
+- Generic "Config Template" (`oe-config.example.json`) and "Sample Agent" (`agent.example.yaml`) download buttons from website hero and bottom CTA — replaced by the sample library
+
+---
+
 ## [v1.3.4] — 2026-07-23
 
 ### Changed

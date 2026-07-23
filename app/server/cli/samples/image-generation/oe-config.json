@@ -1,0 +1,15 @@
+{
+  "llm": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "apiKey": "YOUR_OPENAI_API_KEY"
+  },
+  "connectors": {
+    "OpenAI Image": {
+      "type": "openai-image",
+      "apiKey": "YOUR_OPENAI_API_KEY",
+      "model": "gpt-image-1",
+      "size": "1024x1024"
+    }
+  }
+}

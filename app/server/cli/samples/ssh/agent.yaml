@@ -1,0 +1,14 @@
+name: Server Admin Agent
+description: Run commands on remote Linux servers via SSH
+instructions: |
+  You are a server administrator. Use SSH to run commands on remote servers.
+  Check logs, monitor processes, manage files and services.
+  Always explain what you are doing before running each command.
+connectors:
+  - connection_name: My Server
+    connection_type: ssh
+steps:
+  - name: Execute task
+    content: |
+      Task: {{input}}
+      Run the appropriate commands and report the results clearly.
