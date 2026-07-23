@@ -7,7 +7,7 @@ const os   = require("os");
 
 const engine = require("../src/engine");
 
-const VERSION = "1.3.3";
+const VERSION = require("../package.json").version;
 
 // ── connector matching (mirrors index.js) ────────────────────────────────────
 
