@@ -45,6 +45,7 @@ import ApprovalsPage    from "./pages/Agents/ApprovalsPage";
 import MarketplacePage        from "./pages/Marketplace/MarketplacePage";
 import AgentBuilderPage       from "./pages/AgentBuilder/AgentBuilderPage";
 import ConnectorsLibraryPage  from "./pages/Agents/ConnectorsLibraryPage";
+import RuntimePage             from "./pages/Runtime/RuntimePage";
 
 function AppRoutes() {
   return (
@@ -73,6 +74,7 @@ function AppRoutes() {
         <Route path="/marketplace"           element={<MarketplacePage />} />
         <Route path="/agent-builder"         element={<AgentBuilderPage />} />
         <Route path="/connectors-library"    element={<ConnectorsLibraryPage />} />
+        <Route path="/runtime"               element={<RuntimePage />} />
         <Route path="/users"               element={<UsersPage />} />
         <Route path="/developer"           element={<ApiKeysPage />} />
         <Route path="/developer/embed"     element={<EmbedPage />} />
