@@ -60,8 +60,6 @@ jobs:
           tag_name: ${{ github.ref_name }}
           files: |
             app/server/cli/oe-runtime-linux
-            app/server/cli/oe-config.example.json
-            app/server/cli/agent.example.yaml
             app/server/cli/oe-runtime.postman_collection.json
             app/server/cli/oe-runtime-samples.zip
 

@@ -156,7 +156,7 @@ oe-runtime --help
 
 ### Config File
 
-Copy `oe-config.example.json` → `oe-config.json` and fill in your credentials:
+Create `oe-config.json` with your credentials (or download a starter kit from the [Sample Library](https://github.com/openenterprise-info/open-enterprise-community/releases/latest/download/oe-runtime-samples.zip)):
 
 ```json
 {
@@ -321,14 +321,13 @@ No install. No Docker. No Node.js.
 # 2. Make executable (Linux / macOS)
 chmod +x oe-runtime-linux   # or oe-runtime-macos
 
-# 3. Copy and fill in the config
-cp oe-config.example.json oe-config.json
-# edit oe-config.json — add your LLM key and connector credentials
+# 3. Download a starter kit (includes agent.yaml + oe-config.json)
+#    https://github.com/openenterprise-info/open-enterprise-community/releases/latest/download/oe-runtime-samples.zip
+#    Edit oe-config.json — add your LLM key and connector credentials
 
-# 4. Run the sample agent
-./oe-runtime-linux agent.example.yaml \
-  --config oe-config.json \
-  --param company="OpenAI"
+# 4. Run the agent
+./oe-runtime-linux sql-databases/agent.yaml \
+  --config sql-databases/oe-config.json
 ```
 
 ### Option 2 — Docker (Platform)

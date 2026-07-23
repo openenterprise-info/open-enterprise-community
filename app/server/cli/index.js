@@ -56,7 +56,7 @@ if (args.includes("--serve") || _serverEnabledViaCfg) {
   const cfgFile = _earlyCfgFile;
   if (!fs.existsSync(cfgFile)) {
     console.error(`\nError: config file not found: ${cfgFile}`);
-    console.error(`Copy oe-config.example.json → oe-config.json and fill in your credentials.\n`);
+    console.error(`Download a starter kit from the Sample Library: https://github.com/openenterprise-info/open-enterprise-community/releases/latest/download/oe-runtime-samples.zip\n`);
     process.exit(1);
   }
   const serveCfg = JSON.parse(fs.readFileSync(cfgFile, "utf8"));
@@ -93,7 +93,7 @@ if (!fs.existsSync(agentFile)) {
 }
 if (!fs.existsSync(configFile)) {
   console.error(`\nError: config file not found: ${configFile}`);
-  console.error(`Copy oe-config.example.json → oe-config.json and fill in your credentials.\n`);
+  console.error(`Download a starter kit from the Sample Library: https://github.com/openenterprise-info/open-enterprise-community/releases/latest/download/oe-runtime-samples.zip\n`);
   process.exit(1);
 }
 
