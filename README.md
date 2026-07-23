@@ -68,7 +68,7 @@ graph TD
 
     subgraph Runtime["⚡ OE Runtime (Standalone Binary — Windows / Linux / macOS)"]
         CLI["CLI Mode\noe-runtime agent.yaml"]
-        SRV["Server Mode\noe-runtime --serve\nHTTP API · POST /run"]
+        SRV["Server Mode\nserver.enabled: true\nHTTP API · POST /run"]
         YAML["agent.yaml"]
         CONFIG["oe-config.json"]
         CLI --> YAML
@@ -125,8 +125,7 @@ OE Runtime is a standalone, cross-platform agent executor. No server. No databas
 | **Windows** | [oe-runtime-win.exe](https://github.com/openenterprise-info/open-enterprise-community/releases/latest/download/oe-runtime-win.exe) | ~141 MB |
 | **Linux** | [oe-runtime-linux](https://github.com/openenterprise-info/open-enterprise-community/releases/latest/download/oe-runtime-linux) | ~179 MB |
 | **macOS** | [oe-runtime-macos](https://github.com/openenterprise-info/open-enterprise-community/releases/latest/download/oe-runtime-macos) | ~167 MB |
-| **Config template** | [oe-config.example.json](https://github.com/openenterprise-info/open-enterprise-community/releases/latest/download/oe-config.example.json) | — |
-| **Sample agent** | [agent.example.yaml](https://github.com/openenterprise-info/open-enterprise-community/releases/latest/download/agent.example.yaml) | — |
+| **Sample library** | [oe-runtime-samples.zip](https://github.com/openenterprise-info/open-enterprise-community/releases/latest/download/oe-runtime-samples.zip) | 20 ready-to-run `agent.yaml` + `oe-config.json` starter kits |
 | **Postman collection** | [oe-runtime.postman_collection.json](https://github.com/openenterprise-info/open-enterprise-community/releases/latest/download/oe-runtime.postman_collection.json) | — |
 
 > Links always point to the **latest release**. Binaries are built automatically via GitHub Actions on every version tag across all three platforms simultaneously.
@@ -200,13 +199,27 @@ Supported LLM providers: `openai`, `anthropic`, `azure`, `groq`, `gemini`, `olla
 
 ### HTTP Server Mode
 
-Add `--serve` to turn OE Runtime into a persistent HTTP API server. Call agents from mobile apps, web services, scripts, or any HTTP client — no Node.js or Docker needed on the client side.
+Set `server.enabled: true` in `oe-config.json` to turn OE Runtime into a persistent HTTP API server. Call agents from mobile apps, web services, scripts, or any HTTP client — no Node.js or Docker needed on the client side.
+
+```json
+{
+  "llm": { "provider": "openai", "apiKey": "sk-...", "model": "gpt-4o" },
+  "server": {
+    "enabled": true,
+    "port": 3333,
+    "apiKey": "your-secret-api-key"
+  },
+  "connectors": [ ... ]
+}
+```
 
 ```bash
-oe-runtime --serve --config oe-config.json
-# 🚀  OE Runtime Server  v1.3.3
+oe-runtime
+# 🚀  OE Runtime Server  v1.3.5
 # Listening  http://localhost:3333
 ```
+
+> You can also use the `--serve` flag to activate server mode without editing the config: `oe-runtime --serve`
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
@@ -230,15 +243,7 @@ curl -X POST http://localhost:3333/run \
 { "success": true, "output": "2 + 2 equals 4.", "duration_ms": 1823 }
 ```
 
-**Optional auth** — set `server.apiKey` in `oe-config.json` to protect all endpoints with an `x-api-key` header. Set `server.port` to change from the default `3333`.
-
-```json
-{
-  "llm": { "provider": "openai", "apiKey": "sk-...", "model": "gpt-4o" },
-  "server": { "port": 3333, "apiKey": "your-secret-key" },
-  "connectors": [ ... ]
-}
-```
+**`apiKey`** protects all endpoints with an `x-api-key` header. **`port`** defaults to `3333`. Both are optional.
 
 ### Runtime Capability Categories
 

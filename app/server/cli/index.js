@@ -36,15 +36,24 @@ Examples:
   process.exit(0);
 }
 
-if (!args.length || args.includes("--help") || args.includes("-h")) usage();
+// ── detect config file early (needed to check server.enabled) ────────────────
+
+let _earlyCfgFile = "oe-config.json";
+for (let i = 0; i < args.length; i++) {
+  if (args[i] === "--config" && args[i + 1]) { _earlyCfgFile = args[i + 1]; break; }
+}
+let _serverEnabledViaCfg = false;
+if (fs.existsSync(_earlyCfgFile)) {
+  try { _serverEnabledViaCfg = JSON.parse(fs.readFileSync(_earlyCfgFile, "utf8"))?.server?.enabled === true; }
+  catch (e) {}
+}
+
+if ((!args.length || args.includes("--help") || args.includes("-h")) && !_serverEnabledViaCfg) usage();
 
 // ── serve mode ───────────────────────────────────────────────────────────────
 
-if (args.includes("--serve")) {
-  let cfgFile = "oe-config.json";
-  for (let i = 0; i < args.length; i++) {
-    if (args[i] === "--config" && args[i + 1]) cfgFile = args[++i];
-  }
+if (args.includes("--serve") || _serverEnabledViaCfg) {
+  const cfgFile = _earlyCfgFile;
   if (!fs.existsSync(cfgFile)) {
     console.error(`\nError: config file not found: ${cfgFile}`);
     console.error(`Copy oe-config.example.json → oe-config.json and fill in your credentials.\n`);
