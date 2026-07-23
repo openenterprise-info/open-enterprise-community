@@ -131,6 +131,79 @@ steps:
   - name: Pull internal metrics
   - name: Compose and send report`;
 
+const POSTMAN_COLLECTION = {
+  info: {
+    name: "OE Runtime API",
+    description: "OE Runtime HTTP server endpoints. Start the server with: oe-runtime --serve --config oe-config.json",
+    schema: "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+  },
+  variable: [
+    { key: "base_url", value: "http://localhost:3333", type: "string" },
+    { key: "api_key",  value: "your-api-key",          type: "string" },
+  ],
+  item: [
+    {
+      name: "Health Check",
+      request: {
+        method: "GET",
+        header: [],
+        url: { raw: "{{base_url}}/health", host: ["{{base_url}}"], path: ["health"] },
+        description: "Liveness check — returns runtime version. No auth required.",
+      },
+    },
+    {
+      name: "Run Agent (inline YAML)",
+      request: {
+        method: "POST",
+        header: [
+          { key: "Content-Type", value: "application/json" },
+          { key: "x-api-key",    value: "{{api_key}}", description: "Required only if apiKey is set in oe-config.json" },
+        ],
+        body: {
+          mode: "raw",
+          raw: JSON.stringify({
+            yaml: [
+              "name: DB Query Agent",
+              "steps:",
+              "  - name: Count rows in customers table",
+              "",
+              "connectors:",
+              "  - connection_name: MySQL DB",
+              "    connection_type: mysql",
+            ].join("\n"),
+            params: {},
+            input: "How many rows are in the customers table?",
+          }, null, 2),
+          options: { raw: { language: "json" } },
+        },
+        url: { raw: "{{base_url}}/run", host: ["{{base_url}}"], path: ["run"] },
+        description: "Run an agent by passing YAML inline. Returns { success, output, duration_ms }.",
+      },
+    },
+    {
+      name: "Run Agent (from file on disk)",
+      request: {
+        method: "POST",
+        header: [
+          { key: "Content-Type", value: "application/json" },
+          { key: "x-api-key",    value: "{{api_key}}", description: "Required only if apiKey is set in oe-config.json" },
+        ],
+        body: {
+          mode: "raw",
+          raw: JSON.stringify({
+            file:   "C:/path/to/your/agent.yaml",
+            params: { company: "Tesla" },
+            input:  "Summarize Q3 results",
+          }, null, 2),
+          options: { raw: { language: "json" } },
+        },
+        url: { raw: "{{base_url}}/run-file", host: ["{{base_url}}"], path: ["run-file"] },
+        description: "Run an agent from a YAML file path on the server's disk. Returns { success, output, duration_ms }.",
+      },
+    },
+  ],
+};
+
 export default function RuntimePage() {
   const [copied, setCopied] = useState(false);
 
@@ -139,6 +212,16 @@ export default function RuntimePage() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
+  }
+
+  function downloadPostman() {
+    const blob = new Blob([JSON.stringify(POSTMAN_COLLECTION, null, 2)], { type: "application/json" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = "oe-runtime.postman_collection.json";
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   return (
@@ -242,10 +325,21 @@ oe-runtime researcher.yaml \\
             </div>
           ))}
         </div>
-        <p className="text-xs text-gray-400 mt-3">
-          Set <code className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">server.apiKey</code> in <code className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">oe-config.json</code> to require an <code className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">x-api-key</code> header on every request.
-          Default port is <code className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">3333</code> — override with <code className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">server.port</code>.
-        </p>
+        <div className="flex items-center justify-between mt-3">
+          <p className="text-xs text-gray-400">
+            Set <code className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">server.apiKey</code> in <code className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">oe-config.json</code> to require an <code className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">x-api-key</code> header.
+            Default port is <code className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">3333</code> — override with <code className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">server.port</code>.
+          </p>
+          <button
+            onClick={downloadPostman}
+            className="ml-4 flex-shrink-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold transition-colors"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Download Postman Collection
+          </button>
+        </div>
       </div>
 
       {/* Example YAML */}
