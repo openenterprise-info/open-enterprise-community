@@ -12,9 +12,7 @@ No LangChain. No LangGraph. No code. Run agents anywhere with a single binary.
 [![Windows](https://img.shields.io/badge/Windows-Download-0078D4?logo=windows&logoColor=white)](https://github.com/openenterprise-info/open-enterprise-community/releases/latest/download/oe-runtime-win.exe)
 [![Linux](https://img.shields.io/badge/Linux-Download-E95420?logo=linux&logoColor=white)](https://github.com/openenterprise-info/open-enterprise-community/releases/latest/download/oe-runtime-linux)
 [![macOS](https://img.shields.io/badge/macOS-Download-000000?logo=apple&logoColor=white)](https://github.com/openenterprise-info/open-enterprise-community/releases/latest/download/oe-runtime-macos)
-[![Discord](https://img.shields.io/badge/Discord-Join%20Community-5865F2?logo=discord&logoColor=white)](https://discord.gg/vWsZ24Msn)
-
-[Website](https://www.openenterprise.info) · [OE Runtime](https://www.openenterprise.info/runtime.html) · [Docker Hub](https://hub.docker.com/r/openenterprise/open-enterprise-community) · [Discord](https://discord.gg/vWsZ24Msn)
+[Website](https://www.openenterprise.info) · [OE Runtime](https://www.openenterprise.info/runtime.html) · [Docker Hub](https://hub.docker.com/r/openenterprise/open-enterprise-community)
 
 </div>
 
@@ -696,11 +694,8 @@ Contributions are welcome. Before opening a PR:
 
 ## Community
 
-<a href="https://discord.gg/vWsZ24Msn"><img src="https://img.shields.io/badge/Discord-Join%20the%20Community-5865F2?style=for-the-badge&logo=discord&logoColor=white" height="50" /></a>
-
 | | Link |
 |---|------|
-| 💬 Discord | [discord.gg/vWsZ24Msn](https://discord.gg/vWsZ24Msn) |
 | 🌐 Website | [openenterprise.info](https://www.openenterprise.info) |
 | ⚡ OE Runtime | [openenterprise.info/runtime.html](https://www.openenterprise.info/runtime.html) |
 | 🐳 Docker Hub | [hub.docker.com/r/openenterprise/open-enterprise-community](https://hub.docker.com/r/openenterprise/open-enterprise-community) |
@@ -717,6 +712,6 @@ No usage limits. No telemetry. No call-home. Self-host it on your own infrastruc
 
 <div align="center">
 
-**[⭐ Star this repo](https://github.com/openenterprise-info/open-enterprise-community)** &nbsp;·&nbsp; **[🐳 Docker Hub](https://hub.docker.com/r/openenterprise/open-enterprise-community)** &nbsp;·&nbsp; **[💬 Discord](https://discord.gg/vWsZ24Msn)** &nbsp;·&nbsp; **[🌐 Website](https://www.openenterprise.info)**
+**[⭐ Star this repo](https://github.com/openenterprise-info/open-enterprise-community)** &nbsp;·&nbsp; **[🐳 Docker Hub](https://hub.docker.com/r/openenterprise/open-enterprise-community)** &nbsp;·&nbsp; **[🌐 Website](https://www.openenterprise.info)**
 
 </div>
