@@ -64,13 +64,26 @@ graph TD
         API --> DB
     end
 
-    subgraph Runtime["⚡ OE Runtime (CLI Binary — Windows / Linux / macOS)"]
-        CLI["oe-runtime binary"]
+    subgraph Runtime["⚡ OE Runtime (Standalone Binary — Windows / Linux / macOS)"]
+        CLI["CLI Mode\noe-runtime agent.yaml"]
+        SRV["Server Mode\noe-runtime --serve\nHTTP API · POST /run"]
         YAML["agent.yaml"]
         CONFIG["oe-config.json"]
         CLI --> YAML
         CLI --> CONFIG
+        SRV --> YAML
+        SRV --> CONFIG
     end
+
+    subgraph Clients["📱 HTTP Clients"]
+        MOB["Mobile App"]
+        WEB["Web App"]
+        EXT["Any HTTP Client"]
+    end
+
+    MOB --> SRV
+    WEB --> SRV
+    EXT --> SRV
 
     subgraph Engine["🔧 OE Engine (Shared Execution Core)"]
         EXEC["Agent Executor\n(Tool calling loop)"]
@@ -92,6 +105,7 @@ graph TD
 
     API --> EXEC
     CLI --> EXEC
+    SRV --> EXEC
     TOOLS --> Providers
     LLM --> P1
 ```
@@ -130,6 +144,9 @@ oe-runtime market-report.yaml \
 oe-runtime researcher.yaml \
   --config oe-config.json \
   --input "Summarise AI trends in healthcare Q3 2026"
+
+# Start as an HTTP API server (new in v1.3.3)
+oe-runtime --serve --config oe-config.json
 
 # Show help
 oe-runtime --help
@@ -177,6 +194,48 @@ Copy `oe-config.example.json` → `oe-config.json` and fill in your credentials:
 `connection_name` in the config must match `connection_name` in the agent YAML — that is how the runtime links credentials to connectors.
 
 Supported LLM providers: `openai`, `anthropic`, `azure`, `groq`, `gemini`, `ollama`, `mistral`, `deepseek`, `together`, `fireworks`, and more.
+
+### HTTP Server Mode
+
+Add `--serve` to turn OE Runtime into a persistent HTTP API server. Call agents from mobile apps, web services, scripts, or any HTTP client — no Node.js or Docker needed on the client side.
+
+```bash
+oe-runtime --serve --config oe-config.json
+# 🚀  OE Runtime Server  v1.3.3
+# Listening  http://localhost:3333
+```
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | `GET` | Liveness check — returns `{ status, version }` |
+| `/run` | `POST` | Run an agent from an inline YAML string |
+| `/run-file` | `POST` | Run an agent from a YAML file path on disk |
+
+**Example — POST /run:**
+
+```bash
+curl -X POST http://localhost:3333/run \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-secret-key" \
+  -d '{
+    "yaml": "name: Hello\nsteps:\n  - name: Answer the question",
+    "input": "What is 2 + 2?"
+  }'
+```
+
+```json
+{ "success": true, "output": "2 + 2 equals 4.", "duration_ms": 1823 }
+```
+
+**Optional auth** — set `server.apiKey` in `oe-config.json` to protect all endpoints with an `x-api-key` header. Set `server.port` to change from the default `3333`.
+
+```json
+{
+  "llm": { "provider": "openai", "apiKey": "sk-...", "model": "gpt-4o" },
+  "server": { "port": 3333, "apiKey": "your-secret-key" },
+  "connectors": [ ... ]
+}
+```
 
 ### Runtime Capability Categories
 
@@ -584,9 +643,10 @@ All connectors are browsable from the **Connectors** tab inside the Platform.
 
 | | OE Runtime | Open Enterprise Platform |
 |---|-----------|--------------------------|
-| **Best for** | Local execution, CI/CD, scripts, developer automation | Teams, organizations, production SaaS |
+| **Best for** | Local execution, CI/CD, mobile/web backends, scripts | Teams, organizations, production SaaS |
 | **Install** | Single binary download — no install | Docker or source |
-| **UI** | None — CLI only | Full web application |
+| **UI** | None — CLI or HTTP API | Full web application |
+| **HTTP API** | Yes — `--serve` mode, `POST /run` | Yes — platform REST API |
 | **Multi-user** | No | Yes — workspaces and RBAC |
 | **Persistence** | None | SQLite / PostgreSQL |
 | **Agent authoring** | YAML file in any editor | YAML editor + visual builder |
@@ -666,7 +726,7 @@ All LLM, embedding, and vector database settings are configured from the admin p
 
 ### API & Integration
 
-- [ ] Public REST API for agent execution
+- [x] **OE Runtime HTTP server mode** — `--serve` flag, `POST /run`, `POST /run-file`, optional API key auth *(v1.3.3)*
 - [ ] Node.js and Python SDK
 - [ ] GitHub Action: run any agent in CI/CD
 - [ ] OCI container image per agent
