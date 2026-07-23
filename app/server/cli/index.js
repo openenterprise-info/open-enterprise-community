@@ -16,11 +16,12 @@ function usage() {
 oe-runtime — Open Enterprise Agent Runner
 
 Usage:
-  oe-runtime <agent.yaml> [options]
+  oe-runtime <agent.yaml> [options]   Run an agent once
+  oe-runtime --serve     [options]    Start an HTTP API server
 
 Options:
   --config <file>      Config file with LLM keys + connector creds  (default: oe-config.json)
-  --input  <text>      User message / context to pass to the agent
+  --input  <text>      User message / context to pass to the agent  (single-run only)
   --param  key=value   Set a param value (repeatable); substitutes {{key}} in the agent prompt
   --help               Show this help
 
@@ -29,11 +30,35 @@ Examples:
   oe-runtime outbound-sales.yaml --config ~/my-config.json
   oe-runtime blog-publisher.yaml --input "publish topic: AI trends 2025"
   oe-runtime logo-generator.yaml --param company_name="TechFlow" --param style="minimalist"
+  oe-runtime --serve
+  oe-runtime --serve --config /etc/oe/prod-config.json
 `);
   process.exit(0);
 }
 
 if (!args.length || args.includes("--help") || args.includes("-h")) usage();
+
+// ── serve mode ───────────────────────────────────────────────────────────────
+
+if (args.includes("--serve")) {
+  let cfgFile = "oe-config.json";
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--config" && args[i + 1]) cfgFile = args[++i];
+  }
+  if (!fs.existsSync(cfgFile)) {
+    console.error(`\nError: config file not found: ${cfgFile}`);
+    console.error(`Copy oe-config.example.json → oe-config.json and fill in your credentials.\n`);
+    process.exit(1);
+  }
+  const serveCfg = JSON.parse(fs.readFileSync(cfgFile, "utf8"));
+  if (!serveCfg.llm?.provider || !serveCfg.llm?.apiKey) {
+    console.error("\nError: config must have { llm: { provider, apiKey, model } }\n");
+    process.exit(1);
+  }
+  require("./server").start(serveCfg);
+} else {
+
+// ── single-run mode ──────────────────────────────────────────────────────────
 
 const agentFile  = args[0];
 let configFile   = "oe-config.json";
@@ -160,3 +185,5 @@ engine.run(agentSpec, llmConfig, connectors, {
   console.error(`\nFatal: ${err.message}\n`);
   process.exit(1);
 });
+
+} // end single-run mode

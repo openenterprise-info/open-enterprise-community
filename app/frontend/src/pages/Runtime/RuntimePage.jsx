@@ -81,6 +81,32 @@ const CAPABILITIES = [
   { category: "IoT Messaging", providers: "MQTT, AWS IoT, HiveMQ, Mosquitto" },
 ];
 
+const SERVER_USAGE = `# Start the HTTP server (default port 3333)
+oe-runtime --serve --config oe-config.json
+
+# ── GET /health ─────────────────────────────────────
+curl http://localhost:3333/health
+
+# ── POST /run  (inline YAML) ─────────────────────────
+curl -X POST http://localhost:3333/run \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "yaml": "name: Hello\\nsteps:\\n  - name: Say hello",
+    "params": { "company": "Tesla" },
+    "input": "Summarize Q3 results"
+  }'
+
+# ── POST /run-file  (YAML path on disk) ──────────────
+curl -X POST http://localhost:3333/run-file \\
+  -H "Content-Type: application/json" \\
+  -d '{ "file": "/agents/market-report.yaml", "params": { "company": "Tesla" } }'
+
+# ── With API key auth (optional) ──────────────────────
+curl -X POST http://localhost:3333/run \\
+  -H "x-api-key: your-secret-key" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "yaml": "..." }'`;
+
 const EXAMPLE_YAML = `name: Market Intelligence Briefing
 description: >
   Researches a company, pulls internal DB metrics,
@@ -180,6 +206,46 @@ oe-runtime researcher.yaml \\
   --config oe-config.json \\
   --input "Summarise AI trends in healthcare Q3 2026"`}</pre>
         </div>
+      </div>
+
+      {/* Server mode */}
+      <div>
+        <div className="flex items-center gap-3 mb-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">HTTP Server Mode</h2>
+          <span className="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-700">New in v1.3.3</span>
+        </div>
+        <p className="text-sm text-gray-500 mb-3">
+          Add <code className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">--serve</code> to turn the binary into a persistent HTTP API.
+          Call it from mobile apps, web apps, or any HTTP client — no Node.js or Docker required on the server.
+        </p>
+        <div className="bg-gray-900 rounded-xl overflow-hidden mb-3">
+          <div className="px-4 py-2 border-b border-gray-800 flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full bg-red-500/60" />
+            <span className="w-3 h-3 rounded-full bg-yellow-500/60" />
+            <span className="w-3 h-3 rounded-full bg-green-500/60" />
+            <span className="ml-2 text-xs text-gray-500">terminal + curl</span>
+          </div>
+          <pre className="p-5 text-sm text-gray-300 font-mono leading-relaxed overflow-x-auto">{SERVER_USAGE}</pre>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+          {[
+            { method: "GET",  path: "/health",    desc: "Liveness check — returns version" },
+            { method: "POST", path: "/run",       desc: "Run agent from inline YAML string" },
+            { method: "POST", path: "/run-file",  desc: "Run agent from YAML path on disk" },
+          ].map(e => (
+            <div key={e.path} className="border border-gray-200 rounded-lg px-4 py-3">
+              <div className="flex items-center gap-2 mb-1">
+                <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${e.method === "GET" ? "bg-blue-100 text-blue-700" : "bg-amber-100 text-amber-700"}`}>{e.method}</span>
+                <code className="text-gray-700 font-mono text-xs font-semibold">{e.path}</code>
+              </div>
+              <p className="text-gray-500 text-xs">{e.desc}</p>
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-gray-400 mt-3">
+          Set <code className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">server.apiKey</code> in <code className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">oe-config.json</code> to require an <code className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">x-api-key</code> header on every request.
+          Default port is <code className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">3333</code> — override with <code className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">server.port</code>.
+        </p>
       </div>
 
       {/* Example YAML */}

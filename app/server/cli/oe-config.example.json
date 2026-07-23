@@ -4,6 +4,14 @@
     "apiKey": "sk-YOUR_OPENAI_KEY",
     "model": "gpt-4o"
   },
+
+  // ── Server mode (optional) ────────────────────────────────────────────────
+  // Uncomment to configure when running:  oe-runtime --serve
+  // "server": {
+  //   "port": 3333,
+  //   "apiKey": "your-secret-api-key"
+  // },
+
   "connectors": [
 
     // ── IMPORTANT ────────────────────────────────────────────────────────────
