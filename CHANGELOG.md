@@ -5,6 +5,29 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [v1.3.3] — 2026-07-23
+
+### Added
+- **OE Runtime HTTP server mode** — `oe-runtime --serve` turns the binary into a persistent HTTP API server; call agents from mobile apps, web apps, or any HTTP client without Node.js or Docker on the client
+- **`POST /run`** — execute an agent by passing YAML inline in the request body
+- **`POST /run-file`** — execute an agent from a YAML file path on the server's disk
+- **`GET /health`** — liveness check returning runtime version
+- **API key auth** — set `server.apiKey` in `oe-config.json` to protect all endpoints with an `x-api-key` header
+- **Configurable port** — set `server.port` in `oe-config.json` (default: 3333)
+- **Runtime page in app** — new sidebar nav item with download buttons, CLI usage, HTTP server mode docs, Postman collection download, and 20-category capabilities table
+- **Postman collection download** — one-click download of a ready-to-import collection with all server endpoints pre-filled
+
+### Changed
+- README redesigned — Mermaid architecture diagram, OE Runtime download table, YAML tutorial, connector catalog, runtime vs platform comparison, competitor comparison (LangGraph, CrewAI, AutoGen, Dify)
+- Website repositioned as "Self-Hosted Enterprise AI Agent Runtime" across title, hero, meta, and JSON-LD
+- Website nav — Discord removed, Docker Hub as plain link, OE Runtime as pill button
+- Connector count updated to 2,673 across 45+ categories throughout all surfaces
+
+### Fixed
+- OE Runtime pill text vertical alignment on website nav
+
+---
+
 ## [v1.3.2] — 2026-07-22
 
 ### Added
