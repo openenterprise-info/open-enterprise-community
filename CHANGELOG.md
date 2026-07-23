@@ -5,6 +5,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [v1.3.4] — 2026-07-23
+
+### Changed
+- Removed Discord links from app sidebar footer and user menu
+
+---
+
 ## [v1.3.3] — 2026-07-23
 
 ### Added
