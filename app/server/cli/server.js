@@ -81,10 +81,9 @@ exports.start = function start(config) {
 
   app.use(express.json({ limit: "4mb" }));
 
-  // Optional API key auth — skip /health
+  // Optional API key auth — all routes including /health
   if (apiKey) {
     app.use((req, res, next) => {
-      if (req.path === "/health") return next();
       const provided = req.headers["x-api-key"]
                     || (req.headers["authorization"] || "").replace(/^Bearer\s+/i, "");
       if (provided !== apiKey) return res.status(401).json({ error: "Unauthorized" });

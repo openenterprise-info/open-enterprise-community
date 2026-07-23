@@ -146,9 +146,11 @@ const POSTMAN_COLLECTION = {
       name: "Health Check",
       request: {
         method: "GET",
-        header: [],
+        header: [
+          { key: "x-api-key", value: "{{api_key}}" },
+        ],
         url: { raw: "{{base_url}}/health", host: ["{{base_url}}"], path: ["health"] },
-        description: "Liveness check — returns runtime version. No auth required.",
+        description: "Liveness check — returns runtime version.",
       },
     },
     {
@@ -157,22 +159,14 @@ const POSTMAN_COLLECTION = {
         method: "POST",
         header: [
           { key: "Content-Type", value: "application/json" },
-          { key: "x-api-key",    value: "{{api_key}}", description: "Required only if apiKey is set in oe-config.json" },
+          { key: "x-api-key",    value: "{{api_key}}" },
         ],
         body: {
           mode: "raw",
           raw: JSON.stringify({
-            yaml: [
-              "name: DB Query Agent",
-              "steps:",
-              "  - name: Count rows in customers table",
-              "",
-              "connectors:",
-              "  - connection_name: MySQL DB",
-              "    connection_type: mysql",
-            ].join("\n"),
+            yaml: "name: Hello World\nsteps:\n  - name: Answer the question",
             params: {},
-            input: "How many rows are in the customers table?",
+            input: "What is 2 + 2?",
           }, null, 2),
           options: { raw: { language: "json" } },
         },
@@ -186,14 +180,14 @@ const POSTMAN_COLLECTION = {
         method: "POST",
         header: [
           { key: "Content-Type", value: "application/json" },
-          { key: "x-api-key",    value: "{{api_key}}", description: "Required only if apiKey is set in oe-config.json" },
+          { key: "x-api-key",    value: "{{api_key}}" },
         ],
         body: {
           mode: "raw",
           raw: JSON.stringify({
             file:   "C:/path/to/your/agent.yaml",
-            params: { company: "Tesla" },
-            input:  "Summarize Q3 results",
+            params: {},
+            input:  "What is 2 + 2?",
           }, null, 2),
           options: { raw: { language: "json" } },
         },
