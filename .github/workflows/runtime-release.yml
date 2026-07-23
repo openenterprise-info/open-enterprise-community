@@ -59,6 +59,7 @@ jobs:
             app/server/cli/oe-runtime-linux
             app/server/cli/oe-config.example.json
             app/server/cli/agent.example.yaml
+            app/server/cli/oe-runtime.postman_collection.json
 
   build-macos:
     runs-on: macos-latest

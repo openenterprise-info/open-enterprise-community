@@ -125,6 +125,7 @@ OE Runtime is a standalone, cross-platform agent executor. No server. No databas
 | **macOS** | [oe-runtime-macos](https://github.com/openenterprise-info/open-enterprise-community/releases/latest/download/oe-runtime-macos) | ~167 MB |
 | **Config template** | [oe-config.example.json](https://github.com/openenterprise-info/open-enterprise-community/releases/latest/download/oe-config.example.json) | — |
 | **Sample agent** | [agent.example.yaml](https://github.com/openenterprise-info/open-enterprise-community/releases/latest/download/agent.example.yaml) | — |
+| **Postman collection** | [oe-runtime.postman_collection.json](https://github.com/openenterprise-info/open-enterprise-community/releases/latest/download/oe-runtime.postman_collection.json) | — |
 
 > Links always point to the **latest release**. Binaries are built automatically via GitHub Actions on every version tag across all three platforms simultaneously.
 
