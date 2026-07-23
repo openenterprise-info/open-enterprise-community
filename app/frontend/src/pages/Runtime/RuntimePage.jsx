@@ -227,23 +227,7 @@ export default function RuntimePage() {
   return (
     <div className="max-w-5xl mx-auto space-y-10">
 
-      {/* Header */}
-      <div>
-        <div className="flex items-center gap-3 mb-2">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-indigo/10 text-indigo">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo" />
-            {VERSION}
-          </span>
-          <span className="text-xs text-gray-400 font-medium">Standalone binary · No install required</span>
-        </div>
-        <h1 className="text-2xl font-extrabold text-gray-900 mb-1">OE Runtime</h1>
-        <p className="text-gray-500 max-w-2xl">
-          Execute any agent YAML file locally on Windows, Linux, or macOS. No Docker, no database, no Node.js.
-          Point it at a YAML file and run.
-        </p>
-      </div>
-
-      {/* Download buttons */}
+      {/* Download buttons — top of page */}
       <div>
         <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400 mb-3">Download</h2>
         <div className="flex flex-wrap gap-3">
@@ -262,6 +246,22 @@ export default function RuntimePage() {
         </div>
         <p className="text-xs text-gray-400 mt-2">
           Always points to the latest release. Binaries are built automatically on every version tag.
+        </p>
+      </div>
+
+      {/* Header */}
+      <div>
+        <div className="flex items-center gap-3 mb-2">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-indigo/10 text-indigo">
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo" />
+            {VERSION}
+          </span>
+          <span className="text-xs text-gray-400 font-medium">Standalone binary · No install required</span>
+        </div>
+        <h1 className="text-2xl font-extrabold text-gray-900 mb-1">OE Runtime</h1>
+        <p className="text-gray-500 max-w-2xl">
+          Execute any agent YAML file locally on Windows, Linux, or macOS. No Docker, no database, no Node.js.
+          Point it at a YAML file and run.
         </p>
       </div>
 
