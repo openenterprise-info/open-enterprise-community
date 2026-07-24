@@ -32,7 +32,7 @@ router.get("/workspaces/:workspaceId/agents", async (req, res) => {
 router.post("/workspaces/:workspaceId/agents", async (req, res) => {
   try {
     const workspaceId = parseInt(req.params.workspaceId);
-    const { name, description, systemPrompt, connectorIds, triggerType, cronExpression, enabled, visualize } = req.body;
+    const { name, description, systemPrompt, connectorIds, triggerType, cronExpression, enabled, visualize, maxRounds } = req.body;
     if (!name?.trim()) return res.status(400).json({ error: "Name required" });
     const agent = await req.db.agent.create({
       data: {
@@ -45,6 +45,7 @@ router.post("/workspaces/:workspaceId/agents", async (req, res) => {
         cronExpression: cronExpression || null,
         enabled:        enabled !== false,
         visualize:      visualize === true,
+        maxRounds:      maxRounds ? Math.min(100, Math.max(1, parseInt(maxRounds))) : null,
         createdByUserId: req.user.id || null,
       },
     });
@@ -59,7 +60,7 @@ router.post("/workspaces/:workspaceId/agents", async (req, res) => {
 router.put("/workspaces/:workspaceId/agents/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { name, slug, description, group, nextAgent, nextAgentCondition, chains, systemPrompt, workflow, connectorIds, triggerType, cronExpression, enabled, params, visualize } = req.body;
+    const { name, slug, description, group, nextAgent, nextAgentCondition, chains, systemPrompt, workflow, connectorIds, triggerType, cronExpression, enabled, params, visualize, maxRounds } = req.body;
     const data = {};
     if (name                !== undefined) data.name                = name.trim();
     if (slug                !== undefined) data.slug                = slug?.trim() || null;
@@ -76,6 +77,7 @@ router.put("/workspaces/:workspaceId/agents/:id", async (req, res) => {
     if (enabled             !== undefined) data.enabled             = enabled;
     if (params              !== undefined) data.params              = typeof params === "string" ? params : JSON.stringify(params || []);
     if (visualize           !== undefined) data.visualize           = visualize === true;
+    if (maxRounds           !== undefined) data.maxRounds           = maxRounds ? Math.min(100, Math.max(1, parseInt(maxRounds))) : null;
     const agent = await req.db.agent.update({ where: { id }, data });
     scheduler.scheduleAgent(agent, req.db);
     res.json({ agent });

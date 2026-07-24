@@ -7,13 +7,15 @@ export default function MaintenancePage() {
   const { user } = useAuth();
   if (user && user.role !== "admin") return <Navigate to="/workspaces" replace />;
 
-  const [workspaces, setWorkspaces] = useState([]);
-  const [selWs, setSelWs]           = useState("all");
-  const [purging, setPurging]       = useState(null);
-  const [confirm, setConfirm]       = useState(null);
-  const [fromDate, setFromDate]     = useState("");
-  const [toDate, setToDate]         = useState("");
-  const [result, setResult]         = useState(null);
+  const [workspaces, setWorkspaces]         = useState([]);
+  const [selWs, setSelWs]                   = useState("all");
+  const [purging, setPurging]               = useState(null);
+  const [confirm, setConfirm]               = useState(null);
+  const [fromDate, setFromDate]             = useState("");
+  const [toDate, setToDate]                 = useState("");
+  const [result, setResult]                 = useState(null);
+  const [confirmBuilder, setConfirmBuilder] = useState(false);
+  const [builderResult, setBuilderResult]   = useState(null);
 
   useEffect(() => {
     api.get("/admin/workspaces").then(r => setWorkspaces(r.data.workspaces || []));
@@ -99,6 +101,49 @@ export default function MaintenancePage() {
             )}
           </div>
         ))}
+      </div>
+
+      {/* ── Client-side purges ── */}
+      <h3 className="text-sm font-semibold text-gray-700 mt-8 mb-3">Browser Data</h3>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between px-5 py-4 rounded-xl border border-gray-200 bg-white">
+          <div>
+            <p className="text-sm font-semibold text-gray-800">Agent Builder Conversations</p>
+            <p className="text-xs text-gray-500 mt-0.5">Clears all locally stored Agent Builder chat history</p>
+          </div>
+          {builderResult && (
+            <span className="text-xs text-green-600 font-medium mr-3">{builderResult}</span>
+          )}
+          {confirmBuilder ? (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  localStorage.removeItem("oe_agent_builder_convos");
+                  localStorage.removeItem("oe_agent_builder_active");
+                  setBuilderResult("Cleared ✓");
+                  setConfirmBuilder(false);
+                  setTimeout(() => setBuilderResult(null), 3000);
+                }}
+                className="text-xs px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
+              >
+                Confirm
+              </button>
+              <button
+                onClick={() => setConfirmBuilder(false)}
+                className="text-xs px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => { setConfirmBuilder(true); setBuilderResult(null); }}
+              className="text-xs px-3 py-1.5 bg-white border border-red-300 text-red-600 rounded-lg hover:bg-red-50 font-medium transition-colors"
+            >
+              Purge
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

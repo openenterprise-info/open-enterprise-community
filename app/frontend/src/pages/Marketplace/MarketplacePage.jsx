@@ -1,87 +1,65 @@
 import React, { useState, useEffect } from "react";
 import { load as yamlLoad } from "js-yaml";
-import { TEMPLATES } from "../../utils/agentTemplates";
-import { agentToYaml } from "../../utils/agentToYaml";
+import { agentToYaml, agentToRuntimeYaml } from "../../utils/agentToYaml";
 import { AgentVisualFlow } from "../../components/AgentVisualFlow";
+import api from "../../utils/api";
 
-const MARKET_CATEGORIES = ["All", "Security", "Sales", "Marketing", "Integrations", "Analytics"];
+function folderToLabel(folder) {
+  return folder.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+}
 
-const CATEGORY_ICONS = {
-  Security: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-    </svg>
-  ),
-  Sales: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-    </svg>
-  ),
-  Marketing: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-    </svg>
-  ),
-  Integrations: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-    </svg>
-  ),
-  Analytics: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-    </svg>
-  ),
-};
+function parseSample({ folder, yaml, config }) {
+  let parsed = {};
+  try { parsed = yamlLoad(yaml) || {}; } catch { /* */ }
+  return {
+    folder,
+    name:        parsed.name        || folderToLabel(folder),
+    description: parsed.description || "",
+    instructions: parsed.instructions || "",
+    steps:       Array.isArray(parsed.steps)      ? parsed.steps      : [],
+    connectors:  Array.isArray(parsed.connectors) ? parsed.connectors : [],
+    params:      Array.isArray(parsed.params)     ? parsed.params     : [],
+    category:    folderToLabel(folder),
+    yaml,
+    config,
+  };
+}
 
-const TRIGGER_LABELS = {
-  manual:    { label: "Manual",    color: "bg-gray-100 text-gray-600" },
-  cron:      { label: "Scheduled", color: "bg-blue-100 text-blue-600" },
-  scheduled: { label: "Scheduled", color: "bg-blue-100 text-blue-600" },
-  chat:      { label: "Chat",      color: "bg-teal-100 text-teal-600" },
-  event:     { label: "Event",     color: "bg-purple-100 text-purple-600" },
-};
+
 
 function loadSaved() {
   try { return JSON.parse(localStorage.getItem("oe_marketplace_saved") || "[]"); } catch { return []; }
 }
 
+function triggerDownload(content, filename, type) {
+  const blob = new Blob([content], { type });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
 function downloadYaml(tpl) {
-  const yaml = tpl.yaml || agentToYaml(tpl);
-  const blob = new Blob([yaml], { type: "text/yaml" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${tpl.slug || "agent"}.yaml`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  triggerDownload(tpl.yaml || agentToRuntimeYaml(tpl), `${tpl.folder || tpl.name?.toLowerCase().replace(/\s+/g,"-") || "agent"}.yaml`, "text/yaml");
+}
+
+function downloadConfig(tpl) {
+  if (!tpl.config) return;
+  triggerDownload(tpl.config, `${tpl.folder || "agent"}.oe-config.json`, "application/json");
 }
 
 function AgentCard({ tpl, onPreview }) {
-  const triggerKey = tpl.triggerType || "manual";
-  const trigger = TRIGGER_LABELS[triggerKey] || TRIGGER_LABELS.manual;
   return (
     <div
       className="group border border-gray-200 rounded-xl p-5 hover:border-indigo/40 hover:shadow-md transition-all bg-white flex flex-col gap-3 cursor-pointer"
       onClick={() => onPreview(tpl)}
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide ${tpl.color || "bg-gray-100 text-gray-600"}`}>
-            {tpl.category}
-          </span>
-          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${trigger.color}`}>
-            {trigger.label}
-          </span>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {tpl.source === "builder" && (
-            <span className="text-[9px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded font-semibold">Builder</span>
-          )}
-          <span className="text-[10px] text-gray-400">{tpl.steps.length} step{tpl.steps.length !== 1 ? "s" : ""}</span>
-        </div>
+        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide ${tpl.color || "bg-gray-100 text-gray-600"}`}>
+          {tpl.category}
+        </span>
+        <span className="text-[10px] text-gray-400">{tpl.steps.length} step{tpl.steps.length !== 1 ? "s" : ""}</span>
       </div>
 
       <div>
@@ -101,13 +79,26 @@ function AgentCard({ tpl, onPreview }) {
         <div className="flex items-center gap-2">
           <button
             onClick={e => { e.stopPropagation(); downloadYaml(tpl); }}
-            className="shrink-0 text-gray-400 hover:text-gray-700 transition-colors"
+            className="shrink-0 flex items-center gap-1 text-[10px] font-semibold text-teal-600 border border-teal-200 bg-teal-50 hover:bg-teal-100 px-2 py-1 rounded-lg transition-colors"
             title="Download YAML"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
+            YAML
           </button>
+          {tpl.config && (
+            <button
+              onClick={e => { e.stopPropagation(); downloadConfig(tpl); }}
+              className="shrink-0 flex items-center gap-1 text-[10px] font-semibold text-amber-600 border border-amber-200 bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded-lg transition-colors"
+              title="Download Config"
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Config
+            </button>
+          )}
           <button
             onClick={e => { e.stopPropagation(); onPreview(tpl); }}
             className="shrink-0 text-indigo hover:text-indigo/70 transition-colors"
@@ -125,12 +116,21 @@ function AgentCard({ tpl, onPreview }) {
 }
 
 export default function MarketplacePage() {
-  const [mainTab, setMainTab]           = useState("marketplace"); // "marketplace" | "my-agents"
-  const [search, setSearch]             = useState("");
+  const [mainTab, setMainTab]               = useState("marketplace");
+  const [search, setSearch]                 = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
-  const [preview, setPreview]           = useState(null);
+  const [preview, setPreview]               = useState(null);
   const [previewReadOnly, setPreviewReadOnly] = useState(true);
-  const [saved, setSaved]               = useState(loadSaved);
+  const [saved, setSaved]                   = useState(loadSaved);
+  const [samples, setSamples]               = useState([]);
+  const [loadingSamples, setLoadingSamples] = useState(true);
+
+  useEffect(() => {
+    api.get("/marketplace/samples")
+      .then(r => setSamples((r.data.samples || []).map(parseSample)))
+      .catch(() => {})
+      .finally(() => setLoadingSamples(false));
+  }, []);
 
   useEffect(() => {
     const onFocus = () => setSaved(loadSaved());
@@ -138,7 +138,6 @@ export default function MarketplacePage() {
     return () => window.removeEventListener("focus", onFocus);
   }, []);
 
-  // Reset search/category when switching tabs
   useEffect(() => {
     setSearch("");
     setActiveCategory("All");
@@ -146,25 +145,24 @@ export default function MarketplacePage() {
   }, [mainTab]);
 
   const savedTemplates = saved.map(s => ({
-    slug:           s.slug || "custom-" + Date.now(),
-    name:           s.name || "Untitled Agent",
-    description:    s.description || "",
-    category:       "My Agents",
-    color:          "bg-indigo-100 text-indigo-700",
-    triggerType:    s.trigger?.type || s.triggerType || "manual",
-    cronExpression: s.trigger?.cron || s.cronExpression || "",
-    steps:          Array.isArray(s.steps)      ? s.steps      : [],
-    connectors:     Array.isArray(s.connectors) ? s.connectors : [],
-    systemPrompt:   s.instructions || s.systemPrompt || "",
-    yaml:           s.yaml,
-    source:         "builder",
+    name:        s.name || "Untitled Agent",
+    description: s.description || "",
+    category:    "My Agents",
+    color:       "bg-indigo-100 text-indigo-700",
+    steps:       Array.isArray(s.steps)      ? s.steps      : [],
+    connectors:  Array.isArray(s.connectors) ? s.connectors : [],
+    yaml:        s.yaml,
+    config:      s.config || null,
+    source:      "builder",
   }));
 
   const q = search.toLowerCase();
 
-  const marketplaceFiltered = TEMPLATES.filter(t => {
-    const matchCat = activeCategory === "All" || t.category === activeCategory;
-    const matchSearch = !q || t.name.toLowerCase().includes(q) || t.description.toLowerCase().includes(q) || (t.category || "").toLowerCase().includes(q);
+  const categories = ["All", ...Array.from(new Set(samples.map(s => s.category))).sort()];
+
+  const marketplaceFiltered = samples.filter(t => {
+    const matchCat    = activeCategory === "All" || t.category === activeCategory;
+    const matchSearch = !q || t.name.toLowerCase().includes(q) || t.description.toLowerCase().includes(q) || t.category.toLowerCase().includes(q);
     return matchCat && matchSearch;
   });
 
@@ -177,8 +175,8 @@ export default function MarketplacePage() {
     setPreviewReadOnly(readOnly);
   }
 
-  function deleteSaved(slug) {
-    const next = saved.filter(s => s.slug !== slug);
+  function deleteSaved(name) {
+    const next = saved.filter(s => s.name !== name);
     setSaved(next);
     localStorage.setItem("oe_marketplace_saved", JSON.stringify(next));
     setPreview(null);
@@ -186,7 +184,7 @@ export default function MarketplacePage() {
 
   function handleSave(entry) {
     const existing = [...saved];
-    const idx = existing.findIndex(s => s.slug === entry.slug);
+    const idx = existing.findIndex(s => s.name === entry.name);
     if (idx >= 0) existing[idx] = entry; else existing.push(entry);
     setSaved(existing);
     localStorage.setItem("oe_marketplace_saved", JSON.stringify(existing));
@@ -198,7 +196,7 @@ export default function MarketplacePage() {
       <div className="px-6 pt-6 pb-0 border-b border-gray-100">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Marketplace</h1>
+            <h1 className="text-xl font-bold text-gray-900">Templates</h1>
             <p className="text-sm text-gray-400 mt-0.5">Browse and deploy ready-to-use agents</p>
           </div>
           <div className="relative w-64 shrink-0">
@@ -229,7 +227,7 @@ export default function MarketplacePage() {
             </svg>
             Marketplace
             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${mainTab === "marketplace" ? "bg-indigo-100 text-indigo-600" : "bg-gray-100 text-gray-500"}`}>
-              {TEMPLATES.length}
+              {samples.length}
             </span>
           </button>
           <button
@@ -260,8 +258,8 @@ export default function MarketplacePage() {
           <>
             {/* Category pills */}
             <div className="flex items-center gap-2 px-6 py-3 flex-wrap border-b border-gray-100">
-              {MARKET_CATEGORIES.map(cat => {
-                const count = cat === "All" ? null : TEMPLATES.filter(t => t.category === cat).length;
+              {categories.map(cat => {
+                const count = cat === "All" ? null : samples.filter(t => t.category === cat).length;
                 return (
                   <button
                     key={cat}
@@ -270,7 +268,6 @@ export default function MarketplacePage() {
                       activeCategory === cat ? "bg-indigo text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
                   >
-                    {CATEGORY_ICONS[cat]}
                     {cat}
                     {count != null && (
                       <span className={`text-[10px] font-bold px-1 rounded-full ${activeCategory === cat ? "bg-white/20 text-white" : "bg-gray-200 text-gray-500"}`}>
@@ -283,7 +280,11 @@ export default function MarketplacePage() {
             </div>
 
             <div className="px-6 py-5">
-              {marketplaceFiltered.length === 0 ? (
+              {loadingSamples ? (
+                <div className="flex items-center justify-center py-24">
+                  <div className="w-6 h-6 border-2 border-indigo border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : marketplaceFiltered.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-24 text-center">
                   <svg className="w-10 h-10 text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -294,7 +295,7 @@ export default function MarketplacePage() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                   {marketplaceFiltered.map(tpl => (
-                    <AgentCard key={tpl.slug} tpl={tpl} onPreview={t => openPreview(t, true)} />
+                    <AgentCard key={tpl.folder} tpl={tpl} onPreview={t => openPreview(t, true)} />
                   ))}
                 </div>
               )}
@@ -318,7 +319,7 @@ export default function MarketplacePage() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {myAgentsFiltered.map(tpl => (
-                  <AgentCard key={tpl.slug} tpl={tpl} onPreview={t => openPreview(t, false)} />
+                  <AgentCard key={tpl.name} tpl={tpl} onPreview={t => openPreview(t, false)} />
                 ))}
               </div>
             )}
@@ -332,7 +333,7 @@ export default function MarketplacePage() {
           tpl={preview}
           readOnly={previewReadOnly}
           onClose={() => setPreview(null)}
-          onDelete={!previewReadOnly ? () => deleteSaved(preview.slug) : null}
+          onDelete={!previewReadOnly ? () => deleteSaved(preview.name) : null}
           onSave={!previewReadOnly ? handleSave : null}
         />
       )}
@@ -341,35 +342,28 @@ export default function MarketplacePage() {
 }
 
 function PreviewDrawer({ tpl, readOnly, onClose, onDelete, onSave }) {
-  const triggerKey = tpl.triggerType || "manual";
-  const trigger = TRIGGER_LABELS[triggerKey] || TRIGGER_LABELS.manual;
   const [tab, setTab] = useState("flow");
   const [copied, setCopied] = useState(false);
   const [saveHint, setSaveHint] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const baseYaml = tpl.yaml || agentToYaml(tpl);
+  const baseYaml = tpl.yaml || agentToRuntimeYaml(tpl);
   const [editedYaml, setEditedYaml] = useState(baseYaml);
 
   // Parse live so Visual Flow stays in sync (also works for read-only)
   let parsedAgent = null;
-  try { parsedAgent = yamlLoad(editedYaml); } catch { /* invalid yaml */ }
+  let yamlError = null;
+  try { parsedAgent = yamlLoad(editedYaml); } catch (e) { yamlError = e.message; }
 
   const agentObj = parsedAgent && typeof parsedAgent === "object" ? {
     name:        parsedAgent.name        || tpl.name,
     description: parsedAgent.description || tpl.description,
-    trigger: {
-      type: parsedAgent.trigger?.type || tpl.triggerType || "manual",
-      cron: parsedAgent.trigger?.cron  || tpl.cronExpression,
-    },
-    steps:      Array.isArray(parsedAgent.steps)      ? parsedAgent.steps      : [],
-    connectors: Array.isArray(parsedAgent.connectors) ? parsedAgent.connectors : [],
-    chains:     Array.isArray(parsedAgent.chains)     ? parsedAgent.chains     : [],
-    params:     Array.isArray(parsedAgent.params)     ? parsedAgent.params     : [],
+    steps:       Array.isArray(parsedAgent.steps)      ? parsedAgent.steps      : [],
+    connectors:  Array.isArray(parsedAgent.connectors) ? parsedAgent.connectors : [],
+    params:      Array.isArray(parsedAgent.params)     ? parsedAgent.params     : [],
   } : {
     name: tpl.name, description: tpl.description,
-    trigger: { type: tpl.triggerType || "manual", cron: tpl.cronExpression },
-    steps: tpl.steps || [], connectors: tpl.connectors || [],
-    chains: tpl.chains || [], params: tpl.params || [],
+    steps: tpl.steps || [], connectors: tpl.connectors || [], params: tpl.params || [],
   };
 
   function copyYaml() {
@@ -381,16 +375,20 @@ function PreviewDrawer({ tpl, readOnly, onClose, onDelete, onSave }) {
 
   function handleSave() {
     if (!parsedAgent || typeof parsedAgent !== "object") {
-      setSaveHint("Invalid YAML — fix errors before saving.");
-      setTimeout(() => setSaveHint(""), 3500);
+      setSaveHint(yamlError ? `YAML error: ${yamlError}` : "Invalid YAML — fix errors before saving.");
+      setTimeout(() => setSaveHint(""), 5000);
       return;
     }
     const entry = {
-      ...parsedAgent,
-      yaml:    editedYaml,
-      slug:    parsedAgent.slug || tpl.slug || "agent-" + Date.now(),
-      savedAt: Date.now(),
-      source:  "builder",
+      name:        parsedAgent.name        || tpl.name,
+      description: parsedAgent.description || tpl.description || "",
+      instructions: parsedAgent.instructions || parsedAgent.systemPrompt || "",
+      steps:       parsedAgent.steps       || [],
+      connectors:  parsedAgent.connectors  || [],
+      params:      parsedAgent.params      || [],
+      yaml:        editedYaml,
+      savedAt:     Date.now(),
+      source:      "builder",
     };
     onSave(entry);
     setSaveHint("Saved!");
@@ -408,10 +406,6 @@ function PreviewDrawer({ tpl, readOnly, onClose, onDelete, onSave }) {
             <div>
               <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide ${tpl.color || "bg-gray-100 text-gray-600"}`}>{tpl.category}</span>
-                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${trigger.color}`}>{trigger.label}</span>
-                {tpl.cronExpression && (
-                  <span className="text-[10px] font-mono bg-gray-100 text-gray-500 px-2 py-0.5 rounded">{tpl.cronExpression}</span>
-                )}
                 {readOnly && (
                   <span className="text-[9px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-semibold uppercase tracking-wide">Read-only</span>
                 )}
@@ -491,10 +485,30 @@ function PreviewDrawer({ tpl, readOnly, onClose, onDelete, onSave }) {
           )}
         </div>
 
+        {/* Delete confirmation popup */}
+        {confirmDelete && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/30">
+            <div className="bg-white rounded-2xl shadow-2xl p-6 mx-6 w-full max-w-sm">
+              <h3 className="text-sm font-bold text-gray-900 mb-1">Delete agent?</h3>
+              <p className="text-xs text-gray-500 mb-5">
+                <span className="font-medium text-gray-700">{tpl.name}</span> will be permanently removed from My Agents.
+              </p>
+              <div className="flex gap-2 justify-end">
+                <button onClick={() => setConfirmDelete(false)} className="px-4 py-2 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                  Cancel
+                </button>
+                <button onClick={onDelete} className="px-4 py-2 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Footer */}
         <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex items-center gap-2 shrink-0">
           {onDelete && (
-            <button onClick={onDelete} className="px-3 py-2 text-xs font-medium text-red-500 border border-red-200 rounded-lg hover:bg-red-50 transition-colors">
+            <button onClick={() => setConfirmDelete(true)} className="px-3 py-2 text-xs font-medium text-red-500 border border-red-200 rounded-lg hover:bg-red-50 transition-colors">
               Delete
             </button>
           )}

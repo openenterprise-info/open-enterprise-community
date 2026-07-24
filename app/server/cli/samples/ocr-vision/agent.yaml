@@ -2,11 +2,27 @@ name: Document Reader
 description: Extract and analyze text from images using OCR
 instructions: |
   You are a document analysis agent. Extract text from images using OCR,
-  then analyze, summarize, or answer questions about the extracted content.
+  then analyze, classify, and summarize the extracted content.
+  Complete all steps fully before writing your report.
+steps:
+  - name: Extract Text
+    content: |
+      Run OCR on the image provided via the Azure Vision connector.
+      Extract all visible text — preserve the reading order and layout as closely as possible.
+      Note any regions where text confidence is low.
+  - name: Classify and Structure
+    content: |
+      Analyze the extracted text to determine the document type
+      (invoice, receipt, contract, ID, form, letter, or other).
+      Extract key structured fields based on type — e.g. for an invoice: vendor, date, line items, total.
+  - name: Report
+    content: |
+      Produce a document analysis result:
+      - Document type identified
+      - Structured fields extracted with values
+      - Full raw text extracted
+      - Any low-confidence regions or unreadable sections
+      - Suggested next action (e.g. file, process payment, follow up)
 connectors:
   - connection_name: Azure Vision
     connection_type: azure-vision
-steps:
-  - name: Extract and analyze
-    content: |
-      Extract all text from the provided image, then: {{input}}

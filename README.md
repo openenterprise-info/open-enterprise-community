@@ -136,18 +136,13 @@ OE Runtime is a standalone, cross-platform agent executor. No server. No databas
 # Run an agent
 oe-runtime agent.yaml --config oe-config.json
 
-# Pass parameters
+# Pass parameters (substitutes {{key}} in instructions and steps)
 oe-runtime market-report.yaml \
   --config oe-config.json \
   --param company="Tesla" \
   --param recipient="ceo@company.com"
 
-# Pass an input message
-oe-runtime researcher.yaml \
-  --config oe-config.json \
-  --input "Summarise AI trends in healthcare Q3 2026"
-
-# Start as an HTTP API server (new in v1.3.3)
+# Start as an HTTP API server
 oe-runtime --serve --config oe-config.json
 
 # Show help
@@ -234,13 +229,13 @@ curl -X POST http://localhost:3333/run \
   -H "Content-Type: application/json" \
   -H "x-api-key: your-secret-key" \
   -d '{
-    "yaml": "name: Hello\nsteps:\n  - name: Answer the question",
-    "input": "What is 2 + 2?"
+    "yaml": "name: Hello\nsteps:\n  - name: Say hello",
+    "params": {}
   }'
 ```
 
 ```json
-{ "success": true, "output": "2 + 2 equals 4.", "duration_ms": 1823 }
+{ "success": true, "output": "Hello! How can I help you today?", "duration_ms": 1823 }
 ```
 
 **`apiKey`** protects all endpoints with an `x-api-key` header. **`port`** defaults to `3333`. Both are optional.
@@ -377,37 +372,31 @@ Agents are plain YAML files. No Python. No code. No framework to learn.
 ```yaml
 name: My First Agent
 description: Searches the web and emails a summary
-
 instructions: |
   You are a research assistant. Search for the given topic,
   summarise the findings, and email the report to the recipient.
   Be accurate, cite your sources, and keep the report concise.
-
-params:
-  - name: topic
-    default: "AI trends 2026"
-  - name: recipient
-    default: "you@example.com"
-
-# Connectors reference names from oe-config.json — no secrets here
-connectors:
-  - connection_name: Perplexity Search
-    connection_type: perplexity-search
-  - connection_name: Company Email
-    connection_type: smtp
-
 steps:
   - name: Research
     content: |
       Search for: {{topic}}
       Run 2-3 searches from different angles.
       Collect the 5 most important findings with sources.
-
   - name: Send Report
     content: |
       Write a structured email report and send it to {{recipient}}.
       Subject: Research Report — {{topic}}
       Sections: Executive Summary · Key Findings · Sources
+connectors:
+  - connection_name: Perplexity Search
+    connection_type: perplexity-search
+  - connection_name: Company Email
+    connection_type: smtp
+params:
+  - name: topic
+    default: "AI trends 2026"
+  - name: recipient
+    default: "you@example.com"
 ```
 
 Run it:
@@ -437,15 +426,9 @@ oe-runtime agent.yaml --config oe-config.json --param topic="LLM benchmarks 2026
 ```yaml
 name: Database Health Check
 description: Queries MySQL and reports row counts for all tables
-
 instructions: |
   You are a database inspector. Query the database and clearly
   report the row count for every table, sorted by size.
-
-connectors:
-  - connection_name: MySQL DB
-    connection_type: mysql
-
 steps:
   - name: Get table counts
     content: |
@@ -455,51 +438,28 @@ steps:
         WHERE table_schema = DATABASE()
         ORDER BY table_rows DESC;
       Report each table name and row count clearly.
+connectors:
+  - connection_name: MySQL DB
+    connection_type: mysql
 ```
 
 ### Market Intelligence Briefing
 
 ```yaml
 name: Market Intelligence Briefing
-description: >
-  Researches a company and industry, pulls internal metrics from
-  a database, and emails a structured intelligence report.
-
+description: Researches a company, pulls internal metrics, and emails a structured report
 instructions: |
   You are a senior market intelligence analyst. Gather accurate,
   up-to-date information from multiple sources and produce a
   concise executive briefing that drives decisions.
   Always cite sources. Focus on actionable insights.
-
-params:
-  - name: company
-    default: "OpenAI"
-  - name: industry
-    default: "Generative AI"
-  - name: recipient
-    default: "team@yourcompany.com"
-
-connectors:
-  - connection_name: Perplexity Search
-    connection_type: perplexity-search
-  - connection_name: Postgres DB
-    connection_type: postgres
-  - connection_name: Company Email
-    connection_type: smtp
-
 steps:
-  - name: Research latest news
+  - name: Research Latest News
     content: |
       Search for the latest news about {{company}} in {{industry}}.
       Focus on: product launches, funding, partnerships, executive changes.
       Collect the 5 most significant developments from the past 7 days.
-
-  - name: Research competitor landscape
-    content: |
-      Find the top 3 competitors of {{company}} in {{industry}}.
-      For each: note one recent move and what it means for {{company}}.
-
-  - name: Pull internal performance data
+  - name: Pull Internal Performance Data
     content: |
       Query:
         SELECT metric_name, value, recorded_at
@@ -508,49 +468,65 @@ steps:
         ORDER BY recorded_at DESC
         LIMIT 20;
       Identify the 3 most notable trends in the results.
-
-  - name: Compose and send briefing
+  - name: Compose and Send Briefing
     content: |
       Write and email a Market Intelligence Briefing to {{recipient}}.
       Subject: Market Intelligence — {{company}} — TODAY'S DATE
       Sections:
         ## Executive Summary (3 sentences)
         ## Key Developments (5 bullets with source URLs)
-        ## Competitor Watch (1 paragraph per competitor)
         ## Internal Performance Highlights (3 bullets)
         ## Recommended Actions (3 specific next steps)
+connectors:
+  - connection_name: Perplexity Search
+    connection_type: perplexity
+  - connection_name: Postgres DB
+    connection_type: postgresql
+  - connection_name: Company Email
+    connection_type: smtp
+params:
+  - name: company
+    default: OpenAI
+  - name: industry
+    default: Generative AI
+  - name: recipient
+    default: team@yourcompany.com
 ```
 
 ### Logo Generator
 
 ```yaml
 name: Logo Generator
-description: Generates professional logo variations from a brief
-
+description: Generates professional logo variations from a style brief
 instructions: |
   You are a creative director. Generate professional logo variations
   based on the style brief. Each logo must work on light and dark
   backgrounds. Save each image and report the output paths.
-
-params:
-  - name: company_name
-    default: "TechFlow"
-  - name: style
-    default: "minimalist"
-  - name: count
-    default: "3"
-
+steps:
+  - name: Design Prompts
+    content: |
+      Design {{count}} distinct logo prompts for "{{company_name}}".
+      Style: {{style}}. Each prompt should explore a different visual direction.
+  - name: Generate Logos
+    content: |
+      Generate each logo using the prompts from the previous step.
+      Requirements: clean, scalable, works at small and large sizes.
+      Report the image URL for each generated logo.
+  - name: Report
+    content: |
+      Summarize all generated logos:
+      - List each variation with its prompt and image URL
+      - Note which best fits the {{style}} direction and why
 connectors:
   - connection_name: OpenAI Image
     connection_type: openai-image
-
-steps:
-  - name: Generate logos
-    content: |
-      Generate {{count}} logo variations for "{{company_name}}".
-      Style: {{style}}
-      Requirements: clean, scalable, works at small and large sizes.
-      Generate each one and report all file paths when done.
+params:
+  - name: company_name
+    default: TechFlow
+  - name: style
+    default: minimalist
+  - name: count
+    default: "3"
 ```
 
 ### SSH Server Audit
@@ -558,30 +534,32 @@ steps:
 ```yaml
 name: Server Audit
 description: SSHs into a server and checks disk, memory, and running services
-
 instructions: |
   You are a DevOps engineer. Run diagnostic commands on the server
   and produce a clear health report. Flag any issues found.
-
+steps:
+  - name: Gather System Info
+    content: |
+      Run these commands on the server one at a time:
+        df -h                         # disk usage
+        free -h                       # memory usage
+        uptime                        # load average
+        systemctl list-units --failed # failed services
+        ps aux --sort=-%cpu | head    # top CPU processes
+  - name: Check Security
+    content: |
+      Run these commands:
+        ss -tlnp          # open ports
+        last -n 10        # recent logins
+        journalctl -p err --since "24 hours ago" | tail -20  # recent errors
+  - name: Generate Report
+    content: |
+      Compile a Server Health Report from all command outputs.
+      Flag: disk usage >80%, memory >90%, any failed services, unexpected open ports.
+      Format: one-paragraph summary, then a findings table, then overall status: HEALTHY / WARNING / CRITICAL.
 connectors:
   - connection_name: Production Server
     connection_type: ssh
-
-steps:
-  - name: Check system health
-    content: |
-      Run these commands on the server and collect output:
-        df -h                        # disk usage
-        free -h                      # memory usage
-        uptime                       # load average
-        systemctl list-units --failed # failed services
-        ps aux --sort=-%cpu | head   # top CPU processes
-
-  - name: Generate report
-    content: |
-      Compile a Server Health Report from the command outputs.
-      Flag: disk usage >80%, memory usage >90%, any failed services.
-      Format: one-paragraph summary, then a table of findings.
 ```
 
 ---

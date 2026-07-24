@@ -2,13 +2,27 @@ name: Music Creator
 description: Generate original music tracks from text descriptions
 instructions: |
   You are a music generation agent. Create original music using Suno.
-  Describe the genre, mood, tempo, and instruments clearly.
-  Music is generated asynchronously — wait for completion and return the audio URL.
+  Describe genre, mood, tempo, and instruments clearly in your prompt.
+  Music is generated asynchronously — poll for completion before returning the URL.
+  Complete all steps fully before writing your report.
+steps:
+  - name: Design Music Prompt
+    content: |
+      Craft a detailed Suno music prompt for an upbeat corporate background track.
+      Specify: genre (corporate pop), mood (energetic, optimistic), tempo (120 BPM),
+      instruments (acoustic guitar, light drums, piano), duration (60 seconds), no vocals.
+  - name: Generate Track
+    content: |
+      Submit the music prompt to Suno. Wait for generation to complete — poll every 10 seconds
+      until status is "complete". Retrieve the audio URL and title once done.
+  - name: Report
+    content: |
+      Summarize the result:
+      - Prompt used for generation
+      - Track title assigned by Suno
+      - Audio URL
+      - Duration and format
+      - Generation time taken
 connectors:
   - connection_name: Suno
     connection_type: suno
-steps:
-  - name: Generate music
-    content: |
-      Generate a music track based on: {{input}}
-      Wait for generation to complete and return the audio URL.

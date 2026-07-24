@@ -175,6 +175,7 @@ export default function AgentStudio({ initialAgent, connectors = [], agents = []
     nextAgentCondition: initialAgent?.nextAgentCondition || null,
     chains:             safeArray(initialAgent?.chains),
     visualize:          initialAgent?.visualize          || false,
+    maxRounds:          initialAgent?.maxRounds          || null,
   });
 
   function set(key, val) { setForm(f => ({ ...f, [key]: val })); }
@@ -391,6 +392,22 @@ function TriggerStep({ form, set, agentId, onSlugStatus }) {
           </button>
         </div>
       )}
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Max Rounds <span className="text-gray-400 font-normal">— optional, overrides workspace default</span>
+        </label>
+        <p className="text-xs text-gray-400 mb-2">How many tool calls this agent can make per run. Leave blank to use the workspace default.</p>
+        <input
+          className="input"
+          type="number" min={1} max={100} step={1}
+          placeholder="e.g. 25"
+          value={form.maxRounds || ""}
+          onChange={e => { const v = parseInt(e.target.value); set("maxRounds", isNaN(v) ? null : v); }}
+          onBlur={e => { const v = parseInt(e.target.value); if (!isNaN(v)) set("maxRounds", Math.min(100, Math.max(1, v))); }}
+        />
+        <p className="text-[10px] text-gray-400 mt-1">Range: 1–100. Leave blank = use workspace default.</p>
+      </div>
 
     </div>
   );

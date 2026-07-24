@@ -31,15 +31,24 @@ function yamlToAgentJson(y) {
 // TEMPLATES imported from ../../utils/agentTemplates
 
 function TemplatesPanel({ onClose, onUse }) {
+  const [tab, setTab] = useState("marketplace");
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+  const [myAgents, setMyAgents] = useState([]);
+
+  useEffect(() => {
+    try { setMyAgents(JSON.parse(localStorage.getItem("oe_marketplace_saved") || "[]")); } catch { /* */ }
+  }, []);
 
   const categories = ["All", "Security", "Sales", "Marketing", "Integrations", "Analytics"];
-  const filtered = TEMPLATES.filter(t => {
+  const filteredMarket = TEMPLATES.filter(t => {
     const matchCat = activeCategory === "All" || t.category === activeCategory;
     const matchSearch = !search || t.name.toLowerCase().includes(search.toLowerCase()) || t.description.toLowerCase().includes(search.toLowerCase());
     return matchCat && matchSearch;
   });
+  const filteredMy = myAgents.filter(a =>
+    !search || a.name?.toLowerCase().includes(search.toLowerCase()) || a.description?.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex">
@@ -53,42 +62,86 @@ function TemplatesPanel({ onClose, onUse }) {
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
         </div>
 
+        {/* Tabs */}
+        <div className="flex gap-1 px-5 pt-3 border-b border-gray-100">
+          {[["marketplace", "Marketplace"], ["my-agents", "My Agents"]].map(([key, label]) => (
+            <button key={key} onClick={() => setTab(key)}
+              className={`px-3 py-2 text-xs font-semibold border-b-2 transition-colors ${
+                tab === key ? "border-indigo text-indigo" : "border-transparent text-gray-400 hover:text-gray-700"
+              }`}>
+              {label}
+              {key === "my-agents" && myAgents.length > 0 && (
+                <span className="ml-1.5 text-[10px] bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-full font-bold">{myAgents.length}</span>
+              )}
+            </button>
+          ))}
+        </div>
+
         <div className="px-5 pt-4 space-y-3">
           <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search templates…"
+            placeholder={tab === "my-agents" ? "Search my agents…" : "Search templates…"}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo/30" />
-          <div className="flex gap-1.5 flex-wrap">
-            {categories.map(c => (
-              <button key={c} onClick={() => setActiveCategory(c)}
-                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-                  activeCategory === c ? "bg-indigo text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}>
-                {c}
-              </button>
-            ))}
-          </div>
+          {tab === "marketplace" && (
+            <div className="flex gap-1.5 flex-wrap">
+              {categories.map(c => (
+                <button key={c} onClick={() => setActiveCategory(c)}
+                  className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                    activeCategory === c ? "bg-indigo text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}>
+                  {c}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
-          {filtered.length === 0 ? (
-            <p className="text-center text-sm text-gray-400 py-8">No templates match your search.</p>
-          ) : filtered.map(tpl => (
-            <div key={tpl.name} className="border border-gray-200 rounded-xl p-4 hover:border-indigo/40 hover:bg-indigo/[0.02] transition-colors group">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide ${tpl.color}`}>{tpl.category}</span>
+          {tab === "marketplace" && (
+            filteredMarket.length === 0
+              ? <p className="text-center text-sm text-gray-400 py-8">No templates match your search.</p>
+              : filteredMarket.map(tpl => (
+                <div key={tpl.name} className="border border-gray-200 rounded-xl p-4 hover:border-indigo/40 hover:bg-indigo/[0.02] transition-colors">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide ${tpl.color}`}>{tpl.category}</span>
+                      </div>
+                      <p className="text-sm font-semibold text-gray-800">{tpl.name}</p>
+                      <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{tpl.description}</p>
+                    </div>
+                    <button onClick={() => onUse(tpl)}
+                      className="shrink-0 px-3 py-1.5 text-xs font-semibold text-indigo border border-indigo/30 rounded-lg hover:bg-indigo hover:text-white transition-colors">
+                      Use
+                    </button>
                   </div>
-                  <p className="text-sm font-semibold text-gray-800">{tpl.name}</p>
-                  <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{tpl.description}</p>
                 </div>
-                <button onClick={() => onUse(tpl)}
-                  className="shrink-0 px-3 py-1.5 text-xs font-semibold text-indigo border border-indigo/30 rounded-lg hover:bg-indigo hover:text-white transition-colors">
-                  Use
-                </button>
-              </div>
-            </div>
-          ))}
+              ))
+          )}
+
+          {tab === "my-agents" && (
+            filteredMy.length === 0
+              ? <div className="text-center py-12">
+                  <p className="text-sm text-gray-400">{search ? "No agents match your search." : "No saved agents yet."}</p>
+                  {!search && <p className="text-xs text-gray-300 mt-1">Build agents in Agent Builder and save them to My Agents.</p>}
+                </div>
+              : filteredMy.map((a, i) => (
+                <div key={i} className="border border-gray-200 rounded-xl p-4 hover:border-purple-200 hover:bg-purple-50/30 transition-colors">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide bg-purple-100 text-purple-600">My Agent</span>
+                      </div>
+                      <p className="text-sm font-semibold text-gray-800">{a.name}</p>
+                      {a.description && <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{a.description}</p>}
+                    </div>
+                    <button onClick={() => onUse({ ...a, systemPrompt: a.instructions })}
+                      className="shrink-0 px-3 py-1.5 text-xs font-semibold text-purple-600 border border-purple-200 rounded-lg hover:bg-purple-600 hover:text-white transition-colors">
+                      Use
+                    </button>
+                  </div>
+                </div>
+              ))
+          )}
         </div>
       </div>
     </div>
@@ -260,6 +313,27 @@ data: {"error": "Descriptive error message"}`,
   );
 }
 
+function SlugBadge({ slug }) {
+  const [copied, setCopied] = useState(false);
+  function handleCopy(e) {
+    e.stopPropagation();
+    navigator.clipboard.writeText(`@${slug}`).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  }
+  return (
+    <p
+      onClick={handleCopy}
+      title="Click to copy slug"
+      className="text-xs font-mono mt-1.5 truncate cursor-pointer select-none transition-colors"
+      style={{ color: copied ? "#16a34a" : "#3b82f6" }}
+    >
+      {copied ? "Copied!" : `@${slug}`}
+    </p>
+  );
+}
+
 function AgentCard({ agent, running, onOpen, onRun, onStop, onApi, onDownload, onDelete }) {
   const lastRun   = agent.runs?.[0];
   const isRunning = !!running[agent.id];
@@ -272,6 +346,9 @@ function AgentCard({ agent, running, onOpen, onRun, onStop, onApi, onDownload, o
 
   return (
     <div onClick={onOpen} className="bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col hover:shadow-sm hover:border-indigo/30 transition-all duration-150 cursor-pointer">
+      {agent._owned === false && (
+        <div className="w-full bg-purple-500 text-white text-[10px] font-semibold text-center py-0.5 tracking-wide">SHARED</div>
+      )}
       <div className="px-4 pt-4 pb-3 flex-1">
         <div className="flex items-start justify-between gap-2 mb-1.5">
           <p className="text-sm font-bold text-gray-900 leading-snug">{agent.name}</p>
@@ -281,6 +358,7 @@ function AgentCard({ agent, running, onOpen, onRun, onStop, onApi, onDownload, o
           ? <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">{agent.description}</p>
           : <p className="text-xs text-gray-300 italic">No description</p>
         }
+        <SlugBadge slug={agent.slug} />
       </div>
 
       <div className="px-3 py-2 border-t border-gray-100 flex items-center justify-between gap-1">
@@ -539,6 +617,7 @@ export default function WorkspaceAgentsPage() {
         cronExpression:     form.cronExpression || null,
         enabled:            form.enabled,
         visualize:          form.visualize || false,
+        maxRounds:          form.maxRounds || null,
         workflow:           form.steps || [],
         params:             form.params || [],
         chains:             form.chains || [],

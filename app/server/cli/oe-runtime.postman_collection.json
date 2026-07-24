@@ -34,7 +34,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"yaml\": \"name: Hello World\\nsteps:\\n  - name: Answer the question\",\n  \"params\": {},\n  \"input\": \"What is 2 + 2?\"\n}",
+          "raw": "{\n  \"yaml\": \"name: Hello World\\nsteps:\\n  - name: Answer the question\",\n  \"params\": {}\n}",
           "options": { "raw": { "language": "json" } }
         },
         "url": {
@@ -55,7 +55,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"file\": \"C:/path/to/your/agent.yaml\",\n  \"params\": {},\n  \"input\": \"What is 2 + 2?\"\n}",
+          "raw": "{\n  \"file\": \"C:/path/to/your/agent.yaml\",\n  \"params\": {}\n}",
           "options": { "raw": { "language": "json" } }
         },
         "url": {

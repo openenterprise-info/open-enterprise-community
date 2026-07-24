@@ -1,3 +1,23 @@
+import { dump } from "js-yaml";
+
+// Runtime format — for oe-runtime binary (no workspace-specific fields)
+export function agentToRuntimeYaml(a) {
+  const steps = a.steps || (a.workflow ? (typeof a.workflow === "string" ? JSON.parse(a.workflow) : a.workflow) : []);
+  const conns = a.connectors || [];
+  const params = a.params || [];
+
+  const obj = { name: a.name || "Untitled Agent" };
+  if (a.description)                obj.description   = a.description;
+  const instructions = a.instructions || a.systemPrompt;
+  if (instructions)                  obj.instructions  = instructions;
+  if (steps?.length)                 obj.steps         = steps.map(s => ({ name: s.name || "", ...(s.content?.trim() ? { content: s.content } : {}) }));
+  if (conns.length)                  obj.connectors    = conns.map(c => ({ connection_name: c.connection_name || c.name || "", connection_type: c.connection_type || c.type || "" }));
+  if (params.length)                 obj.params        = params.map(p => ({ name: p.name, ...(p.label ? { label: p.label } : {}), ...(p.default != null ? { default: p.default } : {}) }));
+
+  return dump(obj, { lineWidth: -1, noRefs: true });
+}
+
+// Workspace format — for importing into the Open Enterprise platform
 export function agentToYaml(a) {
   const lines = [
     `name: "${a.name || "Untitled Agent"}"`,

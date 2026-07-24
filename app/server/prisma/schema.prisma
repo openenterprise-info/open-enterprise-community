@@ -212,6 +212,7 @@ model Agent {
   cronExpression  String?
   enabled         Boolean    @default(true)
   visualize       Boolean    @default(false)
+  maxRounds       Int?
   createdByUserId Int?
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
+import { version } from "../../../package.json";
 
-const VERSION = "v1.3.3";
+const VERSION = `v${version}`;
 const REPO = "https://github.com/openenterprise-info/open-enterprise-community";
 const BASE_URL = `${REPO}/releases/latest/download`;
 
@@ -81,8 +82,7 @@ curl -X POST http://localhost:3333/run \\
   -H "Content-Type: application/json" \\
   -d '{
     "yaml": "name: Hello\\nsteps:\\n  - name: Say hello",
-    "params": { "company": "Tesla" },
-    "input": "Summarize Q3 results"
+    "params": { "company": "Tesla" }
   }'
 
 # ── POST /run-file  (YAML path on disk) ──────────────
@@ -97,28 +97,45 @@ curl -X POST http://localhost:3333/run \\
   -d '{ "yaml": "..." }'`;
 
 const EXAMPLE_YAML = `name: Market Intelligence Briefing
-description: >
-  Researches a company, pulls internal DB metrics,
-  and emails a structured report.
-
-params:
-  - name: company
-    default: "OpenAI"
-  - name: recipient
-    default: "team@yourcompany.com"
-
+description: Research a company online, pull internal metrics, and email a structured report
+instructions: |
+  You are a market intelligence agent. Research companies using web search,
+  cross-reference with internal database metrics, and deliver a concise report by email.
+  Complete all steps fully before composing the report.
+steps:
+  - name: Research Company Online
+    content: |
+      Use Perplexity to search for the latest news, funding rounds, product launches,
+      and leadership changes for the company "{{company}}".
+      Collect the top 5 most relevant and recent findings with source URLs.
+  - name: Pull Internal Metrics
+    content: |
+      Query the Postgres database for records related to "{{company}}":
+        SELECT * FROM companies WHERE name ILIKE '%{{company}}%' LIMIT 1;
+        SELECT * FROM deals WHERE company_name ILIKE '%{{company}}%'
+          ORDER BY created_at DESC LIMIT 5;
+      Note all fields returned from both queries.
+  - name: Compose and Send Report
+    content: |
+      Compose a structured report and send it to "{{recipient}}" via SMTP.
+      Subject: Market Intelligence — {{company}}
+      Body:
+      - Executive Summary (3 sentences)
+      - Latest News (top 5 findings with sources)
+      - Internal Data (deals and company record)
+      - Recommendation (one clear action item)
 connectors:
   - connection_name: Perplexity Search
-    connection_type: perplexity-search
+    connection_type: perplexity
   - connection_name: Postgres DB
-    connection_type: postgres
+    connection_type: postgresql
   - connection_name: Company Email
     connection_type: smtp
-
-steps:
-  - name: Research latest news
-  - name: Pull internal metrics
-  - name: Compose and send report`;
+params:
+  - name: company
+    default: OpenAI
+  - name: recipient
+    default: team@yourcompany.com`;
 
 const POSTMAN_COLLECTION = {
   info: {
@@ -155,7 +172,6 @@ const POSTMAN_COLLECTION = {
           raw: JSON.stringify({
             yaml: "name: Hello World\nsteps:\n  - name: Answer the question",
             params: {},
-            input: "What is 2 + 2?",
           }, null, 2),
           options: { raw: { language: "json" } },
         },
@@ -176,7 +192,6 @@ const POSTMAN_COLLECTION = {
           raw: JSON.stringify({
             file:   "C:/path/to/your/agent.yaml",
             params: {},
-            input:  "What is 2 + 2?",
           }, null, 2),
           options: { raw: { language: "json" } },
         },
@@ -261,16 +276,11 @@ export default function RuntimePage() {
           <pre className="p-5 text-sm text-gray-300 font-mono leading-relaxed overflow-x-auto">{`# Run an agent
 oe-runtime agent.yaml --config oe-config.json
 
-# Pass parameters
+# Pass parameters (substitutes {{key}} in instructions and steps)
 oe-runtime market-report.yaml \\
   --config oe-config.json \\
   --param company="Tesla" \\
-  --param recipient="ceo@company.com"
-
-# Pass an input message
-oe-runtime researcher.yaml \\
-  --config oe-config.json \\
-  --input "Summarise AI trends in healthcare Q3 2026"`}</pre>
+  --param recipient="ceo@company.com"`}</pre>
         </div>
       </div>
 
@@ -278,7 +288,7 @@ oe-runtime researcher.yaml \\
       <div>
         <div className="flex items-center gap-3 mb-3">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">HTTP Server Mode</h2>
-          <span className="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-700">New in v1.3.3</span>
+          <span className="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-700">New in v1.3.5</span>
         </div>
         <p className="text-sm text-gray-500 mb-3">
           Add <code className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">--serve</code> to turn the binary into a persistent HTTP API.

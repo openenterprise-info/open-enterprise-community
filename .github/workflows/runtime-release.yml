@@ -89,6 +89,7 @@ jobs:
           files: app/server/cli/oe-runtime-macos
 
   update-website:
+    if: github.repository == 'openenterprise-info/open-enterprise-community'
     runs-on: ubuntu-latest
     needs: [build-windows, build-linux, build-macos]
     steps:

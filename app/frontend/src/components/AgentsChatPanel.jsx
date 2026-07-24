@@ -288,9 +288,9 @@ export default function AgentsChatPanel({ slug, isManager, onClose, onApprovalDe
     if (!formData.name.trim()) return;
     setSaving(true);
     try {
-      const { name, slug: agentSlug, description, group, nextAgent, nextAgentCondition, chains, systemPrompt, steps, connectorIds, triggerType, cronExpression, enabled, params, visualize } = formData;
+      const { name, slug: agentSlug, description, group, nextAgent, nextAgentCondition, chains, systemPrompt, steps, connectorIds, triggerType, cronExpression, enabled, params, visualize, maxRounds } = formData;
       const workflow = steps?.length ? steps : null;
-      const payload = { name, slug: agentSlug, description, group, nextAgent, nextAgentCondition, chains: chains?.filter(c => c.nextAgent), systemPrompt, workflow, connectorIds, triggerType, cronExpression, enabled, params, visualize: visualize === true };
+      const payload = { name, slug: agentSlug, description, group, nextAgent, nextAgentCondition, chains: chains?.filter(c => c.nextAgent), systemPrompt, workflow, connectorIds, triggerType, cronExpression, enabled, params, visualize: visualize === true, maxRounds: maxRounds || null };
       if (editAgent) {
         const { data } = await api.put(`/workspaces/${slug}/agents/${editAgent.id}`, payload);
         setAgents(a => a.map(x => x.id === editAgent.id ? { ...x, ...data.agent } : x));

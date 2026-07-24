@@ -477,6 +477,14 @@ export default function WorkspaceChat() {
   const [agents, setAgents]                   = useState([]);
   const [connectors, setConnectors]           = useState([]);
   const [mentionSearch, setMentionSearch]     = useState(null); // null = closed, string = filtering
+  const [myAgents, setMyAgents]               = useState([]);
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("oe_marketplace_saved") || "[]");
+      setMyAgents(saved);
+    } catch { /* */ }
+  }, []);
   const [runningAgentCount, setRunningAgentCount] = useState(0);
 
   // Drawer
@@ -1188,9 +1196,10 @@ export default function WorkspaceChat() {
           <div className="max-w-[720px] mx-auto relative">
             {/* @mention autocomplete dropdown */}
             {mentionSearch !== null && (() => {
-              const filteredAgents = agents.filter(a => a.slug?.startsWith(mentionSearch));
-              const filteredConns  = connectors.filter(c => c.name?.startsWith(mentionSearch));
-              const hasResults = filteredAgents.length > 0 || filteredConns.length > 0;
+              const filteredAgents   = agents.filter(a => a.slug?.startsWith(mentionSearch));
+              const filteredConns    = connectors.filter(c => c.name?.startsWith(mentionSearch));
+              const filteredMyAgents = myAgents.filter(a => a.name?.toLowerCase().startsWith(mentionSearch.toLowerCase()));
+              const hasResults = filteredAgents.length > 0 || filteredConns.length > 0 || filteredMyAgents.length > 0;
               function pickMention(name) {
                 setInput(input.replace(/@[\w-]*$/, `@${name} `));
                 setMentionSearch(null);
@@ -1230,6 +1239,24 @@ export default function WorkspaceChat() {
                             {c.name?.[0]?.toUpperCase()}
                           </span>
                           <p className="text-sm font-semibold text-gray-800">{c.name}</p>
+                        </button>
+                      ))}
+                    </>
+                  )}
+                  {filteredMyAgents.length > 0 && (
+                    <>
+                      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-3 pt-2 pb-1">My Agents</p>
+                      {filteredMyAgents.map((a, i) => (
+                        <button key={i} type="button"
+                          className="w-full flex items-center gap-3 px-3 py-2 hover:bg-purple-50 text-left transition-colors"
+                          onMouseDown={e => { e.preventDefault(); pickMention(a.name.toLowerCase().replace(/\s+/g, "-")); }}>
+                          <span className="w-7 h-7 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold text-xs shrink-0">
+                            {a.name?.[0]?.toUpperCase()}
+                          </span>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-800">{a.name}</p>
+                            <p className="text-xs text-purple-500 font-mono">runtime agent</p>
+                          </div>
                         </button>
                       ))}
                     </>
