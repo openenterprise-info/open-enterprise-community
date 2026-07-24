@@ -9,11 +9,12 @@
     "port": 3333,
     "apiKey": "your-secret-api-key"
   },
-  "connectors": {
-    "My Slack": {
-      "type": "slack",
+  "connectors": [
+    {
+      "connection_name": "My Slack",
+      "connection_type": "slack",
       "botToken": "xoxb-YOUR-BOT-TOKEN",
       "channel": "general"
     }
-  }
+  ]
 }

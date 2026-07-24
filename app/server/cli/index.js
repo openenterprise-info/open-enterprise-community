@@ -105,14 +105,28 @@ const config    = JSON.parse(fs.readFileSync(configFile, "utf8"));
 // Config has credentials. Match by name first, then by type.
 
 function prepareConnectors(yamlConnectors, configConnectors) {
+  // Support object format { "Name": { type, ...creds } } as well as legacy array format
+  let cfgArray;
+  if (Array.isArray(configConnectors)) {
+    cfgArray = configConnectors;
+  } else if (configConnectors && typeof configConnectors === "object") {
+    cfgArray = Object.entries(configConnectors).map(([name, cfg]) => ({
+      connection_name: name,
+      connection_type: cfg.type,
+      ...cfg,
+    }));
+  } else {
+    cfgArray = [];
+  }
+
   return (yamlConnectors || []).map((yc, i) => {
     // Normalise YAML connector fields — accept both new (connection_*) and legacy (name/type)
     const ycName = yc.connection_name || yc.name;
     const ycType = yc.connection_type || yc.type;
 
     // Match by name first, then fall back to type
-    const cc = (configConnectors || []).find(c => (c.connection_name || c.name) === ycName)
-            || (configConnectors || []).find(c => (c.connection_type || c.type) === ycType);
+    const cc = cfgArray.find(c => (c.connection_name || c.name) === ycName)
+            || cfgArray.find(c => (c.connection_type || c.type) === ycType);
 
     if (!cc) {
       console.warn(`  ⚠  No config entry for connector "${ycName}" (${ycType}) — tool calls will fail`);

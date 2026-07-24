@@ -9,14 +9,15 @@
     "port": 3333,
     "apiKey": "your-secret-api-key"
   },
-  "connectors": {
-    "My Email": {
-      "type": "smtp",
+  "connectors": [
+    {
+      "connection_name": "My Email",
+      "connection_type": "smtp",
       "host": "smtp.gmail.com",
       "port": 587,
       "user": "you@gmail.com",
       "password": "YOUR_APP_PASSWORD",
       "from": "you@gmail.com"
     }
-  }
+  ]
 }

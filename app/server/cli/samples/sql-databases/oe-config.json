@@ -9,14 +9,15 @@
     "port": 3333,
     "apiKey": "your-secret-api-key"
   },
-  "connectors": {
-    "My Database": {
-      "type": "postgresql",
+  "connectors": [
+    {
+      "connection_name": "My Database",
+      "connection_type": "postgresql",
       "host": "localhost",
       "port": 5432,
       "database": "mydb",
       "user": "postgres",
       "password": "YOUR_DB_PASSWORD"
     }
-  }
+  ]
 }

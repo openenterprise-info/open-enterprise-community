@@ -9,10 +9,11 @@
     "port": 3333,
     "apiKey": "your-secret-api-key"
   },
-  "connectors": {
-    "Perplexity": {
-      "type": "perplexity",
+  "connectors": [
+    {
+      "connection_name": "Perplexity",
+      "connection_type": "perplexity",
       "apiKey": "YOUR_PERPLEXITY_API_KEY"
     }
-  }
+  ]
 }

@@ -9,14 +9,15 @@
     "port": 3333,
     "apiKey": "your-secret-api-key"
   },
-  "connectors": {
-    "Target API": {
-      "type": "http",
+  "connectors": [
+    {
+      "connection_name": "Target API",
+      "connection_type": "http",
       "baseUrl": "https://api.example.com",
       "headers": {
         "Authorization": "Bearer YOUR_API_TOKEN",
         "Content-Type": "application/json"
       }
     }
-  }
+  ]
 }

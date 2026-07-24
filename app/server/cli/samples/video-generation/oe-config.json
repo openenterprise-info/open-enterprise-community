@@ -9,12 +9,13 @@
     "port": 3333,
     "apiKey": "your-secret-api-key"
   },
-  "connectors": {
-    "Runway": {
-      "type": "runway",
+  "connectors": [
+    {
+      "connection_name": "Runway",
+      "connection_type": "runway",
       "apiKey": "YOUR_RUNWAY_API_KEY",
       "model": "gen3a_turbo",
       "duration": 5
     }
-  }
+  ]
 }

@@ -9,13 +9,14 @@
     "port": 3333,
     "apiKey": "your-secret-api-key"
   },
-  "connectors": {
-    "My GraphQL API": {
-      "type": "graphql",
+  "connectors": [
+    {
+      "connection_name": "My GraphQL API",
+      "connection_type": "graphql",
       "endpoint": "https://api.example.com/graphql",
       "headers": {
         "Authorization": "Bearer YOUR_TOKEN"
       }
     }
-  }
+  ]
 }

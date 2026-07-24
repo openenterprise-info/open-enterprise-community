@@ -9,12 +9,13 @@
     "port": 3333,
     "apiKey": "your-secret-api-key"
   },
-  "connectors": {
-    "GitHub": {
-      "type": "github",
+  "connectors": [
+    {
+      "connection_name": "GitHub",
+      "connection_type": "github",
       "token": "ghp_YOUR_GITHUB_PERSONAL_ACCESS_TOKEN",
       "owner": "your-org",
       "repo": "your-repo"
     }
-  }
+  ]
 }

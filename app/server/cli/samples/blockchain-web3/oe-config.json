@@ -9,12 +9,13 @@
     "port": 3333,
     "apiKey": "your-secret-api-key"
   },
-  "connectors": {
-    "Ethereum": {
-      "type": "web3",
+  "connectors": [
+    {
+      "connection_name": "Ethereum",
+      "connection_type": "web3",
       "provider": "infura",
       "apiKey": "YOUR_INFURA_PROJECT_ID",
       "network": "mainnet"
     }
-  }
+  ]
 }

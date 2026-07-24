@@ -9,12 +9,13 @@
     "port": 3333,
     "apiKey": "your-secret-api-key"
   },
-  "connectors": {
-    "My Google Drive": {
-      "type": "google-drive",
+  "connectors": [
+    {
+      "connection_name": "My Google Drive",
+      "connection_type": "google-drive",
       "clientId": "YOUR_GOOGLE_CLIENT_ID",
       "clientSecret": "YOUR_GOOGLE_CLIENT_SECRET",
       "refreshToken": "YOUR_GOOGLE_REFRESH_TOKEN"
     }
-  }
+  ]
 }

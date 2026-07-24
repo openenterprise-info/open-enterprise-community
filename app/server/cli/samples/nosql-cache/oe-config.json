@@ -9,11 +9,12 @@
     "port": 3333,
     "apiKey": "your-secret-api-key"
   },
-  "connectors": {
-    "My MongoDB": {
-      "type": "mongodb",
+  "connectors": [
+    {
+      "connection_name": "My MongoDB",
+      "connection_type": "mongodb",
       "uri": "mongodb://localhost:27017",
       "database": "mydb"
     }
-  }
+  ]
 }

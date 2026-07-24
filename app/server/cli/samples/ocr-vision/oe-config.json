@@ -9,11 +9,12 @@
     "port": 3333,
     "apiKey": "your-secret-api-key"
   },
-  "connectors": {
-    "Azure Vision": {
-      "type": "azure-vision",
+  "connectors": [
+    {
+      "connection_name": "Azure Vision",
+      "connection_type": "azure-vision",
       "endpoint": "https://YOUR_RESOURCE.cognitiveservices.azure.com",
       "apiKey": "YOUR_AZURE_VISION_KEY"
     }
-  }
+  ]
 }

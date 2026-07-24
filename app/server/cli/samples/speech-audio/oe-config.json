@@ -9,12 +9,13 @@
     "port": 3333,
     "apiKey": "your-secret-api-key"
   },
-  "connectors": {
-    "ElevenLabs": {
-      "type": "elevenlabs",
+  "connectors": [
+    {
+      "connection_name": "ElevenLabs",
+      "connection_type": "elevenlabs",
       "apiKey": "YOUR_ELEVENLABS_API_KEY",
       "voiceId": "21m00Tcm4TlvDq8ikWAM",
       "modelId": "eleven_multilingual_v2"
     }
-  }
+  ]
 }

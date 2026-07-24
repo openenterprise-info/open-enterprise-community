@@ -9,13 +9,14 @@
     "port": 3333,
     "apiKey": "your-secret-api-key"
   },
-  "connectors": {
-    "My S3 Bucket": {
-      "type": "s3",
+  "connectors": [
+    {
+      "connection_name": "My S3 Bucket",
+      "connection_type": "s3",
       "accessKeyId": "YOUR_AWS_ACCESS_KEY",
       "secretAccessKey": "YOUR_AWS_SECRET_KEY",
       "region": "us-east-1",
       "bucket": "my-bucket"
     }
-  }
+  ]
 }

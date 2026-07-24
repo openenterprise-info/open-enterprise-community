@@ -9,12 +9,13 @@
     "port": 3333,
     "apiKey": "your-secret-api-key"
   },
-  "connectors": {
-    "My Kafka": {
-      "type": "kafka",
+  "connectors": [
+    {
+      "connection_name": "My Kafka",
+      "connection_type": "kafka",
       "brokers": ["localhost:9092"],
       "clientId": "oe-runtime",
       "topic": "my-topic"
     }
-  }
+  ]
 }

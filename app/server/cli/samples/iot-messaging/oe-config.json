@@ -9,14 +9,15 @@
     "port": 3333,
     "apiKey": "your-secret-api-key"
   },
-  "connectors": {
-    "MQTT Broker": {
-      "type": "mqtt",
+  "connectors": [
+    {
+      "connection_name": "MQTT Broker",
+      "connection_type": "mqtt",
       "broker": "mqtt://localhost:1883",
       "clientId": "oe-runtime",
       "topic": "devices/#",
       "username": "YOUR_MQTT_USER",
       "password": "YOUR_MQTT_PASSWORD"
     }
-  }
+  ]
 }

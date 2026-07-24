@@ -9,11 +9,12 @@
     "port": 3333,
     "apiKey": "your-secret-api-key"
   },
-  "connectors": {
-    "Suno": {
-      "type": "suno",
+  "connectors": [
+    {
+      "connection_name": "Suno",
+      "connection_type": "suno",
       "apiKey": "YOUR_SUNO_API_KEY",
       "model": "chirp-v3-5"
     }
-  }
+  ]
 }
