@@ -5,6 +5,30 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [v1.3.7] — 2026-07-24
+
+### Fixed
+- **Connector config format corrected across all 20 samples** — `oe-config.json` connectors were using a keyed object format (`{"Name": {type, ...}}`) that did not match the array-based lookup in `prepareConnectors()`; all 20 sample `oe-config.json` files updated to the canonical array format with `connection_name` and `connection_type` fields
+- **All 20 blog posts updated** — Config File code block in every agent blog post now shows the correct array connector format
+- **`prepareConnectors()` backward-compatible** — `cli/index.js` updated to accept both array format `[{connection_name, connection_type, ...creds}]` and the legacy object format `{"Name": {type, ...creds}}`; both now work without error
+
+---
+
+## [v1.3.6] — 2026-07-24
+
+### Added
+- **`commercial.html`** — standalone Commercial page (hero, 12 feature cards, dedicated services, infrastructure, who-it's-for, CTA); linked from nav and footer across all pages
+- **20 agent how-to blog posts** — one post per sample agent covering YAML, config, download, run commands, API server usage, 8 use cases, and copy-button code blocks (`blog/ai-*.html`)
+- **"How-To Guides" section in `runtime.html`** — card grid linking all 20 blog posts directly from the runtime page
+- **All 20 blog posts in `blog/index.html`** — agent blog cards added to the blog index
+- **All 20 blog URLs in `sitemap.xml`** — with `lastmod 2026-07-24`
+- **Website + Runtime links in `README.md`** — added `openenterprise.info` and `runtime.html` links to the "What is Open Enterprise?" bullet list
+
+### Changed
+- `index.html` — `#commercial` section replaced with a compact teaser pointing to `commercial.html`; nav, mobile nav, and footer updated to link to `commercial.html`
+
+---
+
 ## [v1.3.5] — 2026-07-23
 
 ### Added
