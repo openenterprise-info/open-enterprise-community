@@ -30,6 +30,8 @@ Open Enterprise is an **open-source enterprise AI platform** and **self-hosted A
 - **Human approval gates.** Build human-in-the-loop agentic workflows without writing code.
 - **Enterprise-ready.** Multi-workspace, RAG, MCP, DLP governance, and 2,673 connectors out of the box.
 
+🌐 **[openenterprise.info](https://www.openenterprise.info)** &nbsp;·&nbsp; ⚡ **[OE Runtime docs](https://www.openenterprise.info/runtime.html)**
+
 ---
 
 ## Table of Contents
